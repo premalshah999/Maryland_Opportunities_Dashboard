@@ -25,14 +25,14 @@ This repo is Vercel-ready via `vercel.json` (builds the Vite app under `frontend
 
 1) Push to GitHub.
 2) Import into Vercel.
-3) Set `VITE_API_BASE_URL` in Vercel Environment Variables to your deployed backend URL.
+3) Optional: set `VITE_API_BASE_URL` if you are hosting the backend elsewhere.
 
 Example:
 ```
 VITE_API_BASE_URL=https://your-backend.example.com
 ```
 
-> The frontend expects the backend to serve `/api/*` endpoints. Without a backend URL set, it will call `/api/*` on the same domain.
+> For prototype deployments, Vercel serves the FastAPI backend as serverless functions under `/api/*`.
 
 ## Data Sources
 
