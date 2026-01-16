@@ -35,19 +35,17 @@ const formatNumber = (value) => {
 const API_BASE = import.meta.env.VITE_API_BASE_URL || "";
 
 const fetchJson = async (path) => {
-  const primary = API_BASE ? `${API_BASE}${path}` : path;
   let res;
   try {
-    res = await fetch(primary);
+    res = await fetch(path);
   } catch (err) {
     if (!API_BASE) throw err;
-    res = await fetch(path);
   }
-  if (!res.ok && API_BASE) {
-    const fallback = await fetch(path);
-    if (fallback.ok) {
-      return fallback.json();
+  if (!res || !res.ok) {
+    if (!API_BASE) {
+      throw new Error(`Request failed: ${res ? res.status : "network error"}`);
     }
+    res = await fetch(`${API_BASE}${path}`);
   }
   if (!res.ok) {
     throw new Error(`Request failed: ${res.status}`);
@@ -208,7 +206,7 @@ function MapCanvas({ geojson, level, onHover, onSelect, selectedId }) {
           paint: {
             "fill-color": [
               "match",
-              ["get", "quintile"],
+              ["to-number", ["get", "quintile"]],
               1,
               QUINTILE_COLORS[0],
               2,
@@ -370,7 +368,8 @@ export default function App() {
     }
     setStatus({ state: "loading", message: "Loading variables" });
     setValuesData(null);
-    fetchJson(`/api/variables?dataset=${dataset}&level=${level}`)
+    const params = new URLSearchParams({ dataset, level }).toString();
+    fetchJson(`/api/variables?${params}`)
       .then((data) => {
         const nextVars = data.variables || [];
         setVariables(nextVars);
@@ -384,7 +383,8 @@ export default function App() {
     setStatus({ state: "loading", message: "Loading values" });
     setHoverInfo(null);
     setSelectedFeature(null);
-    fetchJson(`/api/values?dataset=${dataset}&level=${level}&variable=${variable}`)
+    const params = new URLSearchParams({ dataset, level, variable }).toString();
+    fetchJson(`/api/values?${params}`)
       .then((data) => {
         setValuesData(data);
         setStatus({ state: "ready", message: `Loaded ${data.stats?.count || 0} records` });
