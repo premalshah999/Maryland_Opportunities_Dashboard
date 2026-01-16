@@ -1,0 +1,5 @@
+{
+  "name": "Federal Fund Flow Visualizer",
+  "description": "Interactive visualization of federal fund flows across States, Congressional Districts, and Counties using dynamic maps and glassmorphism UI.",
+  "requestFramePermissions": []
+}
