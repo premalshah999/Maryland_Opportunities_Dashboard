@@ -34,8 +34,21 @@ const formatNumber = (value) => {
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || "";
 
-const fetchJson = async (url) => {
-  const res = await fetch(url);
+const fetchJson = async (path) => {
+  const primary = API_BASE ? `${API_BASE}${path}` : path;
+  let res;
+  try {
+    res = await fetch(primary);
+  } catch (err) {
+    if (!API_BASE) throw err;
+    res = await fetch(path);
+  }
+  if (!res.ok && API_BASE) {
+    const fallback = await fetch(path);
+    if (fallback.ok) {
+      return fallback.json();
+    }
+  }
   if (!res.ok) {
     throw new Error(`Request failed: ${res.status}`);
   }
@@ -336,7 +349,7 @@ export default function App() {
   const resizeRef = useRef({ startX: 0, startWidth: 360 });
 
   useEffect(() => {
-    fetchJson(`${API_BASE}/api/datasets`)
+    fetchJson("/api/datasets")
       .then((data) => setDatasets(data.datasets || []))
       .catch(() => setStatus({ state: "error", message: "Failed to load datasets" }));
   }, []);
@@ -357,7 +370,7 @@ export default function App() {
     }
     setStatus({ state: "loading", message: "Loading variables" });
     setValuesData(null);
-    fetchJson(`${API_BASE}/api/variables?dataset=${dataset}&level=${level}`)
+    fetchJson(`/api/variables?dataset=${dataset}&level=${level}`)
       .then((data) => {
         const nextVars = data.variables || [];
         setVariables(nextVars);
@@ -371,7 +384,7 @@ export default function App() {
     setStatus({ state: "loading", message: "Loading values" });
     setHoverInfo(null);
     setSelectedFeature(null);
-    fetchJson(`${API_BASE}/api/values?dataset=${dataset}&level=${level}&variable=${variable}`)
+    fetchJson(`/api/values?dataset=${dataset}&level=${level}&variable=${variable}`)
       .then((data) => {
         setValuesData(data);
         setStatus({ state: "ready", message: `Loaded ${data.stats?.count || 0} records` });
@@ -381,7 +394,7 @@ export default function App() {
 
   useEffect(() => {
     if (!level || geoCache[level]) return;
-    fetchJson(`${API_BASE}/api/geo/${level}`)
+    fetchJson(`/api/geo/${level}`)
       .then((data) => setGeoCache((prev) => ({ ...prev, [level]: data })))
       .catch(() => setStatus({ state: "error", message: "Failed to load geometry" }));
   }, [level, geoCache]);
