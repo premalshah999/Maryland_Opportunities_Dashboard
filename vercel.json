@@ -7,21 +7,6 @@
       "config": {
         "distDir": "dist"
       }
-    },
-    {
-      "src": "api/index.py",
-      "use": "@vercel/python"
     }
-  ],
-  "rewrites": [
-    {
-      "source": "/api/(.*)",
-      "destination": "/api/index.py"
-    }
-  ],
-  "functions": {
-    "api/index.py": {
-      "includeFiles": "backend/data/**"
-    }
-  }
+  ]
 }
