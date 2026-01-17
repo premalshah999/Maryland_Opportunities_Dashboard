@@ -2,6 +2,15 @@
 
 Interactive data atlas to compare demographic, fiscal, contract, and financial capability indicators across U.S. states, counties, and congressional districts.
 
+## Project Structure
+
+- `frontend/` React + Vite client (map, sidebar, flow diagram).
+- `backend/` FastAPI API with all datasets under `backend/data/`.
+  - `backend/data/atlas/processed/`: cleaned XLSX data.
+  - `backend/data/atlas/boundaries/`: geojson boundaries.
+  - `backend/data/flow/flows/`: federal fund flow JSON.
+  - `backend/data/reference/`: variable dictionary and source references.
+
 ## Local Development
 
 Backend:
@@ -19,21 +28,6 @@ npm run dev
 
 Open `http://localhost:5173`.
 
-## Vercel Deployment
-
-This repo is Vercel-ready via `vercel.json` (builds the Vite app under `frontend/`).
-
-1) Push to GitHub.
-2) Import into Vercel.
-3) Optional: set `VITE_API_BASE_URL` if you are hosting the backend elsewhere.
-
-Example:
-```
-VITE_API_BASE_URL=https://your-backend.example.com
-```
-
-> For prototype deployments, Vercel serves the FastAPI backend as serverless functions under `/api/*`.
-
 ## Data Sources
 
-See `Variable_Dictionary_Full.xlsx` and `data_source_url.pdf` for variable definitions and data sources.
+See `backend/data/reference/Variable_Dictionary_Full.xlsx` and `backend/data/reference/data_source_url.pdf` for variable definitions and data sources.

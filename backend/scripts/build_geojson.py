@@ -159,7 +159,7 @@ def write_geojson(path, data):
 
 def main():
     base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    out_dir = os.path.join(base_dir, "data")
+    out_dir = os.path.join(base_dir, "data", "atlas", "boundaries")
     os.makedirs(out_dir, exist_ok=True)
 
     states = build_states(out_dir)
