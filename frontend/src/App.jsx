@@ -28,13 +28,14 @@ const FLOW_BOUNDS = [
   [-65, 72]
 ];
 
-const formatLabel = (value) =>
-  value
-    ? value
-        .toString()
-        .replace(/_/g, " ")
-        .replace(/\b\w/g, (char) => char.toUpperCase())
-    : "—";
+const formatLabel = (value) => {
+  if (!value) return "—";
+  const raw = value.toString().replace(/_/g, " ").trim();
+  return raw
+    .split(" ")
+    .map((word) => (word ? word[0].toUpperCase() + word.slice(1) : word))
+    .join(" ");
+};
 
 const formatNumber = (value) => {
   if (value === null || value === undefined || Number.isNaN(value)) return "—";
@@ -128,8 +129,8 @@ const TOUR_STEPS = [
     body: "Four curated datasets cover demographics, government finance, federal contracts, and financial capability.",
     bullets: [
       "Census (ACS): demographics, education, income, poverty",
-      "Government Spending: assets, liabilities, revenue, expenses",
-      "Contract Flow: obligations and subaward flows",
+      "Contract Spending: assets, liabilities, revenue, expenses",
+      "Government Spending: obligations and subaward flows",
       "FINRA: financial literacy and household health indices"
     ]
   },
@@ -705,6 +706,8 @@ export default function App() {
   const [level, setLevel] = useState("");
   const [variables, setVariables] = useState([]);
   const [variable, setVariable] = useState("");
+  const [years, setYears] = useState([]);
+  const [year, setYear] = useState("");
   const [valuesData, setValuesData] = useState(null);
   const [geoCache, setGeoCache] = useState({});
   const [tab, setTab] = useState("filters");
@@ -762,36 +765,46 @@ export default function App() {
     if (!dataset || !level) {
       setVariables([]);
       setVariable("");
+      setYears([]);
+      setYear("");
       setValuesData(null);
       setSelectedFeature(null);
       setInfoOpen(false);
       return;
     }
+    setVariables([]);
+    setVariable("");
+    setYears([]);
+    setYear("");
     setAtlasStatus({ state: "loading", message: "Loading variables" });
     setValuesData(null);
     const params = new URLSearchParams({ dataset, level }).toString();
     fetchJson(`/api/variables?${params}`)
       .then((data) => {
         const nextVars = data.variables || [];
+        const nextYears = data.years || [];
+        const nextYear = nextYears.length ? nextYears[nextYears.length - 1] : "";
         setVariables(nextVars);
         setVariable(nextVars[0] || "");
+        setYears(nextYears);
+        setYear(nextYear);
       })
       .catch(() => setAtlasStatus({ state: "error", message: "Failed to load variables" }));
   }, [dataset, level]);
 
   useEffect(() => {
-    if (!dataset || !level || !variable) return;
+    if (!dataset || !level || !variable || !year) return;
     setAtlasStatus({ state: "loading", message: "Loading values" });
     setAtlasHover(null);
     setSelectedFeature(null);
-    const params = new URLSearchParams({ dataset, level, variable }).toString();
+    const params = new URLSearchParams({ dataset, level, variable, year }).toString();
     fetchJson(`/api/values?${params}`)
       .then((data) => {
         setValuesData(data);
         setAtlasStatus({ state: "ready", message: `Loaded ${data.stats?.count || 0} records` });
       })
       .catch(() => setAtlasStatus({ state: "error", message: "Failed to load values" }));
-  }, [dataset, level, variable]);
+  }, [dataset, level, variable, year]);
 
   useEffect(() => {
     if (viewMode !== "flow") return;
@@ -1116,6 +1129,10 @@ export default function App() {
                     <div className="info-label">Geography</div>
                     <div className="info-value">{levelLabel}</div>
                   </div>
+                  <div className="info-section">
+                    <div className="info-label">Year</div>
+                    <div className="info-value">{year || "—"}</div>
+                  </div>
                 </div>
               )}
             </>
@@ -1149,6 +1166,29 @@ export default function App() {
                     <option value="state">State</option>
                     <option value="county">County</option>
                     <option value="congress">Congressional District</option>
+                  </select>
+                </label>
+              </div>
+
+              <div className="section">
+                <div className="section-title">Year</div>
+                <label className="control">
+                  <span>Year</span>
+                  <select
+                    className="select-input"
+                    value={year}
+                    onChange={(e) => setYear(e.target.value)}
+                    disabled={!years.length}
+                  >
+                    {!years.length ? (
+                      <option value="">Select dataset and level</option>
+                    ) : (
+                      years.map((item) => (
+                        <option key={item} value={item}>
+                          {item}
+                        </option>
+                      ))
+                    )}
                   </select>
                 </label>
               </div>
@@ -1587,7 +1627,9 @@ export default function App() {
                       <div>
                         <div className="map-card-title">{selectedFeature.label}</div>
                         <div className="map-card-subtitle">
-                          {(datasetLabel || "Dataset") + (level ? ` · ${LEVEL_LABELS[level] || level}` : "")}
+                          {(datasetLabel || "Dataset") +
+                            (level ? ` · ${LEVEL_LABELS[level] || level}` : "") +
+                            (year ? ` · ${year}` : "")}
                         </div>
                       </div>
                       <button

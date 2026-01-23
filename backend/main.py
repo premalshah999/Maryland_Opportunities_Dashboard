@@ -8,9 +8,14 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+ROOT_DIR = os.path.abspath(os.path.join(BASE_DIR, os.pardir))
 DATA_DIR = os.path.join(BASE_DIR, "data")
 ATLAS_DIR = os.path.join(DATA_DIR, "atlas")
-ATLAS_PROCESSED_DIR = os.path.join(ATLAS_DIR, "processed")
+DEFAULT_ATLAS_PROCESSED_DIR = os.path.join(ATLAS_DIR, "processed")
+ROOT_PROCESSED_DIR = os.path.join(ROOT_DIR, "processed")
+ATLAS_PROCESSED_DIR = (
+    ROOT_PROCESSED_DIR if os.path.exists(ROOT_PROCESSED_DIR) else DEFAULT_ATLAS_PROCESSED_DIR
+)
 ATLAS_BOUNDARIES_DIR = os.path.join(ATLAS_DIR, "boundaries")
 FLOW_DIR = os.path.join(DATA_DIR, "flow")
 FLOW_FLOWS_DIR = os.path.join(FLOW_DIR, "flows")
@@ -22,12 +27,12 @@ DATASETS = {
         "prefix": "acs",
     },
     "contract_static": {
-        "label": "Contract Flow",
+        "label": "Government Spending",
         "dir": "contract_static",
         "prefix": "contract",
     },
     "gov_spending": {
-        "label": "Government Spending",
+        "label": "Contract Spending",
         "dir": "gov_spending",
         "prefix": "gov",
     },
@@ -39,6 +44,7 @@ DATASETS = {
 }
 
 LEVELS = {"state", "county", "congress"}
+YEAR_COLUMN = "Year"
 
 ID_COLUMNS = {
     "state": {"state"},
@@ -132,6 +138,29 @@ def load_dataset(dataset: str, level: str) -> pd.DataFrame:
             raise FileNotFoundError(path)
         _DATA_CACHE[cache_key] = pd.read_excel(path)
     return _DATA_CACHE[cache_key]
+
+
+def normalize_year_value(value) -> Optional[str]:
+    if value is None or pd.isna(value):
+        return None
+    if isinstance(value, (int, float)) and not isinstance(value, bool):
+        if float(value).is_integer():
+            return str(int(value))
+    return str(value).strip()
+
+
+def list_years(df: pd.DataFrame) -> List[str]:
+    if YEAR_COLUMN not in df.columns:
+        return []
+    years: List[str] = []
+    seen = set()
+    for raw in pd.unique(df[YEAR_COLUMN].dropna()):
+        normalized = normalize_year_value(raw)
+        if not normalized or normalized in seen:
+            continue
+        seen.add(normalized)
+        years.append(normalized)
+    return years
 
 
 def load_geo(level: str) -> dict:
@@ -318,12 +347,13 @@ def list_variables(dataset: str, level: str):
         raise HTTPException(status_code=404, detail="Unknown level")
     df = load_dataset(dataset, level)
     exclude = ID_COLUMNS[level]
-    columns = [col for col in df.columns if col not in exclude]
-    return {"variables": columns}
+    columns = [col for col in df.columns if col not in exclude and col != YEAR_COLUMN]
+    years = list_years(df)
+    return {"variables": columns, "years": years}
 
 
 @app.get("/api/values")
-def values(dataset: str, level: str, variable: str):
+def values(dataset: str, level: str, variable: str, year: Optional[str] = None):
     if dataset not in DATASETS:
         raise HTTPException(status_code=404, detail="Unknown dataset")
     if level not in LEVELS:
@@ -331,6 +361,14 @@ def values(dataset: str, level: str, variable: str):
     df = load_dataset(dataset, level)
     if variable not in df.columns:
         raise HTTPException(status_code=404, detail="Unknown variable")
+
+    if YEAR_COLUMN in df.columns:
+        available_years = list_years(df)
+        selected_year = normalize_year_value(year) if year is not None else None
+        if not selected_year and available_years:
+            selected_year = available_years[-1]
+        if selected_year:
+            df = df[df[YEAR_COLUMN].apply(normalize_year_value) == selected_year]
 
     records, thresholds = build_records(df, level, variable)
     stats = summarize([r["value"] for r in records])
