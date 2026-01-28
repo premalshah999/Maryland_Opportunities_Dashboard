@@ -8,14 +8,14 @@ export const METADATA = {
       "description": "Demographics, race/ethnicity, education, income, housing, and poverty indicators across U.S. geographies."
     },
     "gov_spending": {
-      "name": "Contract Spending",
+      "name": "Government Finances",
       "sourceName": "Annual Survey of State and Local Government Finances",
       "sourceUrl": "https://govfinance.reason.org/",
       "coverage": "Fiscal year 2023 county-level data aggregated to state and congressional district.",
       "description": "Government fiscal health, assets, liabilities, revenues, expenses, and per-capita measures."
     },
     "contract_static": {
-      "name": "Government Spending",
+      "name": "Federal Spending",
       "sourceName": "USAspending.gov",
       "sourceUrl": "https://usaspending.gov/",
       "coverage": "Federal contract obligations and subaward flows by county, congressional district, and state (2020-2024 average and annual values where available).",
@@ -45,10 +45,9 @@ export const METADATA = {
       "Education >= Bachelor's": "Educational attainment (age >= 25): Bachelor degree or higher",
       "Education >= Graduate": "Educational attainment (age >= 25): Graduate or professional degree",
       "# of household": "Total number of households",
-      "Income <$10K": "Households with income: Less than $10,000",
-      "Income <$50K": "Households with income: Less than $50,000",
-      "Income <$100K": "Households with income: Less than $100,000",
-      "Income <$200K": "Households with income: Less than $200,000",
+      "Income >$50K": "Households with income: more than $50,000",
+      "Income >$100K": "Households with income: more than $100,000",
+      "Income >$200K": "Households with income: more than $200,000",
       "Median household income": "Median household income (USD)",
       "Below poverty": "Population with poverty status: Below poverty level",
       "Owner occupied": "Housing units: Owner occupied",
@@ -87,16 +86,16 @@ export const METADATA = {
     },
     "contract_static": {
       "state": "State name",
-      "fed_act_obl": "Federal contract obligations (direct spending)",
-      "fed_act_obl_indirect": "Adjusted federal contract obligations (direct + net subaward inflow)",
-      "subaward_amount_out": "Subaward amount paid out (outflow)",
-      "subaward_amount_in": "Subaward amount received (inflow)",
-      "subaward_amount_net_inflow": "Net subaward inflow (in minus out)",
-      "employment": "Federal government employment count",
-      "residents": "Federal government resident employee count",
-      "fed_act_obl_per_1000": "Federal contract obligations per 1,000 residents",
-      "fed_act_obl_indirect_per_1000": "Adjusted federal contract obligations per 1,000 residents",
-      "subaward_amount_net_inflow_per_1000": "Net subaward inflow per 1,000 residents"
+      "Federal Contracts": "Federal contract obligations (direct spending)",
+      "Federal Contracts (Indirect)": "Adjusted federal contract obligations (direct + net subaward inflow)",
+      "Sub-contract Out": "Subaward amount paid out (outflow)",
+      "Sub-Contract In": "Subaward amount received (inflow)",
+      "Net Sub-Contract": "Net subaward inflow (in minus out)",
+      "Federal Contracts per 1000 residents": "Federal contract obligations per 1,000 residents",
+      "Federal Contracts (Indirect) per 1000 residents": "Adjusted federal contract obligations per 1,000 residents",
+      "Net Sub-Contract per 1000 residents": "Net subaward inflow per 1,000 residents",
+      "Employees": "Federal government employment count",
+      "Resident": "Federal government resident employee count"
     },
     "finra": {
       "financial_constraint": "Financial Constraint (Normalized)",

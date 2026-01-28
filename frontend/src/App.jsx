@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import maplibregl from "maplibre-gl";
 import { METADATA } from "./metadata.js";
+import { FlowMapCanvas } from "./flowMap.jsx";
 
 const QUINTILE_COLORS = ["#fee5d9", "#fcae91", "#fb6a4a", "#de2d26", "#a50f15"];
 const LEVEL_LABELS = {
@@ -22,10 +23,6 @@ const BASE_STYLE = "https://basemaps.cartocdn.com/gl/positron-gl-style/style.jso
 const US_BOUNDS = [
   [-125.5, 24.2],
   [-66.9, 49.8]
-];
-const FLOW_BOUNDS = [
-  [-180, 17],
-  [-65, 72]
 ];
 
 const formatLabel = (value) => {
@@ -55,6 +52,32 @@ const formatCurrency = (value) => {
   if (absValue >= 1e6) return `$${(value / 1e6).toFixed(2)}M`;
   if (absValue >= 1e3) return `$${(value / 1e3).toFixed(1)}K`;
   return `$${value.toLocaleString(undefined, { maximumFractionDigits: 0 })}`;
+};
+
+const roundToMillion = (value) => {
+  if (value === null || value === undefined || Number.isNaN(value)) return null;
+  return Math.round(value / 1e6) * 1e6;
+};
+
+const formatNumberRounded = (value) => formatNumber(roundToMillion(value));
+const formatCurrencyRounded = (value) => formatCurrency(roundToMillion(value));
+
+const VARIABLE_LABEL_OVERRIDES = {
+  contract_static: {
+    fed_act_obl: "Federal Contracts",
+    fed_act_obl_indirect: "Federal Contracts (Indirect)",
+    subaward_amount_out: "Sub-Contract Out",
+    subaward_amount_in: "Sub-Contract In",
+    subaward_amount_net_inflow: "Net Sub-Contract",
+    fed_act_obl_per_1000: "Federal Contracts per 1,000 Residents",
+    fed_act_obl_indirect_per_1000: "Federal Contracts (Indirect) per 1,000 Residents",
+    subaward_amount_net_inflow_per_1000: "Net Sub-Contract per 1,000 Residents"
+  }
+};
+
+const getVariableLabel = (datasetKey, variableKey) => {
+  if (!variableKey) return "—";
+  return VARIABLE_LABEL_OVERRIDES[datasetKey]?.[variableKey] || formatLabel(variableKey);
 };
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || "";
@@ -129,8 +152,8 @@ const TOUR_STEPS = [
     body: "Four curated datasets cover demographics, government finance, federal contracts, and financial capability.",
     bullets: [
       "Census (ACS): demographics, education, income, poverty",
-      "Contract Spending: assets, liabilities, revenue, expenses",
-      "Government Spending: obligations and subaward flows",
+      "Government Finances: assets, liabilities, revenue, expenses",
+      "Federal Spending: obligations and subaward flows",
       "FINRA: financial literacy and household health indices"
     ]
   },
@@ -367,335 +390,6 @@ function MapCanvas({ geojson, level, onHover, onSelect, selectedId, resizeKey })
   return <div className="map-container" ref={containerRef} />;
 }
 
-const FLOW_COLORS = {
-  inflow: { r: 37, g: 99, b: 235 },
-  outflow: { r: 220, g: 38, b: 38 },
-  neutral: { r: 100, g: 116, b: 139 }
-};
-
-const generateBezierCurve = (startLon, startLat, endLon, endLat, numPoints = 20) => {
-  const points = [];
-  const midLon = (startLon + endLon) / 2;
-  const midLat = (startLat + endLat) / 2;
-  const dx = endLon - startLon;
-  const dy = endLat - startLat;
-  const distance = Math.sqrt(dx * dx + dy * dy) || 1;
-  const curveHeight = Math.min(distance * 0.25, 10);
-  const perpX = -dy / distance;
-  const perpY = dx / distance;
-  const ctrlLon = midLon + perpX * curveHeight;
-  const ctrlLat = midLat + perpY * curveHeight;
-
-  for (let i = 0; i <= numPoints; i += 1) {
-    const t = i / numPoints;
-    const oneMinusT = 1 - t;
-    const lon = oneMinusT * oneMinusT * startLon +
-      2 * oneMinusT * t * ctrlLon +
-      t * t * endLon;
-    const lat = oneMinusT * oneMinusT * startLat +
-      2 * oneMinusT * t * ctrlLat +
-      t * t * endLat;
-    points.push([lon, lat]);
-  }
-  return points;
-};
-
-const getFlowRange = (flows) => {
-  if (!flows.length) return { min: 0, max: 1 };
-  let min = Infinity;
-  let max = -Infinity;
-  flows.forEach((flow) => {
-    const amt = Math.abs(Number(flow.amount));
-    if (!Number.isFinite(amt)) return;
-    const scaled = Math.log10(amt + 1);
-    if (scaled < min) min = scaled;
-    if (scaled > max) max = scaled;
-  });
-  if (!Number.isFinite(min) || !Number.isFinite(max) || max <= min) {
-    return { min: 0, max: 1 };
-  }
-  return { min, max };
-};
-
-const formatRgb = (color) => `rgb(${color.r},${color.g},${color.b})`;
-
-const mixColor = (from, to, t) => ({
-  r: Math.round(from.r + (to.r - from.r) * t),
-  g: Math.round(from.g + (to.g - from.g) * t),
-  b: Math.round(from.b + (to.b - from.b) * t)
-});
-
-const getFlowDirection = (flow, focusState) => {
-  if (!focusState || focusState === "All") return "neutral";
-  if (flow.origin_state && flow.origin_state === focusState) return "outflow";
-  if (flow.dest_state && flow.dest_state === focusState) return "inflow";
-  return "neutral";
-};
-
-const flowsToGeoJSON = (flows, minAmt, maxAmt, focusState) => {
-  const features = [];
-  const useGradient = !focusState || focusState === "All";
-  flows.forEach((flow) => {
-    const amount = Number(flow.amount);
-    if (!Number.isFinite(amount)) return;
-    const magnitude = Math.abs(amount);
-    const scaled = Math.log10(magnitude + 1);
-    const normAmount = maxAmt > minAmt ? (scaled - minAmt) / (maxAmt - minAmt) : 0.5;
-    const widthScale = Math.pow(Math.min(Math.max(normAmount, 0), 1), 0.85);
-    const direction = getFlowDirection(flow, focusState);
-    const curvePoints = generateBezierCurve(
-      flow.origin_lon,
-      flow.origin_lat,
-      flow.dest_lon,
-      flow.dest_lat,
-      20
-    );
-    const baseWidth = 0.25 + widthScale * 0.9;
-    const segments = curvePoints.length - 1;
-    for (let i = 0; i < segments; i += 1) {
-      const t = i / segments;
-      const opacity = 0.4 + Math.sin(t * Math.PI) * 0.35;
-      const color = useGradient
-        ? formatRgb(mixColor(FLOW_COLORS.outflow, FLOW_COLORS.inflow, t))
-        : formatRgb(FLOW_COLORS[direction] || FLOW_COLORS.neutral);
-      features.push({
-        type: "Feature",
-        properties: {
-          flow_id: flow.id,
-          origin: flow.origin_name,
-          dest: flow.dest_name,
-          amount: amount,
-          agency: flow.agency,
-          direction,
-          color,
-          opacity,
-          width: baseWidth
-        },
-        geometry: {
-          type: "LineString",
-          coordinates: [curvePoints[i], curvePoints[i + 1]]
-        }
-      });
-    }
-  });
-  return {
-    type: "FeatureCollection",
-    features
-  };
-};
-
-const endpointsToGeoJSON = (flows) => ({
-  type: "FeatureCollection",
-  features: flows.flatMap((flow) => {
-    const originColor = FLOW_COLORS.outflow;
-    const destColor = FLOW_COLORS.inflow;
-    return ([
-      {
-        type: "Feature",
-        properties: { role: "origin", name: flow.origin_name, color: formatRgb(originColor) },
-        geometry: { type: "Point", coordinates: [flow.origin_lon, flow.origin_lat] }
-      },
-      {
-        type: "Feature",
-        properties: { role: "dest", name: flow.dest_name, color: formatRgb(destColor) },
-        geometry: { type: "Point", coordinates: [flow.dest_lon, flow.dest_lat] }
-      }
-    ]);
-  })
-});
-
-function FlowMapCanvas({
-  flows,
-  level,
-  boundaries,
-  stateBoundaries,
-  focusState,
-  onHover,
-  onSelect,
-  resizeKey
-}) {
-  const containerRef = useRef(null);
-  const mapRef = useRef(null);
-  const eventsBound = useRef(false);
-  const flowLookupRef = useRef(new Map());
-  useEffect(() => {
-    flowLookupRef.current = new Map(flows.map((flow) => [flow.id, flow]));
-  }, [flows]);
-  const { min, max } = useMemo(() => getFlowRange(flows), [flows]);
-  const flowGeoJSON = useMemo(
-    () => flowsToGeoJSON(flows, min, max, focusState),
-    [flows, min, max, focusState]
-  );
-  const endpointsGeoJSON = useMemo(
-    () => endpointsToGeoJSON(flows),
-    [flows]
-  );
-
-  useEffect(() => {
-    if (mapRef.current) return;
-    const map = new maplibregl.Map({
-      container: containerRef.current,
-      style: BASE_STYLE,
-      center: [-98.5, 38.5],
-      zoom: 3,
-      minZoom: 2,
-      dragRotate: false,
-      pitchWithRotate: false
-    });
-    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "top-right");
-    mapRef.current = map;
-    return () => map.remove();
-  }, []);
-
-  useEffect(() => {
-    const map = mapRef.current;
-    if (!map) return;
-
-    const loadData = () => {
-      if (level === "state" && map.getLayer("flow-level-borders")) {
-        map.removeLayer("flow-level-borders");
-      }
-      if (level === "state" && map.getSource("flow-level")) {
-        map.removeSource("flow-level");
-      }
-
-      if (stateBoundaries) {
-        if (!map.getSource("flow-states")) {
-          map.addSource("flow-states", { type: "geojson", data: stateBoundaries });
-          map.addLayer({
-            id: "flow-state-borders",
-            type: "line",
-            source: "flow-states",
-            paint: {
-              "line-color": "rgba(148, 163, 184, 0.7)",
-              "line-width": 0.8
-            }
-          });
-        } else {
-          map.getSource("flow-states").setData(stateBoundaries);
-        }
-      }
-
-      if (boundaries && level !== "state") {
-        if (!map.getSource("flow-level")) {
-          map.addSource("flow-level", { type: "geojson", data: boundaries });
-          map.addLayer({
-            id: "flow-level-borders",
-            type: "line",
-            source: "flow-level",
-            paint: {
-              "line-color": "rgba(203, 213, 225, 0.6)",
-              "line-width": level === "county" ? 0.25 : 0.5
-            }
-          });
-        } else {
-          map.getSource("flow-level").setData(boundaries);
-          map.setPaintProperty("flow-level-borders", "line-width", level === "county" ? 0.25 : 0.5);
-        }
-      } else if (level !== "state" && map.getSource("flow-level")) {
-        map.getSource("flow-level").setData({ type: "FeatureCollection", features: [] });
-      }
-
-      if (!map.getSource("flow-lines")) {
-        map.addSource("flow-lines", { type: "geojson", data: flowGeoJSON });
-        map.addLayer({
-          id: "flow-lines-layer",
-          type: "line",
-          source: "flow-lines",
-          paint: {
-            "line-color": ["get", "color"],
-            "line-width": ["get", "width"],
-            "line-opacity": ["get", "opacity"]
-          },
-          layout: {
-            "line-cap": "round",
-            "line-join": "round"
-          }
-        });
-      } else {
-        map.getSource("flow-lines").setData(flowGeoJSON);
-      }
-
-      if (!map.getSource("flow-points")) {
-        map.addSource("flow-points", { type: "geojson", data: endpointsGeoJSON });
-        map.addLayer({
-          id: "flow-points-layer",
-          type: "circle",
-          source: "flow-points",
-          paint: {
-            "circle-radius": 1.5,
-            "circle-color": ["get", "color"],
-            "circle-opacity": 0.5
-          }
-        });
-      } else {
-        map.getSource("flow-points").setData(endpointsGeoJSON);
-      }
-
-      if (!eventsBound.current) {
-        eventsBound.current = true;
-        const findFlowFeature = (point) => {
-          const padding = 10;
-          const bbox = [
-            [point.x - padding, point.y - padding],
-            [point.x + padding, point.y + padding]
-          ];
-          const features = map.queryRenderedFeatures(bbox, { layers: ["flow-lines-layer"] });
-          return features[0];
-        };
-
-        map.on("mousemove", (event) => {
-          const feature = findFlowFeature(event.point);
-          if (!feature) {
-            map.getCanvas().style.cursor = "";
-            onHover(null);
-            return;
-          }
-          map.getCanvas().style.cursor = "pointer";
-          onHover({
-            x: event.point.x,
-            y: event.point.y,
-            origin: feature.properties?.origin,
-            dest: feature.properties?.dest,
-            amount: Number(feature.properties?.amount),
-            agency: feature.properties?.agency,
-            flowId: feature.properties?.flow_id
-          });
-        });
-        map.on("click", (event) => {
-          const feature = findFlowFeature(event.point);
-          if (!feature) {
-            onSelect(null);
-            return;
-          }
-          const flowId = feature.properties?.flow_id;
-          if (!flowId) return;
-          onSelect(flowLookupRef.current.get(flowId) || null);
-        });
-      }
-    };
-
-    if (map.isStyleLoaded()) {
-      loadData();
-    } else {
-      map.once("load", loadData);
-    }
-  }, [boundaries, endpointsGeoJSON, flowGeoJSON, level, onHover, onSelect, stateBoundaries]);
-
-  useEffect(() => {
-    const map = mapRef.current;
-    if (!map) return;
-    map.fitBounds(FLOW_BOUNDS, { padding: 40, duration: 600 });
-  }, [level, flows]);
-
-  useEffect(() => {
-    if (mapRef.current) {
-      mapRef.current.resize();
-    }
-  }, [resizeKey]);
-
-  return <div className="map-container" ref={containerRef} />;
-}
 
 export default function App() {
   const [sidebarWidth, setSidebarWidth] = useState(360);
@@ -723,6 +417,7 @@ export default function App() {
     industries: [],
     years: []
   });
+  const [flowOptionsLevel, setFlowOptionsLevel] = useState("");
   const [flowFilters, setFlowFilters] = useState({
     agency: "All",
     state: "All",
@@ -806,12 +501,21 @@ export default function App() {
       .catch(() => setAtlasStatus({ state: "error", message: "Failed to load values" }));
   }, [dataset, level, variable, year]);
 
+  // Load flow options when level changes
   useEffect(() => {
     if (viewMode !== "flow") return;
     if (!flowLevel) return;
+
+    let cancelled = false;
     setFlowStatus({ state: "loading", message: "Loading flow options" });
+    setFlowOptionsLevel("");
+    setFlowData(null);
+    setFlowHover(null);
+    setFlowSelected(null);
+
     fetchJson(`/api/flow/options?level=${flowLevel}`)
       .then((data) => {
+        if (cancelled) return;
         const years = data.years || [];
         const minYear = years.length ? Math.min(...years) : null;
         const maxYear = years.length ? Math.max(...years) : null;
@@ -829,18 +533,28 @@ export default function App() {
           yearStart: minYear,
           yearEnd: maxYear
         });
-        setFlowStatus({ state: "ready", message: "Flow options ready" });
+        setFlowOptionsLevel(flowLevel);
       })
-      .catch(() => setFlowStatus({ state: "error", message: "Failed to load flow options" }));
+      .catch(() => {
+        if (cancelled) return;
+        setFlowOptionsLevel("");
+        setFlowStatus({ state: "error", message: "Failed to load flow options" });
+      });
+
+    return () => { cancelled = true; };
   }, [flowLevel, viewMode]);
 
+  // Load flow data when filters change
   useEffect(() => {
     if (viewMode !== "flow") return;
     if (!flowLevel) return;
+    if (flowOptionsLevel !== flowLevel) return;
+
+    let cancelled = false;
     setFlowStatus({ state: "loading", message: "Loading flow data" });
-    setFlowData(null);
     setFlowHover(null);
     setFlowSelected(null);
+
     const params = new URLSearchParams({ level: flowLevel });
     if (flowFilters.agency && flowFilters.agency !== "All") {
       params.set("agency", flowFilters.agency);
@@ -860,29 +574,52 @@ export default function App() {
     if (flowFilters.yearEnd) {
       params.set("year_end", flowFilters.yearEnd);
     }
+
     fetchJson(`/api/flow?${params.toString()}`)
       .then((data) => {
+        if (cancelled) return;
         setFlowData(data);
         setFlowStatus({
           state: "ready",
-          message: `Loaded ${data.aggregated_stats?.total_flows || 0} flows`
+          message: `Loaded ${data.flows?.length || 0} of ${data.stats?.total_flows || 0} flows`
         });
       })
-      .catch(() => setFlowStatus({ state: "error", message: "Failed to load flows" }));
-  }, [flowLevel, flowFilters, viewMode]);
+      .catch(() => {
+        if (cancelled) return;
+        setFlowData(null);
+        setFlowStatus({ state: "error", message: "Failed to load flows" });
+      });
 
+    return () => { cancelled = true; };
+  }, [flowLevel, flowFilters, flowOptionsLevel, viewMode]);
+
+  // Load geography data for atlas and flow views
   useEffect(() => {
     const targets = new Set();
-    if (level) targets.add(level);
-    if (flowLevel) targets.add(flowLevel);
-    if (flowLevel && flowLevel !== "state") targets.add("state");
+    if (viewMode === "atlas" && level) {
+      targets.add(level);
+    }
+    if (viewMode === "flow") {
+      // Load boundaries for flow view based on selected level
+      targets.add("state");
+      if (flowLevel === "county") {
+        targets.add("county");
+      } else if (flowLevel === "congress") {
+        targets.add("congress");
+      }
+    }
+
     targets.forEach((target) => {
       if (geoCache[target]) return;
       fetchJson(`/api/geo/${target}`)
         .then((data) => setGeoCache((prev) => ({ ...prev, [target]: data })))
-        .catch(() => setAtlasStatus({ state: "error", message: "Failed to load geometry" }));
+        .catch(() => {
+          if (viewMode === "atlas") {
+            setAtlasStatus({ state: "error", message: "Failed to load geometry" });
+          }
+        });
     });
-  }, [level, flowLevel, geoCache]);
+  }, [level, viewMode, flowLevel, geoCache]);
 
   useEffect(() => {
     if (!isResizing) return;
@@ -960,21 +697,13 @@ export default function App() {
   const variableMeta = dataset && variable ? METADATA.variables?.[dataset]?.[variable] : null;
   const levelLabel = level ? LEVEL_LABELS[level] || level : "—";
   const flowDisplay = useMemo(() => {
-    if (!flowData?.display_flows) return [];
-    const focusState = flowFilters.state;
-    if (!focusState || focusState === "All") return flowData.display_flows;
-    if (flowFilters.direction === "Inflow") {
-      return flowData.display_flows.filter((flow) => flow.dest_state === focusState);
-    }
-    if (flowFilters.direction === "Outflow") {
-      return flowData.display_flows.filter((flow) => flow.origin_state === focusState);
-    }
-    return flowData.display_flows;
-  }, [flowData, flowFilters.direction, flowFilters.state]);
+    if (!flowData?.flows) return [];
+    return flowData.flows;
+  }, [flowData]);
   const flowStats = useMemo(() => {
     if (!flowData) return null;
     const displayFlows = flowDisplay || [];
-    const aggregated = flowData.aggregated_stats || {};
+    const aggregated = flowData.stats || {};
     const totalAmount = aggregated.total_amount || 0;
     const totalFlows = aggregated.total_flows || 0;
     const uniqueLocations = aggregated.unique_locations || 0;
@@ -1119,7 +848,7 @@ export default function App() {
                   <div className="info-section">
                     <div className="info-label">Variable</div>
                     <div className="info-value">
-                      {variable ? formatLabel(variable) : "Select a variable"}
+                      {variable ? getVariableLabel(dataset, variable) : "Select a variable"}
                     </div>
                     <div className="info-text">
                       {variableMeta || "Variable definitions will appear here."}
@@ -1208,7 +937,7 @@ export default function App() {
                     ) : (
                       variables.map((item) => (
                         <option key={item} value={item}>
-                          {formatLabel(item)}
+                          {getVariableLabel(dataset, item)}
                         </option>
                       ))
                     )}
@@ -1304,11 +1033,30 @@ export default function App() {
                 </div>
               </div>
 
-              {flowLevel === "state" && (
+              {flowLevel === "state" && flowOptions.industries.length > 0 && (
                 <div className="section">
                   <div className="section-title">Industry</div>
                   <label className="control">
-                    <span>NAICS</span>
+                    <span>{flowLevel === "state" ? "NAICS" : "Industry"}</span>
+                  <select
+                    className="select-input"
+                    value={flowFilters.naics}
+                    onChange={(e) => setFlowFilters((prev) => ({ ...prev, naics: e.target.value }))}
+                  >
+                      <option value="All">All Industries</option>
+                      {flowOptions.industries.map((industry) => (
+                        <option key={industry} value={industry}>{industry}</option>
+                      ))}
+                    </select>
+                  </label>
+                </div>
+              )}
+
+              {flowLevel === "congress" && flowOptions.industries.length > 0 && (
+                <div className="section">
+                  <div className="section-title">Industry</div>
+                  <label className="control">
+                    <span>Industry</span>
                     <select
                       className="select-input"
                       value={flowFilters.naics}
@@ -1323,7 +1071,7 @@ export default function App() {
                 </div>
               )}
 
-              {flowLevel !== "state" && (
+              {(flowLevel === "county" || flowLevel === "congress") && (
                 <div className="section">
                   <div className="section-title">Year Range</div>
                   <label className="control">
@@ -1371,18 +1119,30 @@ export default function App() {
 
               <div className="section">
                 <div className="section-title">Legend</div>
-                <div className="flow-legend-grid">
-                  <div className="flow-legend-row">
-                    <span>Inflow</span>
-                    <div className="legend-bar flow-bar inflow" />
+                <div className="flow-legend-compact">
+                  <div className="flow-legend-colors">
+                    <div className="flow-color-item">
+                      <span className="flow-color-dot inflow" />
+                      <span>Inflow</span>
+                    </div>
+                    <div className="flow-color-item">
+                      <span className="flow-color-dot outflow" />
+                      <span>Outflow</span>
+                    </div>
                   </div>
-                  <div className="flow-legend-row">
-                    <span>Outflow</span>
-                    <div className="legend-bar flow-bar outflow" />
-                  </div>
-                  <div className="legend-labels flow-labels">
-                    <span>Lower</span>
-                    <span>Higher</span>
+                  <div className="flow-thickness-compact">
+                    <span className="flow-thickness-label">Intensity</span>
+                    <div className="flow-thickness-scale">
+                      <div className="flow-scale-line q1" />
+                      <div className="flow-scale-line q2" />
+                      <div className="flow-scale-line q3" />
+                      <div className="flow-scale-line q4" />
+                      <div className="flow-scale-line q5" />
+                    </div>
+                    <div className="flow-scale-labels">
+                      <span>Q1</span>
+                      <span>Q5</span>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -1394,7 +1154,7 @@ export default function App() {
               <div className="insight-card">
                 <div className="insight-title">Current Variable</div>
                 <div className="insight-value">
-                  {variable ? formatLabel(variable) : "—"}
+                  {variable ? getVariableLabel(dataset, variable) : "—"}
                 </div>
               </div>
 
@@ -1406,19 +1166,19 @@ export default function App() {
                 </div>
                 <div className="stat-row">
                   <span>Min</span>
-                  <span>{formatNumber(valuesData?.stats?.min)}</span>
+                  <span>{formatNumberRounded(valuesData?.stats?.min)}</span>
                 </div>
                 <div className="stat-row">
                   <span>Max</span>
-                  <span>{formatNumber(valuesData?.stats?.max)}</span>
+                  <span>{formatNumberRounded(valuesData?.stats?.max)}</span>
                 </div>
                 <div className="stat-row">
                   <span>Mean</span>
-                  <span>{formatNumber(valuesData?.stats?.mean)}</span>
+                  <span>{formatNumberRounded(valuesData?.stats?.mean)}</span>
                 </div>
                 <div className="stat-row">
                   <span>Median</span>
-                  <span>{formatNumber(valuesData?.stats?.median)}</span>
+                  <span>{formatNumberRounded(valuesData?.stats?.median)}</span>
                 </div>
               </div>
 
@@ -1426,29 +1186,29 @@ export default function App() {
                 <div className="insight-title">Quintile Thresholds</div>
                 <div className="stat-row">
                   <span>Q1</span>
-                  <span>≤ {formatNumber(thresholds[0])}</span>
+                  <span>≤ {formatNumberRounded(thresholds[0])}</span>
                 </div>
                 <div className="stat-row">
                   <span>Q2</span>
                   <span>
-                    {formatNumber(thresholds[0])} – {formatNumber(thresholds[1])}
+                    {formatNumberRounded(thresholds[0])} – {formatNumberRounded(thresholds[1])}
                   </span>
                 </div>
                 <div className="stat-row">
                   <span>Q3</span>
                   <span>
-                    {formatNumber(thresholds[1])} – {formatNumber(thresholds[2])}
+                    {formatNumberRounded(thresholds[1])} – {formatNumberRounded(thresholds[2])}
                   </span>
                 </div>
                 <div className="stat-row">
                   <span>Q4</span>
                   <span>
-                    {formatNumber(thresholds[2])} – {formatNumber(thresholds[3])}
+                    {formatNumberRounded(thresholds[2])} – {formatNumberRounded(thresholds[3])}
                   </span>
                 </div>
                 <div className="stat-row">
                   <span>Q5</span>
-                  <span>&gt; {formatNumber(thresholds[3])}</span>
+                  <span>&gt; {formatNumberRounded(thresholds[3])}</span>
                 </div>
               </div>
 
@@ -1458,7 +1218,7 @@ export default function App() {
                   {(valuesData?.top || []).map((item) => (
                     <div className="rank-row" key={item.label}>
                       <span>{item.label}</span>
-                      <span>{formatNumber(item.value)}</span>
+                      <span>{formatNumberRounded(item.value)}</span>
                     </div>
                   ))}
                 </div>
@@ -1470,7 +1230,7 @@ export default function App() {
                   {(valuesData?.bottom || []).map((item) => (
                     <div className="rank-row" key={item.label}>
                       <span>{item.label}</span>
-                      <span>{formatNumber(item.value)}</span>
+                      <span>{formatNumberRounded(item.value)}</span>
                     </div>
                   ))}
                 </div>
@@ -1483,7 +1243,7 @@ export default function App() {
               <div className="insight-card">
                 <div className="insight-title">Total Amount</div>
                 <div className="insight-value">
-                  {formatCurrency(flowStats?.totalAmount)}
+                  {formatCurrencyRounded(flowStats?.totalAmount)}
                 </div>
                 <div className="insight-subtitle">
                   Period: {flowStats?.period || "—"}
@@ -1502,11 +1262,11 @@ export default function App() {
                 </div>
                 <div className="stat-row">
                   <span>Displayed Amount</span>
-                  <span>{formatCurrency(flowStats?.displayedAmount)}</span>
+                  <span>{formatCurrencyRounded(flowStats?.displayedAmount)}</span>
                 </div>
                 <div className="stat-row">
                   <span>Average Flow</span>
-                  <span>{formatCurrency(flowStats?.averageFlow)}</span>
+                  <span>{formatCurrencyRounded(flowStats?.averageFlow)}</span>
                 </div>
                 <div className="stat-row">
                   <span>Locations Involved</span>
@@ -1514,13 +1274,39 @@ export default function App() {
                 </div>
               </div>
 
+              {flowData?.thresholds && (
+                <div className="insight-card">
+                  <div className="insight-title">Quintile Thresholds (Amount)</div>
+                  <div className="stat-row">
+                    <span>Q1</span>
+                    <span>≤ {formatCurrencyRounded(flowData.thresholds[0])}</span>
+                  </div>
+                  <div className="stat-row">
+                    <span>Q2</span>
+                    <span>≤ {formatCurrencyRounded(flowData.thresholds[1])}</span>
+                  </div>
+                  <div className="stat-row">
+                    <span>Q3</span>
+                    <span>≤ {formatCurrencyRounded(flowData.thresholds[2])}</span>
+                  </div>
+                  <div className="stat-row">
+                    <span>Q4</span>
+                    <span>≤ {formatCurrencyRounded(flowData.thresholds[3])}</span>
+                  </div>
+                  <div className="stat-row">
+                    <span>Q5</span>
+                    <span>&gt; {formatCurrencyRounded(flowData.thresholds[3])}</span>
+                  </div>
+                </div>
+              )}
+
               <div className="insight-card">
                 <div className="insight-title">Top Agencies</div>
                 <div className="rank-list">
                   {(flowStats?.topAgencies || []).map((item) => (
                     <div className="rank-row" key={item.name}>
                       <span>{item.name}</span>
-                      <span>{formatCurrency(item.amount)}</span>
+                      <span>{formatCurrencyRounded(item.amount)}</span>
                     </div>
                   ))}
                 </div>
@@ -1532,7 +1318,7 @@ export default function App() {
                   {(flowStats?.topOrigins || []).map((item) => (
                     <div className="rank-row" key={item.name}>
                       <span>{item.name}</span>
-                      <span>{formatCurrency(item.amount)}</span>
+                      <span>{formatCurrencyRounded(item.amount)}</span>
                     </div>
                   ))}
                 </div>
@@ -1544,7 +1330,7 @@ export default function App() {
                   {(flowStats?.topDestinations || []).map((item) => (
                     <div className="rank-row" key={item.name}>
                       <span>{item.name}</span>
-                      <span>{formatCurrency(item.amount)}</span>
+                      <span>{formatCurrencyRounded(item.amount)}</span>
                     </div>
                   ))}
                 </div>
@@ -1568,7 +1354,7 @@ export default function App() {
                     </div>
                     <div className="stat-row">
                       <span>Amount</span>
-                      <span>{formatCurrency(flowStats.largestFlow.amount)}</span>
+                      <span>{formatCurrencyRounded(flowStats.largestFlow.amount)}</span>
                     </div>
                   </>
                 ) : (
@@ -1614,7 +1400,7 @@ export default function App() {
                 {atlasHover && (
                   <div className="map-tooltip" style={{ left: atlasHover.x, top: atlasHover.y }}>
                     <div className="map-tooltip-title">{atlasHover.label}</div>
-                    <div className="map-tooltip-meta">{formatLabel(variable)}</div>
+                    <div className="map-tooltip-meta">{getVariableLabel(dataset, variable)}</div>
                     <em>{formatNumber(atlasHover.value)}</em>
                     <div className="map-tooltip-meta">
                       {atlasHover.quintile ? `Q${atlasHover.quintile}` : "No data"}
@@ -1647,7 +1433,7 @@ export default function App() {
                       </div>
                       <div className="map-card-row">
                         <span>Metric</span>
-                        <span>{formatLabel(variable)}</span>
+                        <span>{getVariableLabel(dataset, variable)}</span>
                       </div>
                       <div className="map-card-row">
                         <span>Value</span>
@@ -1690,12 +1476,16 @@ export default function App() {
                 <FlowMapCanvas
                   flows={flowDisplay}
                   level={flowLevel}
-                  boundaries={geoCache[flowLevel]}
                   stateBoundaries={geoCache.state}
+                  levelBoundaries={flowLevel !== "state" ? geoCache[flowLevel] : null}
                   focusState={flowFilters.state}
+                  direction={flowFilters.direction}
                   onHover={setFlowHover}
                   onSelect={setFlowSelected}
                   resizeKey={`${viewMode}-${sidebarWidth}`}
+                  isLoading={flowStatus.state === "loading"}
+                  baseStyle={BASE_STYLE}
+                  fitBounds={US_BOUNDS}
                 />
                 {flowStatus.state === "loading" && (
                   <div className="map-loading">
@@ -1705,7 +1495,7 @@ export default function App() {
                 )}
                 {!flowDisplay?.length && flowStatus.state !== "loading" && (
                   <div className="map-placeholder">
-                    <p>Select flow parameters to begin.</p>
+                    <p>Select flow parameters to load data.</p>
                   </div>
                 )}
                 {flowHover && (
@@ -1715,6 +1505,9 @@ export default function App() {
                     </div>
                     <div className="map-tooltip-meta">{flowHover.agency}</div>
                     <em>{formatCurrency(flowHover.amount)}</em>
+                    {flowHover.quintile > 0 && (
+                      <div className="map-tooltip-meta">Quintile {flowHover.quintile}</div>
+                    )}
                   </div>
                 )}
                 {flowSelected && (
@@ -1736,11 +1529,11 @@ export default function App() {
                     </div>
                     <div className="map-card-body">
                       <div className="map-card-row">
-                        <span>Origin</span>
+                        <span>Origin (Outflow)</span>
                         <span>{flowSelected.origin_name}</span>
                       </div>
                       <div className="map-card-row">
-                        <span>Destination</span>
+                        <span>Destination (Inflow)</span>
                         <span>{flowSelected.dest_name}</span>
                       </div>
                       <div className="map-card-row">
@@ -1751,39 +1544,42 @@ export default function App() {
                         <span>Amount</span>
                         <span>{formatCurrency(flowSelected.amount)}</span>
                       </div>
+                      {flowSelected.quintile > 0 && (
+                        <div className="map-card-row">
+                          <span>Quintile</span>
+                          <span>Q{flowSelected.quintile}</span>
+                        </div>
+                      )}
                       {flowSelected.record_count !== undefined && (
                         <div className="map-card-row">
                           <span>Records</span>
                           <span>{formatNumber(flowSelected.record_count)}</span>
                         </div>
                       )}
-                      <div className="map-card-row">
-                        <span>Origin Coords</span>
-                        <span>{flowSelected.origin_lat.toFixed(2)}, {flowSelected.origin_lon.toFixed(2)}</span>
-                      </div>
-                      <div className="map-card-row">
-                        <span>Destination Coords</span>
-                        <span>{flowSelected.dest_lat.toFixed(2)}, {flowSelected.dest_lon.toFixed(2)}</span>
-                      </div>
                     </div>
                   </div>
                 )}
                 <div className="map-legend flow-legend">
-                  <span>Flow Intensity</span>
-                  <div className="legend-scale">
-                    <div className="flow-legend-grid">
-                      <div className="flow-legend-row">
+                  <div className="flow-map-legend-content">
+                    <div className="flow-legend-colors">
+                      <div className="flow-color-item">
+                        <span className="flow-color-dot inflow" />
                         <span>Inflow</span>
-                        <div className="legend-bar flow-bar inflow" />
                       </div>
-                      <div className="flow-legend-row">
+                      <div className="flow-color-item">
+                        <span className="flow-color-dot outflow" />
                         <span>Outflow</span>
-                        <div className="legend-bar flow-bar outflow" />
                       </div>
-                      <div className="legend-labels flow-labels">
-                        <span>Lower</span>
-                        <span>Higher</span>
+                    </div>
+                    <div className="flow-legend-divider" />
+                    <div className="flow-thickness-mini">
+                      <span>Q1</span>
+                      <div className="flow-mini-scale">
+                        <div className="flow-scale-line q1" />
+                        <div className="flow-scale-line q3" />
+                        <div className="flow-scale-line q5" />
                       </div>
+                      <span>Q5</span>
                     </div>
                   </div>
                 </div>

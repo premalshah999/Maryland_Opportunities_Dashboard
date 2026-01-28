@@ -8,8 +8,8 @@ Interactive data atlas to compare demographic, fiscal, contract, and financial c
 - `backend/` FastAPI API with all datasets under `backend/data/`.
   - `backend/data/atlas/processed/`: cleaned XLSX data.
   - `backend/data/atlas/boundaries/`: geojson boundaries.
-  - `backend/data/flow/flows/`: federal fund flow JSON.
   - `backend/data/reference/`: variable dictionary and source references.
+- `data/`: refreshed flow datasets (`state_flow.xlsx`, `county_flow.xlsx`, `congress_flow.xlsx`).
 
 ## Local Development
 
@@ -27,6 +27,13 @@ npm run dev
 ```
 
 Open `http://localhost:5173`.
+
+## Data Validation
+
+Run the dataset sanity checks (IDs, duplicates, missing boundaries):
+```bash
+python backend/scripts/validate_data.py --warn-only
+```
 
 ## Data Sources
 
