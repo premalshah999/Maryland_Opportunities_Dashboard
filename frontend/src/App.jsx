@@ -3,6 +3,7 @@ import { METADATA } from "./metadata.js";
 import { Icons } from "./components/common/Icons.jsx";
 import { LEVEL_LABELS } from "./constants.js";
 import {
+  formatCurrencyRounded,
   formatNumber,
   getVariableLabel
 } from "./lib/formatters.js";
