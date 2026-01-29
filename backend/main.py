@@ -1,11 +1,19 @@
 import json
+import logging
 import math
 import os
+import time
+from threading import Lock
 from typing import Dict, List, Optional
 
 import pandas as pd
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.gzip import GZipMiddleware
+from fastapi.responses import JSONResponse
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
+from slowapi.util import get_remote_address
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 ROOT_DIR = os.path.abspath(os.path.join(BASE_DIR, os.pardir))
@@ -114,12 +122,23 @@ STATE_META = [
     ("wisconsin", "55", "WI"),
     ("wyoming", "56", "WY"),
     ("puerto rico", "72", "PR"),
+    # US Territories
+    ("guam", "66", "GU"),
+    ("virgin islands", "78", "VI"),
+    ("virgin islands of the u.s.", "78", "VI"),  # Alternative name in data
+    ("american samoa", "60", "AS"),
+    ("northern mariana islands", "69", "MP"),
 ]
 
 STATE_NAME_TO_ABBR = {name: abbr for name, _, abbr in STATE_META}
 STATE_NAME_TO_FIPS = {name: fips for name, fips, _ in STATE_META}
 
+LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO").upper()
+logging.basicConfig(level=LOG_LEVEL)
+logger = logging.getLogger("atlas")
+
 app = FastAPI(title="Opportunity Atlas API")
+app.add_middleware(GZipMiddleware, minimum_size=1024)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -128,14 +147,49 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-_DATA_CACHE: Dict[str, pd.DataFrame] = {}
-_GEO_CACHE: Dict[str, dict] = {}
+_DATA_CACHE: Dict[str, tuple[pd.DataFrame, float]] = {}
+_GEO_CACHE: Dict[str, tuple[dict, float]] = {}
 _GEO_CACHE_ORDER: List[str] = []
-_FLOW_CACHE: Dict[str, pd.DataFrame] = {}
+_FLOW_CACHE: Dict[str, tuple[pd.DataFrame, float]] = {}
 _FLOW_CACHE_ORDER: List[str] = []
-_BOUNDARY_ID_CACHE: Dict[str, set] = {}
+_BOUNDARY_ID_CACHE: Dict[str, tuple[set, float]] = {}
 _STATE_CENTROID_CACHE: Optional[Dict[str, tuple[float, float]]] = None
 GEO_CACHE_LIMIT = int(os.getenv("GEO_CACHE_LIMIT", "2"))
+CACHE_TTL_SECONDS = int(os.getenv("CACHE_TTL_SECONDS", "3600"))
+RATE_LIMIT_DEFAULT = os.getenv("RATE_LIMIT_DEFAULT", "120/minute")
+_RATE_LIMIT_LOCK = Lock()
+APP_START_TIME = time.time()
+
+limiter = Limiter(key_func=get_remote_address, default_limits=[RATE_LIMIT_DEFAULT])
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
+
+def _is_expired(timestamp: float) -> bool:
+    if CACHE_TTL_SECONDS <= 0:
+        return False
+    return (time.time() - timestamp) > CACHE_TTL_SECONDS
+
+
+@app.middleware("http")
+async def log_and_rate_limit(request: Request, call_next):
+    start = time.time()
+    try:
+        response = await call_next(request)
+    except Exception:
+        logger.exception("unhandled_error path=%s", request.url.path)
+        raise
+    finally:
+        duration_ms = int((time.time() - start) * 1000)
+        logger.info("request path=%s status=%s duration_ms=%s", request.url.path, getattr(response, "status_code", "500"), duration_ms)
+
+    return response
+
+
+@app.exception_handler(HTTPException)
+async def http_exception_handler(request: Request, exc: HTTPException):
+    logger.warning("http_error path=%s status=%s detail=%s", request.url.path, exc.status_code, exc.detail)
+    return JSONResponse(status_code=exc.status_code, content={"detail": exc.detail})
 
 
 def dataset_path(dataset: str, level: str) -> str:
@@ -146,12 +200,17 @@ def dataset_path(dataset: str, level: str) -> str:
 
 def load_dataset(dataset: str, level: str) -> pd.DataFrame:
     cache_key = f"{dataset}:{level}"
+    entry = _DATA_CACHE.get(cache_key)
+    if entry is not None and not _is_expired(entry[1]):
+        return entry[0]
+    if entry is not None and _is_expired(entry[1]):
+        _DATA_CACHE.pop(cache_key, None)
     if cache_key not in _DATA_CACHE:
         path = dataset_path(dataset, level)
         if not os.path.exists(path):
             raise FileNotFoundError(path)
-        _DATA_CACHE[cache_key] = pd.read_excel(path)
-    return _DATA_CACHE[cache_key]
+        _DATA_CACHE[cache_key] = (pd.read_excel(path), time.time())
+    return _DATA_CACHE[cache_key][0]
 
 
 def normalize_year_value(value) -> Optional[str]:
@@ -178,7 +237,18 @@ def list_years(df: pd.DataFrame) -> List[str]:
 
 
 def load_geo(level: str) -> dict:
+    entry = _GEO_CACHE.get(level)
+    if entry is not None and _is_expired(entry[1]):
+        _GEO_CACHE.pop(level, None)
+        if level in _GEO_CACHE_ORDER:
+            _GEO_CACHE_ORDER.remove(level)
     if level not in _GEO_CACHE:
+        # prune expired in order list
+        for cached_level in list(_GEO_CACHE_ORDER):
+            cached_entry = _GEO_CACHE.get(cached_level)
+            if cached_entry and _is_expired(cached_entry[1]):
+                _GEO_CACHE.pop(cached_level, None)
+                _GEO_CACHE_ORDER.remove(cached_level)
         while _GEO_CACHE_ORDER and len(_GEO_CACHE_ORDER) >= GEO_CACHE_LIMIT:
             evict_level = _GEO_CACHE_ORDER.pop(0)
             _GEO_CACHE.pop(evict_level, None)
@@ -191,18 +261,19 @@ def load_geo(level: str) -> dict:
         if not os.path.exists(path):
             raise FileNotFoundError(path)
         with open(path, "r", encoding="utf-8") as f:
-            _GEO_CACHE[level] = json.load(f)
+            _GEO_CACHE[level] = (json.load(f), time.time())
         _GEO_CACHE_ORDER.append(level)
     else:
         if level in _GEO_CACHE_ORDER:
             _GEO_CACHE_ORDER.remove(level)
             _GEO_CACHE_ORDER.append(level)
-    return _GEO_CACHE[level]
+    return _GEO_CACHE[level][0]
 
 
 def boundary_ids(level: str) -> set:
-    if level in _BOUNDARY_ID_CACHE:
-        return _BOUNDARY_ID_CACHE[level]
+    entry = _BOUNDARY_ID_CACHE.get(level)
+    if entry is not None and not _is_expired(entry[1]):
+        return entry[0]
     geo = load_geo(level)
     ids = set()
     for feature in geo.get("features", []):
@@ -221,7 +292,7 @@ def boundary_ids(level: str) -> set:
                 continue
         else:
             ids.add(str(raw_id).strip().upper())
-    _BOUNDARY_ID_CACHE[level] = ids
+    _BOUNDARY_ID_CACHE[level] = (ids, time.time())
     return ids
 
 
@@ -236,10 +307,15 @@ def _walk_coords(coords):
         yield from _walk_coords(item)
 
 
-# Hardcoded centroids for states that cross the International Date Line or have complex geometries
+# Hardcoded centroids for states/territories that cross the International Date Line or have complex geometries
 SPECIAL_STATE_CENTROIDS = {
     "02": (64.2008, -152.4937),  # Alaska - manually set to avoid date line issues
     "15": (20.7984, -156.3319),  # Hawaii - center of main islands
+    # US Territories (not in standard GeoJSON boundaries)
+    "66": (13.4443, 144.7937),   # Guam
+    "78": (18.3358, -64.8963),   # US Virgin Islands
+    "60": (-14.2710, -170.1322), # American Samoa
+    "69": (15.0979, 145.6739),   # Northern Mariana Islands
 }
 
 
@@ -435,13 +511,27 @@ def _normalize_flow(level: str, df: pd.DataFrame) -> pd.DataFrame:
     })
 
 
+_FLOW_STATS_CACHE: Dict[str, dict] = {}
+
+
 def load_flow(level: str) -> pd.DataFrame:
     if level not in FLOW_LEVELS:
         raise KeyError(level)
+    entry = _FLOW_CACHE.get(level)
+    if entry is not None and _is_expired(entry[1]):
+        _FLOW_CACHE.pop(level, None)
+        if level in _FLOW_CACHE_ORDER:
+            _FLOW_CACHE_ORDER.remove(level)
     if level not in _FLOW_CACHE:
+        for cached_level in list(_FLOW_CACHE_ORDER):
+            cached_entry = _FLOW_CACHE.get(cached_level)
+            if cached_entry and _is_expired(cached_entry[1]):
+                _FLOW_CACHE.pop(cached_level, None)
+                _FLOW_CACHE_ORDER.remove(cached_level)
         while _FLOW_CACHE_ORDER and len(_FLOW_CACHE_ORDER) >= FLOW_CACHE_LIMIT:
             evict_level = _FLOW_CACHE_ORDER.pop(0)
             _FLOW_CACHE.pop(evict_level, None)
+            _FLOW_STATS_CACHE.pop(evict_level, None)
         path = os.path.join(FLOW_DATA_DIR, FLOW_FILES[level])
         if not os.path.exists(path):
             raise FileNotFoundError(path)
@@ -463,16 +553,47 @@ def load_flow(level: str) -> pd.DataFrame:
                 df[col] = df[col].astype("category")
 
         normalized = _normalize_flow(level, df)
+
+        # Track data quality stats before filtering
+        raw_count = len(normalized)
         normalized = normalized.dropna(subset=["origin_lat", "origin_lon", "dest_lat", "dest_lon", "amount"])
+        missing_coords_count = raw_count - len(normalized)
+
+        negative_amount_count = int((normalized["amount"] <= 0).sum())
         normalized = normalized[normalized["amount"] > 0]
-        normalized = normalized[normalized["origin_name"] != normalized["dest_name"]]
-        _FLOW_CACHE[level] = normalized
+
+        # Calculate internal flow stats before filtering them out
+        internal_mask = normalized["origin_name"] == normalized["dest_name"]
+        internal_flows = normalized[internal_mask]
+        internal_flow_count = len(internal_flows)
+        internal_flow_amount = float(internal_flows["amount"].sum()) if len(internal_flows) > 0 else 0.0
+
+        # Filter out internal flows (can't visualize as lines)
+        normalized = normalized[~internal_mask]
+
+        # Store data quality stats for this level
+        _FLOW_STATS_CACHE[level] = {
+            "raw_record_count": raw_count,
+            "filtered_missing_coords": missing_coords_count,
+            "filtered_negative_amount": negative_amount_count,
+            "internal_flow_count": internal_flow_count,
+            "internal_flow_amount": internal_flow_amount,
+        }
+
+        _FLOW_CACHE[level] = (normalized, time.time())
         _FLOW_CACHE_ORDER.append(level)
     else:
         if level in _FLOW_CACHE_ORDER:
             _FLOW_CACHE_ORDER.remove(level)
             _FLOW_CACHE_ORDER.append(level)
-    return _FLOW_CACHE[level]
+    return _FLOW_CACHE[level][0]
+
+
+def get_flow_data_quality_stats(level: str) -> dict:
+    """Get data quality statistics for a flow level."""
+    if level not in _FLOW_STATS_CACHE:
+        load_flow(level)  # Ensure cache is populated
+    return _FLOW_STATS_CACHE.get(level, {})
 
 
 def clean_long_numeric(value):
@@ -527,14 +648,24 @@ def get_quintile(val: float, thresholds: List[float]) -> int:
     return 5
 
 
+# Fixed quintile thresholds for fund flow amounts (in dollars)
+# Using logarithmic scale appropriate for federal spending data
+FIXED_FLOW_THRESHOLDS = [
+    1_000_000,      # Q1: <= $1M
+    10_000_000,     # Q2: <= $10M
+    100_000_000,    # Q3: <= $100M
+    1_000_000_000,  # Q4: <= $1B
+    # Q5: > $1B
+]
+
 # Quantile-based thickness - subtle but differentiable
 # Width range: 0.5 (Q1) to 2.5 (Q5) for subtle, elegant lines
 FLOW_WIDTH_BY_QUINTILE = {
-    1: 0.5,   # Q1: Smallest flows - hairline
-    2: 0.8,   # Q2: Below median
-    3: 1.2,   # Q3: Around median
-    4: 1.8,   # Q4: Above median
-    5: 2.5,   # Q5: Largest flows - visible but not heavy
+    1: 0.5,   # Q1: Smallest flows - hairline (<= $1M)
+    2: 0.8,   # Q2: Below median (<= $10M)
+    3: 1.2,   # Q3: Around median (<= $100M)
+    4: 1.8,   # Q4: Above median (<= $1B)
+    5: 2.5,   # Q5: Largest flows - visible but not heavy (> $1B)
 }
 
 
@@ -627,8 +758,33 @@ def list_datasets():
     }
 
 
+@app.get("/api/health")
+@limiter.limit("10/minute")
+def health(request: Request):
+    return {
+        "status": "ok",
+        "uptime_seconds": int(time.time() - APP_START_TIME),
+        "cache": {
+            "datasets": len(_DATA_CACHE),
+            "geo": len(_GEO_CACHE),
+            "flow": len(_FLOW_CACHE),
+            "boundaries": len(_BOUNDARY_ID_CACHE),
+            "ttl_seconds": CACHE_TTL_SECONDS,
+            "geo_limit": GEO_CACHE_LIMIT,
+        },
+        "data_paths": {
+            "atlas_processed": ATLAS_PROCESSED_DIR,
+            "flow_data": FLOW_DATA_DIR,
+        },
+        "rate_limit_default": RATE_LIMIT_DEFAULT,
+    }
+
+
 @app.get("/api/variables")
-def list_variables(dataset: str, level: str):
+def list_variables(
+    dataset: str = Query(..., min_length=1, max_length=50),
+    level: str = Query(..., min_length=1, max_length=20),
+):
     if dataset not in DATASETS:
         raise HTTPException(status_code=404, detail="Unknown dataset")
     if level not in LEVELS:
@@ -651,7 +807,12 @@ def list_variables(dataset: str, level: str):
 
 
 @app.get("/api/values")
-def values(dataset: str, level: str, variable: str, year: Optional[str] = None):
+def values(
+    dataset: str = Query(..., min_length=1, max_length=50),
+    level: str = Query(..., min_length=1, max_length=20),
+    variable: str = Query(..., min_length=1, max_length=120),
+    year: Optional[str] = Query(None, max_length=32),
+):
     if dataset not in DATASETS:
         raise HTTPException(status_code=404, detail="Unknown dataset")
     if level not in LEVELS:
@@ -717,6 +878,10 @@ def _apply_flow_filters(
     year_end: Optional[int] = None,
 ) -> pd.DataFrame:
     filtered = df
+    if direction not in {"All", "Inflow", "Outflow"}:
+        raise HTTPException(status_code=422, detail="Invalid direction")
+    if year_start is not None and year_end is not None and year_start > year_end:
+        raise HTTPException(status_code=422, detail="Invalid year range")
     if agency and agency != "All":
         filtered = filtered[filtered["agency"] == agency]
 
@@ -747,13 +912,13 @@ def _apply_flow_filters(
 
 @app.get("/api/flow/options")
 def flow_options(
-    level: str,
-    agency: str = "All",
-    state: str = "All",
-    direction: str = "All",
-    naics: str = "All",
-    year_start: Optional[int] = None,
-    year_end: Optional[int] = None,
+    level: str = Query(..., min_length=1, max_length=20),
+    agency: str = Query("All", max_length=120),
+    state: str = Query("All", max_length=64),
+    direction: str = Query("All", max_length=12),
+    naics: str = Query("All", max_length=120),
+    year_start: Optional[int] = Query(None, ge=1900, le=2100),
+    year_end: Optional[int] = Query(None, ge=1900, le=2100),
 ):
     if level not in FLOW_LEVELS:
         raise HTTPException(status_code=404, detail="Unknown level")
@@ -775,14 +940,14 @@ def flow_options(
 
 @app.get("/api/flow")
 def flow_data(
-    level: str,
-    agency: str = "All",
-    state: str = "All",
-    direction: str = "All",
-    naics: str = "All",
-    year_start: Optional[int] = None,
-    year_end: Optional[int] = None,
-    limit: int = 300,
+    level: str = Query(..., min_length=1, max_length=20),
+    agency: str = Query("All", max_length=120),
+    state: str = Query("All", max_length=64),
+    direction: str = Query("All", max_length=12),
+    naics: str = Query("All", max_length=120),
+    year_start: Optional[int] = Query(None, ge=1900, le=2100),
+    year_end: Optional[int] = Query(None, ge=1900, le=2100),
+    limit: int = Query(300, ge=1, le=1000),
 ):
     if level not in FLOW_LEVELS:
         raise HTTPException(status_code=404, detail="Unknown level")
@@ -830,16 +995,15 @@ def flow_data(
         top_agency = agency_group.drop_duplicates(subset=group_fields)[group_fields + ["agency"]]
         grouped = grouped.merge(top_agency, on=group_fields, how="left")
         agency_series = grouped["agency"]
-        if pd.api.types.is_categorical_dtype(agency_series):
+        if isinstance(agency_series.dtype, pd.CategoricalDtype):
             agency_series = agency_series.astype("string")
         grouped["agency_label"] = agency_series.fillna("Multiple Agencies")
 
     grouped = grouped.sort_values(by="amount_sum", ascending=False)
     max_amount = float(grouped["amount_sum"].max()) if len(grouped) else 0.0
 
-    # Calculate quintile thresholds based on all grouped amounts BEFORE limiting
-    all_amounts = grouped["amount_sum"].dropna().tolist()
-    flow_thresholds = quantile_thresholds(all_amounts)
+    # Use fixed quintile thresholds for consistent visualization
+    flow_thresholds = FIXED_FLOW_THRESHOLDS
 
     if limit and limit > 0:
         grouped = grouped.head(limit)
@@ -867,6 +1031,9 @@ def flow_data(
             "width": width,
         })
 
+    # Get data quality stats for transparency
+    data_quality = get_flow_data_quality_stats(level)
+
     return {
         "flows": flows,
         "stats": {
@@ -874,6 +1041,9 @@ def flow_data(
             "total_flows": total_flows,
             "unique_locations": int(unique_locations),
             "max_amount": max_amount,
+            # Include internal flow info for transparency
+            "internal_flow_count": data_quality.get("internal_flow_count", 0),
+            "internal_flow_amount": data_quality.get("internal_flow_amount", 0.0),
         },
         "thresholds": flow_thresholds,
     }

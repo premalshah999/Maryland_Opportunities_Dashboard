@@ -1,20 +1,23 @@
 import { useEffect, useMemo, useRef } from "react";
 import maplibregl from "maplibre-gl";
 
-// Flow map color scheme - subtle, elegant colors
-const FLOW_COLORS = {
-  inflow: "rgba(59, 130, 246, 0.5)",   // Soft blue
-  outflow: "rgba(239, 68, 68, 0.5)",   // Soft red
-  mixed: "rgba(139, 92, 246, 0.45)"    // Soft purple
-};
+// Quintile-based color gradients for inflows (blues) and outflows (reds)
+// Wide color range for clear differentiation between quintiles
+// Higher opacity for thinner lines (Q1, Q2) to ensure visibility
+const QUINTILE_INFLOW_COLORS = [
+  "rgba(191, 219, 254, 0.9)",   // Q1 - very light sky blue (pastel)
+  "rgba(96, 165, 250, 0.85)",   // Q2 - light blue
+  "rgba(37, 99, 235, 0.8)",     // Q3 - medium blue
+  "rgba(30, 64, 175, 0.85)",    // Q4 - strong blue
+  "rgba(30, 58, 138, 0.9)"      // Q5 - deep navy blue
+];
 
-// Quintile-based colors - subtle gradient from light to darker
-const QUINTILE_FLOW_COLORS = [
-  "rgba(148, 163, 184, 0.35)",  // Q1 - very subtle gray-blue
-  "rgba(125, 145, 178, 0.4)",   // Q2
-  "rgba(100, 130, 170, 0.45)",  // Q3
-  "rgba(75, 115, 165, 0.5)",    // Q4
-  "rgba(59, 100, 160, 0.55)"    // Q5 - deeper but still subtle
+const QUINTILE_OUTFLOW_COLORS = [
+  "rgba(254, 202, 202, 0.9)",   // Q1 - very light pink (pastel)
+  "rgba(252, 129, 129, 0.85)",  // Q2 - light coral
+  "rgba(220, 38, 38, 0.8)",     // Q3 - medium red
+  "rgba(153, 27, 27, 0.85)",    // Q4 - dark red
+  "rgba(127, 29, 29, 0.9)"      // Q5 - deep maroon
 ];
 
 const normalizeLon = (lon) => {
@@ -55,6 +58,46 @@ const generateBezierCurve = (startLon, startLat, endLon, endLat, numPoints = 24)
   return points;
 };
 
+// Determine the color palette based on flow direction and quintile
+const getFlowColor = (flow, focusState, direction) => {
+  const quintile = flow.quintile || 3;
+  const colorIndex = Math.min(4, Math.max(0, quintile - 1));
+
+  // If a specific state is selected, determine direction relative to that state
+  if (focusState && focusState !== "All") {
+    const isOutflow = flow.origin_state === focusState;
+    const isInflow = flow.dest_state === focusState;
+    // If both (internal flow), treat as inflow (money staying in state)
+    // If outflow only, show red
+    // If inflow only, show blue
+    if (isOutflow && !isInflow) {
+      return { color: QUINTILE_OUTFLOW_COLORS[colorIndex], flowType: "outflow" };
+    } else {
+      // inflow or internal - show as blue
+      return { color: QUINTILE_INFLOW_COLORS[colorIndex], flowType: "inflow" };
+    }
+  }
+
+  // If direction filter is applied
+  if (direction === "Inflow") {
+    return { color: QUINTILE_INFLOW_COLORS[colorIndex], flowType: "inflow" };
+  }
+  if (direction === "Outflow") {
+    return { color: QUINTILE_OUTFLOW_COLORS[colorIndex], flowType: "outflow" };
+  }
+
+  // No state selected and no direction filter - use deterministic coloring
+  // Color based on comparing origin and destination to create visual variety
+  // If origin longitude is west of destination, it's flowing east (show as inflow/blue)
+  // If origin longitude is east of destination, it's flowing west (show as outflow/red)
+  const isEastward = flow.origin_lon < flow.dest_lon;
+  if (isEastward) {
+    return { color: QUINTILE_INFLOW_COLORS[colorIndex], flowType: "inflow" };
+  } else {
+    return { color: QUINTILE_OUTFLOW_COLORS[colorIndex], flowType: "outflow" };
+  }
+};
+
 const flowsToGeoJSON = (flows, focusState, direction) => {
   const features = [];
 
@@ -65,26 +108,7 @@ const flowsToGeoJSON = (flows, focusState, direction) => {
     if (!Number.isFinite(flow.origin_lat) || !Number.isFinite(flow.origin_lon) ||
         !Number.isFinite(flow.dest_lat) || !Number.isFinite(flow.dest_lon)) continue;
 
-    let color;
-    if (focusState && focusState !== "All") {
-      const isOutflow = flow.origin_state === focusState;
-      const isInflow = flow.dest_state === focusState;
-      if (isOutflow && !isInflow) {
-        color = FLOW_COLORS.outflow;
-      } else if (isInflow && !isOutflow) {
-        color = FLOW_COLORS.inflow;
-      } else {
-        color = FLOW_COLORS.mixed;
-      }
-    } else if (direction === "Inflow") {
-      color = FLOW_COLORS.inflow;
-    } else if (direction === "Outflow") {
-      color = FLOW_COLORS.outflow;
-    } else {
-      const quintile = flow.quintile || 3;
-      color = QUINTILE_FLOW_COLORS[Math.min(4, Math.max(0, quintile - 1))];
-    }
-
+    const { color, flowType } = getFlowColor(flow, focusState, direction);
     const width = flow.width || 2;
     const curvePoints = generateBezierCurve(
       flow.origin_lon,
@@ -103,7 +127,8 @@ const flowsToGeoJSON = (flows, focusState, direction) => {
         agency: flow.agency,
         quintile: flow.quintile || 0,
         width,
-        color
+        color,
+        flowType
       },
       geometry: {
         type: "LineString",
@@ -122,14 +147,15 @@ export function FlowMapCanvas({
   levelBoundaries,
   focusState,
   direction,
-  onHover,
   onSelect,
   resizeKey,
   isLoading,
   baseStyle,
-  fitBounds
+  fitBounds,
+  formatAmount
 }) {
   const containerRef = useRef(null);
+  const tooltipRef = useRef(null);
   const mapRef = useRef(null);
   const sourceAddedRef = useRef(false);
   const flowLookupRef = useRef(new Map());
@@ -178,8 +204,9 @@ export function FlowMapCanvas({
         type: "line",
         source: "flow-level-boundaries",
         paint: {
-          "line-color": "rgba(15, 23, 42, 0.25)",
-          "line-width": 0.3
+          "line-color": "#374151",
+          "line-width": 0.3,
+          "line-opacity": 0.35
         }
       });
 
@@ -188,8 +215,9 @@ export function FlowMapCanvas({
         type: "line",
         source: "flow-states",
         paint: {
-          "line-color": "rgba(15, 23, 42, 0.5)",
-          "line-width": 0.6
+          "line-color": "#1f2937",
+          "line-width": 0.5,
+          "line-opacity": 0.5
         }
       });
 
@@ -200,8 +228,8 @@ export function FlowMapCanvas({
         paint: {
           "line-color": ["get", "color"],
           "line-width": ["get", "width"],
-          "line-opacity": 0.9,
-          "line-blur": 0.3
+          "line-opacity": 0.85,
+          "line-blur": 0.5
         },
         layout: {
           "line-cap": "round",
@@ -212,42 +240,41 @@ export function FlowMapCanvas({
       sourceAddedRef.current = true;
     });
 
-    const queryFlowFeatures = (point, padding = 8) => {
-      const bbox = [
-        [point.x - padding, point.y - padding],
-        [point.x + padding, point.y + padding]
-      ];
-      return map.queryRenderedFeatures(bbox, { layers: ["flow-lines-layer"] });
-    };
-
-    map.on("mousemove", (e) => {
+    map.on("mousemove", "flow-lines-layer", (e) => {
       if (!sourceAddedRef.current) return;
-
-      const features = queryFlowFeatures(e.point, 10);
-      if (features.length === 0) {
-        map.getCanvas().style.cursor = "";
-        onHover(null);
-        return;
-      }
+      const feature = e.features && e.features[0];
+      if (!feature) return;
 
       map.getCanvas().style.cursor = "pointer";
-      const props = features[0].properties || {};
-      onHover({
-        x: e.point.x,
-        y: e.point.y,
-        origin: props.origin,
-        dest: props.dest,
-        amount: Number(props.amount) || 0,
-        agency: props.agency,
-        quintile: props.quintile,
-        flowId: props.flow_id
-      });
+      const props = feature.properties || {};
+      const tooltip = tooltipRef.current;
+      if (tooltip) {
+        const amount = Number(props.amount) || 0;
+        const quintile = Number(props.quintile) || 0;
+        const formattedAmount = formatAmount ? formatAmount(amount) : amount;
+        tooltip.innerHTML = `
+          <div class="map-tooltip-title">${props.origin} → ${props.dest}</div>
+          <div class="map-tooltip-meta">${props.agency || "—"}</div>
+          <em>${formattedAmount}</em>
+          <div class="map-tooltip-meta">${quintile ? `Q${quintile}` : "No data"}</div>
+        `;
+        tooltip.style.display = "block";
+        tooltip.style.left = `${e.point.x}px`;
+        tooltip.style.top = `${e.point.y}px`;
+      }
+    });
+
+    map.on("mouseleave", "flow-lines-layer", () => {
+      map.getCanvas().style.cursor = "";
+      if (tooltipRef.current) {
+        tooltipRef.current.style.display = "none";
+      }
     });
 
     map.on("click", (e) => {
       if (!sourceAddedRef.current) return;
 
-      const features = queryFlowFeatures(e.point, 12);
+      const features = map.queryRenderedFeatures(e.point, { layers: ["flow-lines-layer"] });
       if (features.length === 0) {
         onSelect(null);
         return;
@@ -264,29 +291,47 @@ export function FlowMapCanvas({
       mapRef.current = null;
       sourceAddedRef.current = false;
     };
-  }, [baseStyle, onHover, onSelect]);
+  }, [baseStyle, onSelect, formatAmount]);
 
   useEffect(() => {
     const map = mapRef.current;
-    if (!map || !sourceAddedRef.current) return;
+    if (!map) return;
 
-    const source = map.getSource("flow-states");
-    if (source && stateBoundaries) {
-      source.setData(stateBoundaries);
+    const updateSource = () => {
+      if (!sourceAddedRef.current) return;
+      const source = map.getSource("flow-states");
+      if (source && stateBoundaries) {
+        source.setData(stateBoundaries);
+      }
+    };
+
+    if (map.isStyleLoaded() && sourceAddedRef.current) {
+      updateSource();
+    } else {
+      map.once("load", updateSource);
     }
   }, [stateBoundaries]);
 
   useEffect(() => {
     const map = mapRef.current;
-    if (!map || !sourceAddedRef.current) return;
+    if (!map) return;
 
-    const source = map.getSource("flow-level-boundaries");
-    if (source) {
-      if (levelBoundaries) {
-        source.setData(levelBoundaries);
-      } else {
-        source.setData({ type: "FeatureCollection", features: [] });
+    const updateSource = () => {
+      if (!sourceAddedRef.current) return;
+      const source = map.getSource("flow-level-boundaries");
+      if (source) {
+        if (levelBoundaries) {
+          source.setData(levelBoundaries);
+        } else {
+          source.setData({ type: "FeatureCollection", features: [] });
+        }
       }
+    };
+
+    if (map.isStyleLoaded() && sourceAddedRef.current) {
+      updateSource();
+    } else {
+      map.once("load", updateSource);
     }
   }, [levelBoundaries]);
 
@@ -328,6 +373,7 @@ export function FlowMapCanvas({
           <div className="loading-spinner" />
         </div>
       )}
+      <div className="map-tooltip map-tooltip--internal" ref={tooltipRef} />
     </div>
   );
 }

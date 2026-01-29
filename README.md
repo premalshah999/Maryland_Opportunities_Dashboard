@@ -5,6 +5,7 @@ Interactive data atlas to compare demographic, fiscal, contract, and financial c
 ## Project Structure
 
 - `frontend/` React + Vite client (map, sidebar, flow diagram).
+- `frontend/src/components/`: UI modules grouped by `atlas/`, `flow/`, and `common/`.
 - `backend/` FastAPI API with all datasets under `backend/data/`.
   - `backend/data/atlas/processed/`: cleaned XLSX data.
   - `backend/data/atlas/boundaries/`: geojson boundaries.
