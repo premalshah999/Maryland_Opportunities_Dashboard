@@ -11,7 +11,8 @@ export function FlowMapPanel({
   flowSelected,
   onFlowSelected,
   sidebarWidth,
-  formatAmount
+  formatAmount,
+  flowBucket
 }) {
   return (
     <>
@@ -28,6 +29,7 @@ export function FlowMapPanel({
         baseStyle={BASE_STYLE}
         fitBounds={US_BOUNDS}
         formatAmount={formatAmount}
+        flowBucket={flowBucket}
       />
       {!flows?.length && flowStatus.state !== "loading" && (
         <div className="map-placeholder">

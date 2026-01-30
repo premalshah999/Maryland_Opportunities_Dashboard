@@ -668,10 +668,34 @@ FLOW_WIDTH_BY_QUINTILE = {
     5: 2.5,   # Q5: Largest flows - visible but not heavy (> $1B)
 }
 
+FLOW_BUCKET_WIDTH_MULTIPLIER = {
+    "top10": 1.15,
+    "top50": 1.0,
+    "50-100": 0.9,
+    "100-150": 0.85,
+    "150+": 0.8,
+}
 
-def width_from_quintile(quintile: int) -> float:
+
+def width_from_quintile(quintile: int, bucket: Optional[str] = None) -> float:
     q = max(1, min(5, int(quintile) if quintile else 1))
-    return FLOW_WIDTH_BY_QUINTILE.get(q, 1.0)
+    base = FLOW_WIDTH_BY_QUINTILE.get(q, 1.0)
+    multiplier = FLOW_BUCKET_WIDTH_MULTIPLIER.get(bucket or "", 1.0)
+    return base * multiplier
+
+
+def compute_flow_thresholds(amounts: pd.Series) -> List[float]:
+    if amounts is None or amounts.empty:
+        return FIXED_FLOW_THRESHOLDS
+    series = amounts.dropna()
+    if series.size < 5:
+        return FIXED_FLOW_THRESHOLDS
+    quantiles = series.quantile([0.2, 0.4, 0.6, 0.8]).tolist()
+    if any(not isinstance(val, (int, float)) for val in quantiles):
+        return FIXED_FLOW_THRESHOLDS
+    if any(val <= 0 for val in quantiles):
+        return FIXED_FLOW_THRESHOLDS
+    return [float(val) for val in quantiles]
 
 
 def summarize(values: List[float]) -> dict:
@@ -947,7 +971,9 @@ def flow_data(
     naics: str = Query("All", max_length=120),
     year_start: Optional[int] = Query(None, ge=1900, le=2100),
     year_end: Optional[int] = Query(None, ge=1900, le=2100),
-    limit: int = Query(300, ge=1, le=1000),
+    flow_bucket: Optional[str] = Query(None, max_length=20),
+    offset: int = Query(0, ge=0, le=5000),
+    limit: int = Query(50, ge=1, le=1000),
 ):
     if level not in FLOW_LEVELS:
         raise HTTPException(status_code=404, detail="Unknown level")
@@ -1002,17 +1028,21 @@ def flow_data(
     grouped = grouped.sort_values(by="amount_sum", ascending=False)
     max_amount = float(grouped["amount_sum"].max()) if len(grouped) else 0.0
 
-    # Use fixed quintile thresholds for consistent visualization
-    flow_thresholds = FIXED_FLOW_THRESHOLDS
-
+    if offset:
+        grouped = grouped.iloc[offset:]
     if limit and limit > 0:
         grouped = grouped.head(limit)
+
+    if flow_bucket:
+        flow_thresholds = compute_flow_thresholds(grouped["amount_sum"])
+    else:
+        flow_thresholds = FIXED_FLOW_THRESHOLDS
 
     flows: List[dict] = []
     for _, row in grouped.iterrows():
         amount = float(row["amount_sum"])
         quintile = get_quintile(amount, flow_thresholds)
-        width = width_from_quintile(quintile)
+        width = width_from_quintile(quintile, flow_bucket)
         flow_id = f"{row['origin_name']}-{row['dest_name']}-{row['origin_state']}-{row['dest_state']}"
         flows.append({
             "id": str(flow_id),

@@ -1,6 +1,15 @@
 import { formatCurrencyRounded, formatNumber } from "../../lib/formatters.js";
 
-export function FlowInsightsPanel({ flowStats }) {
+export function FlowInsightsPanel({ flowStats, thresholds }) {
+  const thresholdLabels = thresholds && thresholds.length >= 4
+    ? [
+        `≤ ${formatCurrencyRounded(thresholds[0])}`,
+        `${formatCurrencyRounded(thresholds[0])} – ${formatCurrencyRounded(thresholds[1])}`,
+        `${formatCurrencyRounded(thresholds[1])} – ${formatCurrencyRounded(thresholds[2])}`,
+        `${formatCurrencyRounded(thresholds[2])} – ${formatCurrencyRounded(thresholds[3])}`,
+        `> ${formatCurrencyRounded(thresholds[3])}`
+      ]
+    : ["≤ $1M", "$1M – $10M", "$10M – $100M", "$100M – $1B", "> $1B"];
   return (
     <div className="panel">
       <div className="insight-card">
@@ -59,23 +68,23 @@ export function FlowInsightsPanel({ flowStats }) {
         <div className="insight-title">Quintile Thresholds (Amount)</div>
         <div className="stat-row">
           <span>Q1</span>
-          <span>≤ $1M</span>
+          <span>{thresholdLabels[0]}</span>
         </div>
         <div className="stat-row">
           <span>Q2</span>
-          <span>$1M – $10M</span>
+          <span>{thresholdLabels[1]}</span>
         </div>
         <div className="stat-row">
           <span>Q3</span>
-          <span>$10M – $100M</span>
+          <span>{thresholdLabels[2]}</span>
         </div>
         <div className="stat-row">
           <span>Q4</span>
-          <span>$100M – $1B</span>
+          <span>{thresholdLabels[3]}</span>
         </div>
         <div className="stat-row">
           <span>Q5</span>
-          <span>&gt; $1B</span>
+          <span>{thresholdLabels[4]}</span>
         </div>
       </div>
 

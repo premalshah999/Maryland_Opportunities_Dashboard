@@ -4,21 +4,88 @@ import maplibregl from "maplibre-gl";
 // Quintile-based color gradients for inflows (blues) and outflows (reds)
 // Wide color range for clear differentiation between quintiles
 // Higher opacity for thinner lines (Q1, Q2) to ensure visibility
-const QUINTILE_INFLOW_COLORS = [
-  "rgba(191, 219, 254, 0.9)",   // Q1 - very light sky blue (pastel)
-  "rgba(96, 165, 250, 0.85)",   // Q2 - light blue
-  "rgba(37, 99, 235, 0.8)",     // Q3 - medium blue
-  "rgba(30, 64, 175, 0.85)",    // Q4 - strong blue
-  "rgba(30, 58, 138, 0.9)"      // Q5 - deep navy blue
-];
-
-const QUINTILE_OUTFLOW_COLORS = [
-  "rgba(254, 202, 202, 0.9)",   // Q1 - very light pink (pastel)
-  "rgba(252, 129, 129, 0.85)",  // Q2 - light coral
-  "rgba(220, 38, 38, 0.8)",     // Q3 - medium red
-  "rgba(153, 27, 27, 0.85)",    // Q4 - dark red
-  "rgba(127, 29, 29, 0.9)"      // Q5 - deep maroon
-];
+const FLOW_PALETTES = {
+  top10: {
+    inflow: [
+      "rgba(147, 197, 253, 0.98)",
+      "rgba(96, 165, 250, 0.95)",
+      "rgba(37, 99, 235, 0.92)",
+      "rgba(30, 64, 175, 0.95)",
+      "rgba(30, 58, 138, 0.98)"
+    ],
+    outflow: [
+      "rgba(252, 165, 165, 0.98)",
+      "rgba(252, 129, 129, 0.95)",
+      "rgba(220, 38, 38, 0.92)",
+      "rgba(153, 27, 27, 0.95)",
+      "rgba(127, 29, 29, 0.98)"
+    ]
+  },
+  top50: {
+    inflow: [
+      "rgba(147, 197, 253, 0.92)",
+      "rgba(96, 165, 250, 0.88)",
+      "rgba(37, 99, 235, 0.84)",
+      "rgba(30, 64, 175, 0.88)",
+      "rgba(30, 58, 138, 0.92)"
+    ],
+    outflow: [
+      "rgba(252, 165, 165, 0.92)",
+      "rgba(252, 129, 129, 0.88)",
+      "rgba(220, 38, 38, 0.84)",
+      "rgba(153, 27, 27, 0.88)",
+      "rgba(127, 29, 29, 0.92)"
+    ]
+  },
+  "50-100": {
+    inflow: [
+      "rgba(147, 197, 253, 0.82)",
+      "rgba(96, 165, 250, 0.78)",
+      "rgba(37, 99, 235, 0.76)",
+      "rgba(30, 64, 175, 0.78)",
+      "rgba(30, 58, 138, 0.82)"
+    ],
+    outflow: [
+      "rgba(252, 165, 165, 0.82)",
+      "rgba(252, 129, 129, 0.78)",
+      "rgba(220, 38, 38, 0.76)",
+      "rgba(153, 27, 27, 0.78)",
+      "rgba(127, 29, 29, 0.82)"
+    ]
+  },
+  "100-150": {
+    inflow: [
+      "rgba(147, 197, 253, 0.74)",
+      "rgba(96, 165, 250, 0.7)",
+      "rgba(37, 99, 235, 0.68)",
+      "rgba(30, 64, 175, 0.7)",
+      "rgba(30, 58, 138, 0.74)"
+    ],
+    outflow: [
+      "rgba(252, 165, 165, 0.74)",
+      "rgba(252, 129, 129, 0.7)",
+      "rgba(220, 38, 38, 0.68)",
+      "rgba(153, 27, 27, 0.7)",
+      "rgba(127, 29, 29, 0.74)"
+    ]
+  },
+  "150+": {
+    inflow: [
+      "rgba(147, 197, 253, 0.68)",
+      "rgba(96, 165, 250, 0.64)",
+      "rgba(37, 99, 235, 0.62)",
+      "rgba(30, 64, 175, 0.64)",
+      "rgba(30, 58, 138, 0.68)"
+    ],
+    outflow: [
+      "rgba(252, 165, 165, 0.68)",
+      "rgba(252, 129, 129, 0.64)",
+      "rgba(220, 38, 38, 0.62)",
+      "rgba(153, 27, 27, 0.64)",
+      "rgba(127, 29, 29, 0.68)"
+    ]
+  }
+};
 
 const normalizeLon = (lon) => {
   let normalized = lon;
@@ -59,7 +126,7 @@ const generateBezierCurve = (startLon, startLat, endLon, endLat, numPoints = 24)
 };
 
 // Determine the color palette based on flow direction and quintile
-const getFlowColor = (flow, focusState, direction) => {
+const getFlowColor = (flow, focusState, direction, palette) => {
   const quintile = flow.quintile || 3;
   const colorIndex = Math.min(4, Math.max(0, quintile - 1));
 
@@ -71,19 +138,19 @@ const getFlowColor = (flow, focusState, direction) => {
     // If outflow only, show red
     // If inflow only, show blue
     if (isOutflow && !isInflow) {
-      return { color: QUINTILE_OUTFLOW_COLORS[colorIndex], flowType: "outflow" };
+      return { color: palette.outflow[colorIndex], flowType: "outflow" };
     } else {
       // inflow or internal - show as blue
-      return { color: QUINTILE_INFLOW_COLORS[colorIndex], flowType: "inflow" };
+      return { color: palette.inflow[colorIndex], flowType: "inflow" };
     }
   }
 
   // If direction filter is applied
   if (direction === "Inflow") {
-    return { color: QUINTILE_INFLOW_COLORS[colorIndex], flowType: "inflow" };
+    return { color: palette.inflow[colorIndex], flowType: "inflow" };
   }
   if (direction === "Outflow") {
-    return { color: QUINTILE_OUTFLOW_COLORS[colorIndex], flowType: "outflow" };
+    return { color: palette.outflow[colorIndex], flowType: "outflow" };
   }
 
   // No state selected and no direction filter - use deterministic coloring
@@ -92,14 +159,15 @@ const getFlowColor = (flow, focusState, direction) => {
   // If origin longitude is east of destination, it's flowing west (show as outflow/red)
   const isEastward = flow.origin_lon < flow.dest_lon;
   if (isEastward) {
-    return { color: QUINTILE_INFLOW_COLORS[colorIndex], flowType: "inflow" };
+    return { color: palette.inflow[colorIndex], flowType: "inflow" };
   } else {
-    return { color: QUINTILE_OUTFLOW_COLORS[colorIndex], flowType: "outflow" };
+    return { color: palette.outflow[colorIndex], flowType: "outflow" };
   }
 };
 
-const flowsToGeoJSON = (flows, focusState, direction) => {
+const flowsToGeoJSON = (flows, focusState, direction, flowBucket) => {
   const features = [];
+  const palette = FLOW_PALETTES[flowBucket] || FLOW_PALETTES.top50;
 
   for (const flow of flows) {
     const amount = Number(flow.amount);
@@ -108,7 +176,7 @@ const flowsToGeoJSON = (flows, focusState, direction) => {
     if (!Number.isFinite(flow.origin_lat) || !Number.isFinite(flow.origin_lon) ||
         !Number.isFinite(flow.dest_lat) || !Number.isFinite(flow.dest_lon)) continue;
 
-    const { color, flowType } = getFlowColor(flow, focusState, direction);
+    const { color, flowType } = getFlowColor(flow, focusState, direction, palette);
     const width = flow.width || 2;
     const curvePoints = generateBezierCurve(
       flow.origin_lon,
@@ -152,7 +220,8 @@ export function FlowMapCanvas({
   isLoading,
   baseStyle,
   fitBounds,
-  formatAmount
+  formatAmount,
+  flowBucket
 }) {
   const containerRef = useRef(null);
   const tooltipRef = useRef(null);
@@ -165,8 +234,8 @@ export function FlowMapCanvas({
   }, [flows]);
 
   const flowGeoJSON = useMemo(
-    () => flowsToGeoJSON(flows, focusState, direction),
-    [flows, focusState, direction]
+    () => flowsToGeoJSON(flows, focusState, direction, flowBucket),
+    [flows, focusState, direction, flowBucket]
   );
 
   useEffect(() => {
@@ -237,10 +306,25 @@ export function FlowMapCanvas({
         }
       });
 
+      map.addLayer({
+        id: "flow-lines-hit",
+        type: "line",
+        source: "flow-lines",
+        paint: {
+          "line-color": "rgba(0,0,0,0)",
+          "line-width": ["+", ["get", "width"], 8],
+          "line-opacity": 0
+        },
+        layout: {
+          "line-cap": "round",
+          "line-join": "round"
+        }
+      });
+
       sourceAddedRef.current = true;
     });
 
-    map.on("mousemove", "flow-lines-layer", (e) => {
+    map.on("mousemove", "flow-lines-hit", (e) => {
       if (!sourceAddedRef.current) return;
       const feature = e.features && e.features[0];
       if (!feature) return;
@@ -264,7 +348,7 @@ export function FlowMapCanvas({
       }
     });
 
-    map.on("mouseleave", "flow-lines-layer", () => {
+    map.on("mouseleave", "flow-lines-hit", () => {
       map.getCanvas().style.cursor = "";
       if (tooltipRef.current) {
         tooltipRef.current.style.display = "none";
@@ -274,7 +358,7 @@ export function FlowMapCanvas({
     map.on("click", (e) => {
       if (!sourceAddedRef.current) return;
 
-      const features = map.queryRenderedFeatures(e.point, { layers: ["flow-lines-layer"] });
+      const features = map.queryRenderedFeatures(e.point, { layers: ["flow-lines-hit"] });
       if (features.length === 0) {
         onSelect(null);
         return;

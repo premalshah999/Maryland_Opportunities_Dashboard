@@ -47,7 +47,8 @@ export default function App() {
     direction: "All",
     naics: "All",
     yearStart: null,
-    yearEnd: null
+    yearEnd: null,
+    flowRange: "top50"
   });
   const [flowData, setFlowData] = useState(null);
   const [flowStatus, setFlowStatus] = useState({ state: "ready", message: "Ready" });
@@ -152,7 +153,8 @@ export default function App() {
           direction: "All",
           naics: "All",
           yearStart: minYear,
-          yearEnd: maxYear
+          yearEnd: maxYear,
+          flowRange: "top50"
         });
         setFlowOptionsLevel(flowLevel);
       })
@@ -193,6 +195,28 @@ export default function App() {
     }
     if (flowFilters.yearEnd) {
       params.set("year_end", flowFilters.yearEnd);
+    }
+    if (flowFilters.flowRange) {
+      const range = flowFilters.flowRange;
+      if (range === "top10") {
+        params.set("offset", 0);
+        params.set("limit", 10);
+      } else if (range === "top50") {
+        params.set("offset", 0);
+        params.set("limit", 50);
+      } else if (range === "150+") {
+        params.set("offset", 150);
+        params.set("limit", 1000);
+      } else {
+        const [start, end] = range.split("-").map((value) => Number(value));
+        if (!Number.isNaN(start)) {
+          params.set("offset", start);
+        }
+        if (!Number.isNaN(end)) {
+          params.set("limit", Math.max(0, end - start));
+        }
+      }
+      params.set("flow_bucket", range);
     }
 
     fetchJson(`/api/flow?${params.toString()}`)
@@ -557,7 +581,7 @@ export default function App() {
           )}
 
           {tab === "insights" && viewMode === "flow" && (
-            <FlowInsightsPanel flowStats={flowStats} />
+            <FlowInsightsPanel flowStats={flowStats} thresholds={flowData?.thresholds} />
           )}
         </div>
 
@@ -602,6 +626,7 @@ export default function App() {
                 onFlowSelected={setFlowSelected}
                 sidebarWidth={sidebarWidth}
                 formatAmount={formatCurrencyRounded}
+                flowBucket={flowFilters.flowRange}
               />
             )}
           </div>

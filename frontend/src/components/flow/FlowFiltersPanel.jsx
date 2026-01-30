@@ -191,6 +191,34 @@ export function FlowFiltersPanel({
       )}
 
       <div className="section">
+        <div className="section-title">Flow Volume</div>
+        <div className="control">
+          <span>Flow Range</span>
+          <div className="range-toggle" role="group" aria-label="Flow volume range">
+            {[
+              { value: "top10", label: "Top 10" },
+              { value: "top50", label: "Top 50" },
+              { value: "50-100", label: "50–100" },
+              { value: "100-150", label: "100–150" },
+              { value: "150+", label: "150+" }
+            ].map((range) => (
+              <button
+                key={range.value}
+                type="button"
+                className={`direction-btn ${flowFilters.flowRange === range.value ? "active" : ""}`}
+                aria-pressed={flowFilters.flowRange === range.value}
+                onClick={() =>
+                  onFlowFiltersChange((prev) => ({ ...prev, flowRange: range.value }))
+                }
+              >
+                {range.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      <div className="section">
         <div className="section-title">Legend</div>
         <div className="flow-legend-compact">
           <div className="flow-thickness-compact">

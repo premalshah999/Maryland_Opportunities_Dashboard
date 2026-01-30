@@ -46,6 +46,13 @@ def test_flow_data_state():
     assert "stats" in data
 
 
+def test_flow_data_range():
+    response = client.get("/api/flow", params={"level": "state", "offset": 50, "limit": 50})
+    assert response.status_code == 200
+    data = response.json()
+    assert "flows" in data
+
+
 def test_health_details():
     response = client.get("/api/health")
     assert response.status_code == 200
