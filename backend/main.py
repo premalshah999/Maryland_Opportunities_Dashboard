@@ -373,7 +373,8 @@ FLOW_COLUMNS = {
     "state": [
         "rcpt_state_name",
         "subawardee_state_name",
-        "naics_4digit_title",
+        "naics_2digit_code",
+        "naics_2digit_title",
         "agency_code",
         "agency_name",
         "subaward_amount_year",
@@ -407,7 +408,8 @@ FLOW_COLUMNS = {
         "act_dt_fis_yr",
         "subaward_amount",
         "agency_name",
-        "Industry Title",
+        "naics_2digit_code",
+        "naics_2digit_title",
         "origin_lat",
         "origin_lon",
         "dest_lat",
@@ -445,9 +447,9 @@ FLOW_FLOAT32_COLUMNS = {
     "congress": ["origin_lat", "origin_lon", "dest_lat", "dest_lon"],
 }
 FLOW_CATEGORY_COLUMNS = {
-    "state": ["rcpt_state_name", "subawardee_state_name", "naics_4digit_title", "agency_name"],
+    "state": ["rcpt_state_name", "subawardee_state_name", "naics_2digit_title", "agency_name"],
     "county": ["rcpt_state", "subawardee_state", "agency_name"],
-    "congress": ["rcpt_state", "subawardee_state", "agency_name", "Industry Title"],
+    "congress": ["rcpt_state", "subawardee_state", "agency_name", "naics_2digit_title"],
 }
 
 
@@ -462,6 +464,15 @@ def _normalize_flow(level: str, df: pd.DataFrame) -> pd.DataFrame:
         dest_state = _normalize_text(df["subawardee_state_name"])
         origin_fips = origin_state.str.lower().map(STATE_NAME_TO_FIPS)
         dest_fips = dest_state.str.lower().map(STATE_NAME_TO_FIPS)
+        industry_code = (
+            _normalize_text(df["naics_2digit_code"]) if "naics_2digit_code" in df.columns
+            else pd.Series([None] * len(df), dtype="string")
+        )
+        industry_title = (
+            _normalize_text(df["naics_2digit_title"]) if "naics_2digit_title" in df.columns
+            else _normalize_text(df["naics_4digit_title"]) if "naics_4digit_title" in df.columns
+            else pd.Series([None] * len(df), dtype="string")
+        )
         return pd.DataFrame({
             "origin_name": origin_state,
             "dest_name": dest_state,
@@ -473,12 +484,22 @@ def _normalize_flow(level: str, df: pd.DataFrame) -> pd.DataFrame:
             "dest_lon": dest_fips.map(lambda f: centroids.get(f, (None, None))[1] if f else None),
             "amount": pd.to_numeric(df["subaward_amount_year"], errors="coerce"),
             "agency": _normalize_text(df["agency_name"]),
-            "industry": _normalize_text(df["naics_4digit_title"]),
+            "industry_code": industry_code,
+            "industry": industry_title,
             "year": pd.Series([None] * len(df), dtype="Int16"),
         })
     if level == "congress":
         origin_name = df["rcpt_full_name"].fillna(df["rcpt_cd_name"])
         dest_name = df["subawardee_full_name"].fillna(df["subawardee_cd_name"])
+        industry_code = (
+            _normalize_text(df["naics_2digit_code"]) if "naics_2digit_code" in df.columns
+            else pd.Series([None] * len(df), dtype="string")
+        )
+        industry_title = (
+            _normalize_text(df["naics_2digit_title"]) if "naics_2digit_title" in df.columns
+            else _normalize_text(df["Industry Title"]) if "Industry Title" in df.columns
+            else pd.Series([None] * len(df), dtype="string")
+        )
         return pd.DataFrame({
             "origin_name": _normalize_text(origin_name),
             "dest_name": _normalize_text(dest_name),
@@ -490,7 +511,8 @@ def _normalize_flow(level: str, df: pd.DataFrame) -> pd.DataFrame:
             "dest_lon": pd.to_numeric(df["dest_lon"], errors="coerce"),
             "amount": pd.to_numeric(df["subaward_amount"], errors="coerce"),
             "agency": _normalize_text(df["agency_name"]),
-            "industry": _normalize_text(df["Industry Title"]) if "Industry Title" in df.columns else pd.Series([None] * len(df)),
+            "industry_code": industry_code,
+            "industry": industry_title,
             "year": pd.to_numeric(df["act_dt_fis_yr"], errors="coerce").round().astype("Int16"),
         })
     origin_name = df["rcpt_full_name"].fillna(df["rcpt_cty_name"])
