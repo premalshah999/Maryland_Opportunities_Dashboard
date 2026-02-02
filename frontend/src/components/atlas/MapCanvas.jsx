@@ -11,7 +11,9 @@ export function MapCanvas({
   hoverMetaLabel,
   formatHoverValue,
   zoomToFeature,
-  focusMode = false
+  focusMode = false,
+  focusBoundsPadding,
+  focusOffset
 }) {
   const containerRef = useRef(null);
   const tooltipRef = useRef(null);
@@ -291,12 +293,12 @@ export function MapCanvas({
     ];
 
     const padding = focusMode
-      ? { top: 80, bottom: 80, left: 60, right: 60 }
+      ? (focusBoundsPadding || { top: 80, bottom: 80, left: 60, right: 60 })
       : { top: 60, bottom: 60, left: 60, right: 60 };
-    const offset = focusMode ? [-320, 0] : [0, 0];
+    const offset = focusMode ? (focusOffset || [0, 0]) : [0, 0];
 
     map.fitBounds(bounds, { padding, offset, duration: 500, maxZoom: 5 });
-  }, [zoomToFeature, geojson, focusMode]);
+  }, [zoomToFeature, geojson, focusMode, focusBoundsPadding, focusOffset]);
 
   return (
     <div className="map-container" ref={containerRef}>

@@ -39,14 +39,24 @@ const formatSegmentLabel = (value, viewType) => {
   return value >= 1e9 ? formatCurrency(value) : "";
 };
 
-const formatAxisNumber = (value) => {
+const formatAxisMoneyCompact = (value) => {
   if (value === null || value === undefined || Number.isNaN(value)) return "";
-  return Math.round(Number(value)).toLocaleString();
+  const numeric = Number(value);
+  const absValue = Math.abs(numeric);
+  if (absValue >= 1e12) return `${(numeric / 1e12).toFixed(absValue >= 1e13 ? 0 : 1)}T`;
+  if (absValue >= 1e9) return `${(numeric / 1e9).toFixed(absValue >= 1e10 ? 0 : 1)}B`;
+  if (absValue >= 1e6) return `${(numeric / 1e6).toFixed(absValue >= 1e7 ? 0 : 1)}M`;
+  if (absValue >= 1e3) return `${(numeric / 1e3).toFixed(absValue >= 1e4 ? 0 : 1)}K`;
+  return `${Math.round(numeric)}`;
 };
 
-const formatAxisThousands = (value) => {
+const formatAxisCountCompact = (value) => {
   if (value === null || value === undefined || Number.isNaN(value)) return "";
-  return `${Math.round(Number(value) / 1000)}K`;
+  const numeric = Number(value);
+  const absValue = Math.abs(numeric);
+  if (absValue >= 1e6) return `${Math.round(numeric / 1e6)}M`;
+  if (absValue >= 1e3) return `${Math.round(numeric / 1e3)}K`;
+  return `${Math.round(numeric)}`;
 };
 
 const formatCountLabel = (value) => {
@@ -69,12 +79,25 @@ export function SpendingMapPanel({
   viewType = "amount",
   focusMode = false
 }) {
-  const compactCharts = typeof window !== "undefined" && window.innerWidth < 1100;
-  const chartYAxisWidth = compactCharts ? 220 : 310;
-  const chartBarGap = compactCharts ? 18 : 24;
-  const chartBarSize = compactCharts ? 30 : 34;
+  const viewportWidth = typeof window !== "undefined" ? window.innerWidth : 1440;
+  const compactCharts = viewportWidth < 1100;
+  const chartYAxisWidth = compactCharts ? 200 : 270;
+  const chartBarGap = compactCharts ? 20 : 28;
+  const chartBarSize = compactCharts ? 34 : 42;
   const spendingChartHeight = compactCharts ? 420 : 560;
-  const jobsChartHeight = compactCharts ? 380 : 520;
+  const jobsChartHeight = compactCharts ? 420 : 520;
+  const mainWidth = Math.max(320, viewportWidth - sidebarWidth);
+  const chartsOverlayWidth = compactCharts
+    ? Math.min(360, Math.round(mainWidth * 0.64))
+    : Math.min(720, Math.round(mainWidth * 0.56));
+  const focusBoundsPadding = focusMode
+    ? {
+      top: 70,
+      bottom: 240,
+      left: 30,
+      right: chartsOverlayWidth + 48
+    }
+    : undefined;
 
   const spendingData = (detailRecords || [])
     .map((row) => {
@@ -114,6 +137,7 @@ export function SpendingMapPanel({
         formatHoverValue={(value) => formatMetricValue(value, metric)}
         zoomToFeature={selectedId}
         focusMode={focusMode}
+        focusBoundsPadding={focusBoundsPadding}
       />
       {!enrichedGeo && (
         <div className="map-placeholder">
@@ -122,44 +146,47 @@ export function SpendingMapPanel({
       )}
 
       {selectedFeature && (
-        <div className="spending-overlay-cards">
-          <div className="spending-overlay-header">
-            <div className="spending-overlay-title-row">
-              <div>
-                <span className="spending-overlay-state">
-                  {toTitleCase(selectedFeature.label)}
-                </span>
-                <span className="spending-overlay-meta">
-                  {metric || "Metric"}
-                  {year ? ` · ${year}` : ""}
-                </span>
+        <>
+          <div className="spending-state-info">
+            <div className="spending-overlay-header">
+              <div className="spending-overlay-title-row">
+                <div>
+                  <span className="spending-overlay-state">
+                    {toTitleCase(selectedFeature.label)}
+                  </span>
+                  <span className="spending-overlay-meta">
+                    {metric || "Metric"}
+                    {year ? ` · ${year}` : ""}
+                  </span>
+                </div>
+                <button
+                  className="spending-overlay-close"
+                  type="button"
+                  onClick={() => onSelectedFeatureChange(null)}
+                >
+                  ×
+                </button>
               </div>
-              <button
-                className="spending-overlay-close"
-                type="button"
-                onClick={() => onSelectedFeatureChange(null)}
-              >
-                ×
-              </button>
-            </div>
-            <div className="spending-overlay-value">
-              {formatMetricValue(selectedFeature.value, metric)}
-              {selectedRank && (
-                <span className="spending-overlay-rank">
-                  Rank #{selectedRank.rank} of {rankTotal}
-                </span>
-              )}
+              <div className="spending-overlay-value">
+                {formatMetricValue(selectedFeature.value, metric)}
+                {selectedRank && (
+                  <span className="spending-overlay-rank">
+                    Rank #{selectedRank.rank} of {rankTotal}
+                  </span>
+                )}
+              </div>
             </div>
           </div>
 
-          {detailLoading && (
-            <div className="spending-overlay-loading">
-              <span>Loading agency data...</span>
-            </div>
-          )}
+          <div className="spending-overlay-cards spending-overlay-cards--charts">
+            {detailLoading && (
+              <div className="spending-overlay-loading">
+                <span>Loading agency data...</span>
+              </div>
+            )}
 
-          {!detailLoading && detailRecords && detailRecords.length > 0 && (
-            <>
+            {!detailLoading && detailRecords && detailRecords.length > 0 && (
+              <>
               <div className="spending-overlay-chart">
                 <div className="spending-chart-title">
                   Top 10 Federal Agencies by Spending (Contracts, Grants, and Wages)
@@ -170,7 +197,7 @@ export function SpendingMapPanel({
                     <BarChart
                       data={spendingData}
                       layout="vertical"
-                      margin={{ top: 10, right: 26, left: 6, bottom: 10 }}
+                      margin={{ top: 10, right: 20, left: 0, bottom: 8 }}
                       barCategoryGap={chartBarGap}
                       barSize={chartBarSize}
                     >
@@ -180,7 +207,7 @@ export function SpendingMapPanel({
                         tickFormatter={
                           viewType === "percentage"
                             ? (value) => `${Math.round(value)}%`
-                            : formatAxisNumber
+                            : formatAxisMoneyCompact
                         }
                         domain={viewType === "percentage" ? [0, 100] : ["auto", "auto"]}
                         axisLine={false}
@@ -195,7 +222,7 @@ export function SpendingMapPanel({
                         axisLine={false}
                         tickLine={false}
                         interval={0}
-                        tickMargin={16}
+                        tickMargin={18}
                         tickFormatter={formatAgencyLabel}
                       />
                       <Tooltip
@@ -246,14 +273,14 @@ export function SpendingMapPanel({
                     <BarChart
                       data={jobsData}
                       layout="vertical"
-                      margin={{ top: 10, right: 26, left: 6, bottom: 10 }}
+                      margin={{ top: 10, right: 20, left: 0, bottom: 8 }}
                       barCategoryGap={chartBarGap}
                       barSize={chartBarSize}
                     >
                       <CartesianGrid strokeDasharray="4 6" stroke="#e5e7eb" horizontal={false} />
                       <XAxis
                         type="number"
-                        tickFormatter={formatAxisThousands}
+                        tickFormatter={formatAxisCountCompact}
                         axisLine={false}
                         tickLine={false}
                         tick={{ fill: "#111827", fontSize: compactCharts ? 11 : 12, fontWeight: 500 }}
@@ -266,7 +293,7 @@ export function SpendingMapPanel({
                         axisLine={false}
                         tickLine={false}
                         interval={0}
-                        tickMargin={16}
+                        tickMargin={18}
                         tickFormatter={formatAgencyLabel}
                       />
                       <Tooltip
@@ -296,7 +323,8 @@ export function SpendingMapPanel({
               </div>
             </>
           )}
-        </div>
+          </div>
+        </>
       )}
 
       {!selectedFeature && (
