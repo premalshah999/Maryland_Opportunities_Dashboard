@@ -71,6 +71,9 @@ export default function App() {
   const [tourStep, setTourStep] = useState(0);
   const [infoOpen, setInfoOpen] = useState(false);
   const resizeRef = useRef({ startX: 0, startWidth: 360 });
+  const spendingMetaLoadedRef = useRef(false);
+  const spendingValuesCacheRef = useRef(new Map());
+  const spendingDetailCacheRef = useRef(new Map());
 
   useEffect(() => {
     fetchJson("/api/datasets")
@@ -266,13 +269,21 @@ export default function App() {
 
   useEffect(() => {
     if (viewMode !== "spending") return;
+    if (spendingMetaLoadedRef.current) {
+      setSpendingStatus({ state: "ready", message: "Ready" });
+      return;
+    }
     setSpendingStatus({ state: "loading", message: "Loading spending dataset" });
-    fetchJson("/api/variables?dataset=spending_breakdown&level=state")
+    let cancelled = false;
+    const controller = new AbortController();
+    fetchJson("/api/variables?dataset=spending_breakdown&level=state", { signal: controller.signal })
       .then((data) => {
+        if (cancelled) return;
         const vars = data.variables || [];
         const yrs = data.years || [];
         setSpendingVariables(vars);
         setSpendingYears(yrs);
+        spendingMetaLoadedRef.current = true;
         if (!spendingMetric && vars.length) {
           const defaultMetric = vars.includes("Contracts") ? "Contracts" : vars[0];
           setSpendingMetric(defaultMetric);
@@ -282,14 +293,31 @@ export default function App() {
         }
         setSpendingStatus({ state: "ready", message: "Ready" });
       })
-      .catch(() => {
+      .catch((error) => {
+        if (cancelled || error?.name === "AbortError") return;
         setSpendingStatus({ state: "error", message: "Failed to load spending dataset" });
       });
+    return () => {
+      cancelled = true;
+      controller.abort();
+    };
   }, [viewMode]);
 
   useEffect(() => {
     if (viewMode !== "spending") return;
     if (!spendingMetric || !spendingYear) return;
+
+    const cacheKey = `${spendingMetric}|${spendingYear}`;
+    const cached = spendingValuesCacheRef.current.get(cacheKey);
+    if (cached) {
+      setSpendingValuesData(cached);
+      setSpendingStatus({
+        state: "ready",
+        message: `Loaded ${cached.stats?.count || 0} records`
+      });
+      return;
+    }
+
     setSpendingStatus({ state: "loading", message: "Loading spending values" });
     const params = new URLSearchParams({
       dataset: "spending_breakdown",
@@ -297,18 +325,27 @@ export default function App() {
       variable: spendingMetric,
       year: spendingYear
     });
-    fetchJson(`/api/values?${params.toString()}`)
+    let cancelled = false;
+    const controller = new AbortController();
+    fetchJson(`/api/values?${params.toString()}`, { signal: controller.signal })
       .then((data) => {
+        if (cancelled) return;
+        spendingValuesCacheRef.current.set(cacheKey, data);
         setSpendingValuesData(data);
         setSpendingStatus({
           state: "ready",
           message: `Loaded ${data.stats?.count || 0} records`
         });
       })
-      .catch(() => {
+      .catch((error) => {
+        if (cancelled || error?.name === "AbortError") return;
         setSpendingValuesData(null);
         setSpendingStatus({ state: "error", message: "Failed to load spending values" });
       });
+    return () => {
+      cancelled = true;
+      controller.abort();
+    };
   }, [viewMode, spendingMetric, spendingYear]);
 
   useEffect(() => {
@@ -318,22 +355,42 @@ export default function App() {
       setSpendingSelectedAgency("ALL");
       return;
     }
+    const cacheKey = `${spendingSelectedState}|${spendingYear}`;
+    const cached = spendingDetailCacheRef.current.get(cacheKey);
+    if (cached) {
+      setSpendingDetailRecords(cached);
+      setSpendingSelectedAgency("ALL");
+      setSpendingDetailLoading(false);
+      return;
+    }
+
     setSpendingDetailLoading(true);
     const params = new URLSearchParams({
       year: spendingYear,
       state: spendingSelectedState
     });
-    fetchJson(`/api/spending/state-detail?${params.toString()}`)
+    let cancelled = false;
+    const controller = new AbortController();
+    fetchJson(`/api/spending/state-detail?${params.toString()}`, { signal: controller.signal })
       .then((data) => {
-        setSpendingDetailRecords(data.records || []);
+        if (cancelled) return;
+        const records = data.records || [];
+        spendingDetailCacheRef.current.set(cacheKey, records);
+        setSpendingDetailRecords(records);
         setSpendingSelectedAgency("ALL");
       })
-      .catch(() => {
+      .catch((error) => {
+        if (cancelled || error?.name === "AbortError") return;
         setSpendingDetailRecords([]);
       })
       .finally(() => {
+        if (cancelled) return;
         setSpendingDetailLoading(false);
       });
+    return () => {
+      cancelled = true;
+      controller.abort();
+    };
   }, [viewMode, spendingSelectedState, spendingYear]);
 
   // Load geography data for atlas and flow views

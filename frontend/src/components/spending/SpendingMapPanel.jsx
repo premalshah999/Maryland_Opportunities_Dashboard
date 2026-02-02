@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import {
   Bar,
   BarChart,
@@ -158,49 +158,63 @@ export function SpendingMapPanel({
     }
     : undefined;
 
-  const spendingData = (detailRecords || [])
-    .map((row) => {
-      const contracts = Number(row["Contracts"]) || 0;
-      const grants = Number(row["Grants"]) || 0;
-      const wages = Number(row["Resident Wage"]) || 0;
-      const total = contracts + grants + wages;
-      const pct = total > 0 ? 100 / total : 0;
-      return {
+  const spendingData = useMemo(
+    () => (detailRecords || [])
+      .map((row) => {
+        const contracts = Number(row["Contracts"]) || 0;
+        const grants = Number(row["Grants"]) || 0;
+        const wages = Number(row["Resident Wage"]) || 0;
+        const total = contracts + grants + wages;
+        const pct = total > 0 ? 100 / total : 0;
+        return {
+          agency: row.agency,
+          total,
+          contracts: viewType === "percentage" ? contracts * pct : contracts,
+          grants: viewType === "percentage" ? grants * pct : grants,
+          wages: viewType === "percentage" ? wages * pct : wages
+        };
+      })
+      .sort((a, b) => b.total - a.total)
+      .slice(0, 10),
+    [detailRecords, viewType]
+  );
+
+  const jobsData = useMemo(
+    () => (detailRecords || [])
+      .map((row) => ({
         agency: row.agency,
-        total,
-        contracts: viewType === "percentage" ? contracts * pct : contracts,
-        grants: viewType === "percentage" ? grants * pct : grants,
-        wages: viewType === "percentage" ? wages * pct : wages
-      };
-    })
-    .sort((a, b) => b.total - a.total)
-    .slice(0, 10);
+        jobs: Number(row["Employees"]) || 0
+      }))
+      .sort((a, b) => b.jobs - a.jobs)
+      .slice(0, 10),
+    [detailRecords]
+  );
 
-  const jobsData = (detailRecords || [])
-    .map((row) => ({
-      agency: row.agency,
-      jobs: Number(row["Employees"]) || 0
-    }))
-    .sort((a, b) => b.jobs - a.jobs)
-    .slice(0, 10);
-
-  const spendingMax = spendingData.reduce((max, row) => Math.max(max, row.total || 0), 0);
   const spendingTickStep = 1e10;
-  const spendingTickMax = spendingMax
-    ? Math.ceil(spendingMax / spendingTickStep) * spendingTickStep
-    : spendingTickStep * 3;
-  const spendingTicks = Array.from(
-    { length: Math.max(1, Math.floor(spendingTickMax / spendingTickStep) + 1) },
-    (_, idx) => idx * spendingTickStep
-  );
+  const spendingTicks = useMemo(() => {
+    const spendingMax = spendingData.reduce((max, row) => Math.max(max, row.total || 0), 0);
+    const spendingTickMax = spendingMax
+      ? Math.ceil(spendingMax / spendingTickStep) * spendingTickStep
+      : spendingTickStep * 3;
+    return Array.from(
+      { length: Math.max(1, Math.floor(spendingTickMax / spendingTickStep) + 1) },
+      (_, idx) => idx * spendingTickStep
+    );
+  }, [spendingData]);
 
-  const jobsMax = jobsData.reduce((max, row) => Math.max(max, row.jobs || 0), 0);
+  const spendingTickMax = spendingTicks[spendingTicks.length - 1] || spendingTickStep * 3;
+
   const jobsTickStep = 5000;
-  const jobsTickMax = jobsMax ? Math.ceil(jobsMax / jobsTickStep) * jobsTickStep : jobsTickStep * 10;
-  const jobsTicks = Array.from(
-    { length: Math.max(1, Math.floor(jobsTickMax / jobsTickStep) + 1) },
-    (_, idx) => idx * jobsTickStep
-  );
+  const jobsTicks = useMemo(() => {
+    const jobsMax = jobsData.reduce((max, row) => Math.max(max, row.jobs || 0), 0);
+    const jobsTickMax = jobsMax ? Math.ceil(jobsMax / jobsTickStep) * jobsTickStep : jobsTickStep * 10;
+    return Array.from(
+      { length: Math.max(1, Math.floor(jobsTickMax / jobsTickStep) + 1) },
+      (_, idx) => idx * jobsTickStep
+    );
+  }, [jobsData]);
+
+  const jobsTickMax = jobsTicks[jobsTicks.length - 1] || jobsTickStep * 10;
 
   const chartsPaneRef = useRef(null);
 
@@ -419,7 +433,13 @@ export function SpendingMapPanel({
                   </div>
                 </div>
               </div>
-          )}
+            )}
+
+            {!detailLoading && (!detailRecords || detailRecords.length === 0) && (
+              <div className="spending-overlay-loading">
+                <span>No agency records available for this state and year.</span>
+              </div>
+            )}
           </div>
         </>
       )}

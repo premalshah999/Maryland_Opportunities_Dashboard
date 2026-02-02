@@ -179,9 +179,13 @@ def load_spending_data() -> pd.DataFrame:
     if not os.path.exists(SPENDING_DATA_FILE):
         raise FileNotFoundError(SPENDING_DATA_FILE)
     df = pd.read_excel(SPENDING_DATA_FILE)
+    for required_col in ("state", "agency", "year"):
+        if required_col not in df.columns:
+            raise ValueError(f"Missing required spending column: {required_col}")
     df["state"] = df["state"].astype(str).str.strip().str.upper()
     df["agency"] = df["agency"].astype(str).str.strip()
-    df["year"] = df["year"].astype(str).str.strip()
+    df["year"] = df["year"].apply(normalize_year_value)
+    df = df[df["year"].notna()]
     return df
 
 
@@ -199,6 +203,49 @@ def spending_metric_sets() -> Dict[str, List[str]]:
         "metrics": metrics,
         "per_capita_metrics": per_capita,
     }
+
+
+@lru_cache(maxsize=1)
+def spending_metadata_payload() -> Dict[str, List[str]]:
+    df = load_spending_data()
+    columns = spending_metric_sets()
+    years = sorted(df["year"].dropna().astype(str).unique().tolist())
+    states = sorted(df["state"].dropna().astype(str).unique().tolist())
+    agencies = sorted(df["agency"].dropna().astype(str).unique().tolist())
+    return {
+        "years": years,
+        "states": states,
+        "agencies": agencies,
+        **columns,
+    }
+
+
+@lru_cache(maxsize=512)
+def spending_state_summary_records(year: str, metric: str) -> List[dict]:
+    year_value = str(year).strip()
+    df = load_spending_data()
+    year_df = df[df["year"] == year_value]
+    if year_df.empty:
+        return []
+    grouped = (
+        year_df.groupby(["state", "state_fips"], dropna=False, sort=False)[metric]
+        .sum()
+        .reset_index()
+        .rename(columns={metric: "value"})
+        .sort_values("state")
+    )
+    return grouped.to_dict(orient="records")
+
+
+@lru_cache(maxsize=2048)
+def spending_state_detail_records(state: str, year: str) -> List[dict]:
+    state_key = state.strip().upper()
+    year_value = str(year).strip()
+    df = load_spending_data()
+    detail = df[(df["state"] == state_key) & (df["year"] == year_value)]
+    if detail.empty:
+        return []
+    return detail.to_dict(orient="records")
 
 
 def _is_expired(timestamp: float) -> bool:
@@ -245,7 +292,10 @@ def load_dataset(dataset: str, level: str) -> pd.DataFrame:
         path = dataset_path(dataset, level)
         if not os.path.exists(path):
             raise FileNotFoundError(path)
-        _DATA_CACHE[cache_key] = (pd.read_excel(path), time.time())
+        df = pd.read_excel(path)
+        if YEAR_COLUMN in df.columns:
+            df[YEAR_COLUMN] = df[YEAR_COLUMN].apply(normalize_year_value)
+        _DATA_CACHE[cache_key] = (df, time.time())
     return _DATA_CACHE[cache_key][0]
 
 
@@ -264,7 +314,7 @@ def list_years(df: pd.DataFrame) -> List[str]:
     years: List[str] = []
     seen = set()
     for raw in pd.unique(df[YEAR_COLUMN].dropna()):
-        normalized = normalize_year_value(raw)
+        normalized = str(raw).strip()
         if not normalized or normalized in seen:
             continue
         seen.add(normalized)
@@ -869,17 +919,7 @@ def health(request: Request):
 
 @app.get("/api/spending/metadata")
 def spending_metadata() -> dict:
-    df = load_spending_data()
-    columns = spending_metric_sets()
-    years = sorted(df["year"].unique().tolist())
-    states = sorted(df["state"].unique().tolist())
-    agencies = sorted(df["agency"].unique().tolist())
-    return {
-        "years": years,
-        "states": states,
-        "agencies": agencies,
-        **columns,
-    }
+    return spending_metadata_payload()
 
 
 @app.get("/api/spending/state-summary")
@@ -887,23 +927,18 @@ def spending_state_summary(
     year: str = Query(...),
     metric: str = Query(...),
 ) -> dict:
-    df = load_spending_data()
-    if metric not in df.columns:
+    metric_columns = spending_metric_sets()
+    allowed_metrics = set(metric_columns["metrics"]) | set(metric_columns["per_capita_metrics"])
+    if metric not in allowed_metrics:
         raise HTTPException(status_code=400, detail="Unknown metric")
-    year_df = df[df["year"] == str(year)]
-    if year_df.empty:
+    year_value = str(year).strip()
+    grouped = spending_state_summary_records(year_value, metric)
+    if not grouped:
         raise HTTPException(status_code=404, detail="Year not found")
-    grouped = (
-        year_df.groupby(["state", "state_fips"], dropna=False)[metric]
-        .sum()
-        .reset_index()
-        .rename(columns={metric: "value"})
-        .sort_values("state")
-    )
     return {
-        "year": str(year),
+        "year": year_value,
         "metric": metric,
-        "values": grouped.to_dict(orient="records"),
+        "values": grouped,
     }
 
 
@@ -912,15 +947,15 @@ def spending_state_detail(
     state: str = Query(...),
     year: str = Query(...),
 ) -> dict:
-    df = load_spending_data()
     state_key = state.strip().upper()
-    detail = df[(df["state"] == state_key) & (df["year"] == str(year))]
-    if detail.empty:
+    year_value = str(year).strip()
+    detail = spending_state_detail_records(state_key, year_value)
+    if not detail:
         raise HTTPException(status_code=404, detail="State/year not found")
     return {
         "state": state_key,
-        "year": str(year),
-        "records": detail.to_dict(orient="records"),
+        "year": year_value,
+        "records": detail,
     }
 
 
@@ -975,7 +1010,7 @@ def values(
         if not selected_year and available_years:
             selected_year = available_years[-1]
         if selected_year:
-            df = df[df[YEAR_COLUMN].apply(normalize_year_value) == selected_year]
+            df = df[df[YEAR_COLUMN] == selected_year]
 
     if dataset == "census" and variable in CENSUS_DERIVED_VARIABLES and variable not in df.columns:
         total_col, less_col = CENSUS_DERIVED_VARIABLES[variable]

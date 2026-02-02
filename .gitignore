@@ -7,7 +7,6 @@ frontend/dist/
 frontend/.vite/
 archive/
 newapp/
-federal-agencies-dashboard/
 __pycache__/
 .pytest_cache/
 backend/.env

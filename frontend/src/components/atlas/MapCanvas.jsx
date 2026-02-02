@@ -55,6 +55,21 @@ export function MapCanvas({
   const fittedLevels = useRef({});
   const hoveredId = useRef(null);
   const baseLayerVisibility = useRef(new Map());
+  const onSelectRef = useRef(onSelect);
+  const hoverMetaLabelRef = useRef(hoverMetaLabel);
+  const formatHoverValueRef = useRef(formatHoverValue);
+
+  useEffect(() => {
+    onSelectRef.current = onSelect;
+  }, [onSelect]);
+
+  useEffect(() => {
+    hoverMetaLabelRef.current = hoverMetaLabel;
+  }, [hoverMetaLabel]);
+
+  useEffect(() => {
+    formatHoverValueRef.current = formatHoverValue;
+  }, [formatHoverValue]);
 
   useEffect(() => {
     if (mapRef.current) return;
@@ -175,10 +190,12 @@ export function MapCanvas({
                 : Number(feature.properties.value);
             const quintile = Number(feature.properties.quintile) || 0;
             const label = feature.properties.label || feature.properties.name || "Unknown";
-            const formattedValue = formatHoverValue ? formatHoverValue(value) : value;
+            const formatter = formatHoverValueRef.current;
+            const formattedValue = formatter ? formatter(value) : value;
+            const hoverLabel = hoverMetaLabelRef.current;
             tooltip.innerHTML = `
               <div class="map-tooltip-title">${label}</div>
-              ${hoverMetaLabel ? `<div class="map-tooltip-meta">${hoverMetaLabel}</div>` : ""}
+              ${hoverLabel ? `<div class="map-tooltip-meta">${hoverLabel}</div>` : ""}
               <em>${formattedValue ?? "—"}</em>
               <div class="map-tooltip-meta">${quintile ? `Q${quintile}` : "No data"}</div>
             `;
@@ -208,7 +225,7 @@ export function MapCanvas({
           const props = feature.properties || {};
           const value = props.value === null || props.value === undefined ? null : Number(props.value);
           const quintile = Number(props.quintile) || 0;
-          onSelect({
+          onSelectRef.current({
             id: props.id,
             label: props.label || props.name || "Unknown",
             value,
@@ -219,7 +236,7 @@ export function MapCanvas({
         map.on("click", (event) => {
           const features = map.queryRenderedFeatures(event.point, { layers: ["choropleth-fill"] });
           if (!features.length) {
-            onSelect(null);
+            onSelectRef.current(null);
           }
         });
       }
@@ -230,7 +247,7 @@ export function MapCanvas({
     } else {
       map.once("load", loadData);
     }
-  }, [geojson, onSelect, selectedId]);
+  }, [geojson, selectedId]);
 
   useEffect(() => {
     const map = mapRef.current;

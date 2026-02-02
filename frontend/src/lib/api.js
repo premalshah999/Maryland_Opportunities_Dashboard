@@ -11,20 +11,20 @@ const buildUrl = (base, path) => {
   return `${cleanBase}${path}`;
 };
 
-export const fetchJson = async (path) => {
+export const fetchJson = async (path, init = undefined) => {
   const primaryUrl = buildUrl(API_BASE, path);
   const fallbackUrl = path;
 
   let res;
   try {
-    res = await fetch(primaryUrl);
+    res = await fetch(primaryUrl, init);
   } catch (err) {
     if (!API_BASE) throw err;
   }
 
   if (!res || !res.ok) {
     if (API_BASE && primaryUrl !== fallbackUrl) {
-      res = await fetch(fallbackUrl);
+      res = await fetch(fallbackUrl, init);
     }
   }
 
