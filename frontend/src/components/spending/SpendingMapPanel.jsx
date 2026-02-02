@@ -1,3 +1,4 @@
+import { useEffect, useRef } from "react";
 import {
   Bar,
   BarChart,
@@ -201,6 +202,13 @@ export function SpendingMapPanel({
     (_, idx) => idx * jobsTickStep
   );
 
+  const chartsPaneRef = useRef(null);
+
+  useEffect(() => {
+    if (!chartsPaneRef.current) return;
+    chartsPaneRef.current.scrollTop = 0;
+  }, [selectedId]);
+
   return (
     <>
       <MapCanvas
@@ -253,7 +261,11 @@ export function SpendingMapPanel({
             </div>
           </div>
 
-          <div className="spending-charts-pane" style={{ width: chartsOverlayWidth }}>
+          <div
+            className="spending-charts-pane"
+            style={{ width: chartsOverlayWidth }}
+            ref={chartsPaneRef}
+          >
             {detailLoading && (
               <div className="spending-overlay-loading">
                 <span>Loading agency data...</span>
