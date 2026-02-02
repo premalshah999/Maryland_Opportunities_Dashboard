@@ -104,7 +104,8 @@ def main_cli(warn_only: bool) -> int:
     issue_map = defaultdict(list)
 
     for dataset in main.DATASETS:
-        for level in sorted(main.LEVELS):
+        levels = main.DATASET_LEVELS.get(dataset, main.LEVELS)
+        for level in sorted(levels):
             summary, issues = check_dataset(dataset, level)
             key = f"{dataset}:{level}"
             line = (

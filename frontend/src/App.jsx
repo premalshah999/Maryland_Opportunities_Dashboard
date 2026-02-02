@@ -14,6 +14,9 @@ import { AtlasInsightsPanel } from "./components/atlas/AtlasInsightsPanel.jsx";
 import { FlowInsightsPanel } from "./components/flow/FlowInsightsPanel.jsx";
 import { AtlasMapPanel } from "./components/atlas/AtlasMapPanel.jsx";
 import { FlowMapPanel } from "./components/flow/FlowMapPanel.jsx";
+import { SpendingFiltersPanel } from "./components/spending/SpendingFiltersPanel.jsx";
+import { SpendingInsightsPanel } from "./components/spending/SpendingInsightsPanel.jsx";
+import { SpendingMapPanel } from "./components/spending/SpendingMapPanel.jsx";
 import { TourOverlay } from "./components/common/TourOverlay.jsx";
 
 export default function App() {
@@ -52,6 +55,18 @@ export default function App() {
   });
   const [flowData, setFlowData] = useState(null);
   const [flowStatus, setFlowStatus] = useState({ state: "ready", message: "Ready" });
+  const [spendingVariables, setSpendingVariables] = useState([]);
+  const [spendingYears, setSpendingYears] = useState([]);
+  const [spendingMetric, setSpendingMetric] = useState("");
+  const [spendingYear, setSpendingYear] = useState("");
+  const [spendingValuesData, setSpendingValuesData] = useState(null);
+  const [spendingStatus, setSpendingStatus] = useState({ state: "ready", message: "Ready" });
+  const [spendingSelectedState, setSpendingSelectedState] = useState("ALL");
+  const [spendingDetailRecords, setSpendingDetailRecords] = useState([]);
+  const [spendingDetailLoading, setSpendingDetailLoading] = useState(false);
+  const [spendingViewType, setSpendingViewType] = useState("amount");
+  const [spendingSelectedAgency, setSpendingSelectedAgency] = useState("ALL");
+  const [spendingSelectedFeature, setSpendingSelectedFeature] = useState(null);
   const [tourOpen, setTourOpen] = useState(false);
   const [tourStep, setTourStep] = useState(0);
   const [infoOpen, setInfoOpen] = useState(false);
@@ -63,13 +78,25 @@ export default function App() {
       .catch(() => setAtlasStatus({ state: "error", message: "Failed to load datasets" }));
   }, []);
 
+  const datasetLevels = useMemo(() => {
+    const selected = datasets.find((item) => item.key === dataset);
+    return selected?.levels?.length ? selected.levels : ["state", "county", "congress"];
+  }, [datasets, dataset]);
+
+  useEffect(() => {
+    if (!dataset || !datasetLevels.length) return;
+    if (!level || !datasetLevels.includes(level)) {
+      setLevel(datasetLevels[0]);
+    }
+  }, [dataset, datasetLevels, level]);
+
   useEffect(() => {
     setTourOpen(true);
     setTourStep(0);
   }, []);
 
   useEffect(() => {
-    if (viewMode === "flow") {
+    if (viewMode !== "atlas") {
       setInfoOpen(false);
     }
   }, [viewMode]);
@@ -237,6 +264,78 @@ export default function App() {
     return () => { cancelled = true; };
   }, [flowLevel, flowFilters, flowOptionsLevel, viewMode]);
 
+  useEffect(() => {
+    if (viewMode !== "spending") return;
+    setSpendingStatus({ state: "loading", message: "Loading spending dataset" });
+    fetchJson("/api/variables?dataset=spending_breakdown&level=state")
+      .then((data) => {
+        const vars = data.variables || [];
+        const yrs = data.years || [];
+        setSpendingVariables(vars);
+        setSpendingYears(yrs);
+        if (!spendingMetric && vars.length) {
+          const defaultMetric = vars.includes("Contracts") ? "Contracts" : vars[0];
+          setSpendingMetric(defaultMetric);
+        }
+        if (!spendingYear && yrs.length) {
+          setSpendingYear(yrs[yrs.length - 1]);
+        }
+        setSpendingStatus({ state: "ready", message: "Ready" });
+      })
+      .catch(() => {
+        setSpendingStatus({ state: "error", message: "Failed to load spending dataset" });
+      });
+  }, [viewMode]);
+
+  useEffect(() => {
+    if (viewMode !== "spending") return;
+    if (!spendingMetric || !spendingYear) return;
+    setSpendingStatus({ state: "loading", message: "Loading spending values" });
+    const params = new URLSearchParams({
+      dataset: "spending_breakdown",
+      level: "state",
+      variable: spendingMetric,
+      year: spendingYear
+    });
+    fetchJson(`/api/values?${params.toString()}`)
+      .then((data) => {
+        setSpendingValuesData(data);
+        setSpendingStatus({
+          state: "ready",
+          message: `Loaded ${data.stats?.count || 0} records`
+        });
+      })
+      .catch(() => {
+        setSpendingValuesData(null);
+        setSpendingStatus({ state: "error", message: "Failed to load spending values" });
+      });
+  }, [viewMode, spendingMetric, spendingYear]);
+
+  useEffect(() => {
+    if (viewMode !== "spending") return;
+    if (!spendingYear || spendingSelectedState === "ALL") {
+      setSpendingDetailRecords([]);
+      setSpendingSelectedAgency("ALL");
+      return;
+    }
+    setSpendingDetailLoading(true);
+    const params = new URLSearchParams({
+      year: spendingYear,
+      state: spendingSelectedState
+    });
+    fetchJson(`/api/spending/state-detail?${params.toString()}`)
+      .then((data) => {
+        setSpendingDetailRecords(data.records || []);
+        setSpendingSelectedAgency("ALL");
+      })
+      .catch(() => {
+        setSpendingDetailRecords([]);
+      })
+      .finally(() => {
+        setSpendingDetailLoading(false);
+      });
+  }, [viewMode, spendingSelectedState, spendingYear]);
+
   // Load geography data for atlas and flow views
   useEffect(() => {
     const targets = new Set();
@@ -251,6 +350,9 @@ export default function App() {
       } else if (flowLevel === "congress") {
         targets.add("congress");
       }
+    }
+    if (viewMode === "spending") {
+      targets.add("state");
     }
 
     targets.forEach((target) => {
@@ -316,8 +418,38 @@ export default function App() {
     };
   }, [geoCache, level, valuesData]);
 
+  const spendingEnrichedGeo = useMemo(() => {
+    const baseGeo = geoCache.state;
+    if (!baseGeo || !spendingValuesData) return null;
+    const recordMap = new Map(
+      spendingValuesData.records.map((record) => [String(record.id), record])
+    );
+    return {
+      type: "FeatureCollection",
+      features: baseGeo.features.map((feature) => {
+        const featureId = String(feature.properties?.id || "");
+        const record = recordMap.get(featureId);
+        const value = record ? record.value : null;
+        const quintile = record ? record.quintile : 0;
+        const label = record?.label || feature.properties?.name || featureId || "Unknown";
+        return {
+          ...feature,
+          properties: {
+            ...feature.properties,
+            id: featureId,
+            label,
+            value,
+            quintile
+          }
+        };
+      })
+    };
+  }, [geoCache, spendingValuesData]);
+
   const thresholds = valuesData?.thresholds || [];
+  const spendingThresholds = spendingValuesData?.thresholds || [];
   const datasetLabel = datasets.find((item) => item.key === dataset)?.label;
+  const spendingDatasetLabel = datasets.find((item) => item.key === "spending_breakdown")?.label;
   const rankMeta = useMemo(() => {
     if (!valuesData?.records) return { map: new Map(), total: 0 };
     const sorted = valuesData.records
@@ -332,10 +464,58 @@ export default function App() {
     });
     return { map, total: sorted.length };
   }, [valuesData]);
+  const spendingRankMeta = useMemo(() => {
+    if (!spendingValuesData?.records) return { map: new Map(), total: 0 };
+    const sorted = spendingValuesData.records
+      .filter((record) => record.value !== null && record.value !== undefined)
+      .sort((a, b) => b.value - a.value);
+    const map = new Map();
+    sorted.forEach((record, idx) => {
+      const percentile = sorted.length > 1
+        ? Math.round((1 - idx / (sorted.length - 1)) * 100)
+        : 100;
+      map.set(String(record.id), { rank: idx + 1, percentile });
+    });
+    return { map, total: sorted.length };
+  }, [spendingValuesData]);
+  const spendingStates = useMemo(() => {
+    if (!spendingValuesData?.records) return [];
+    const names = spendingValuesData.records
+      .map((record) => (record.label ? String(record.label).toUpperCase() : ""))
+      .filter(Boolean);
+    return Array.from(new Set(names)).sort();
+  }, [spendingValuesData]);
+
+  useEffect(() => {
+    if (!spendingValuesData?.records) return;
+    if (spendingSelectedState === "ALL") {
+      setSpendingSelectedFeature(null);
+      return;
+    }
+    const match = spendingValuesData.records.find(
+      (record) => String(record.label || "").toUpperCase() === spendingSelectedState
+    );
+    if (!match) {
+      setSpendingSelectedFeature(null);
+      return;
+    }
+    if (String(match.id) !== String(spendingSelectedFeature?.id || "")) {
+      setSpendingSelectedFeature(match);
+    }
+  }, [spendingSelectedState, spendingValuesData, spendingSelectedFeature]);
   const selectedId = selectedFeature?.id ? String(selectedFeature.id) : "";
   const selectedRank = selectedId ? rankMeta.map.get(selectedId) : null;
   const thresholdSummary = thresholds.length
     ? `Q1 ≤ ${formatNumber(thresholds[0])} · Q2 ≤ ${formatNumber(thresholds[1])} · Q3 ≤ ${formatNumber(thresholds[2])} · Q4 ≤ ${formatNumber(thresholds[3])}`
+    : "—";
+  const spendingSelectedId = spendingSelectedFeature?.id
+    ? String(spendingSelectedFeature.id)
+    : "";
+  const spendingSelectedRank = spendingSelectedId
+    ? spendingRankMeta.map.get(spendingSelectedId)
+    : null;
+  const spendingThresholdSummary = spendingThresholds.length
+    ? `Q1 ≤ ${formatNumber(spendingThresholds[0])} · Q2 ≤ ${formatNumber(spendingThresholds[1])} · Q3 ≤ ${formatNumber(spendingThresholds[2])} · Q4 ≤ ${formatNumber(spendingThresholds[3])}`
     : "—";
   const datasetMeta = dataset ? METADATA.datasets?.[dataset] : null;
   const variableMeta = dataset && variable ? METADATA.variables?.[dataset]?.[variable] : null;
@@ -424,7 +604,8 @@ export default function App() {
       internalFlowAmount: internalFlowAmount || null
     };
   }, [flowData, flowDisplay, flowFilters.yearEnd, flowFilters.yearStart]);
-  const activeStatus = viewMode === "flow" ? flowStatus : atlasStatus;
+  const activeStatus =
+    viewMode === "flow" ? flowStatus : viewMode === "spending" ? spendingStatus : atlasStatus;
   return (
     <div className={`app ${tab === "insights" ? "insights-active" : ""}`}>
       <aside className="sidebar" style={{ width: sidebarWidth }}>
@@ -449,6 +630,13 @@ export default function App() {
             onClick={() => setViewMode("flow")}
           >
             Fund Flow
+          </button>
+          <button
+            type="button"
+            className={`view-btn ${viewMode === "spending" ? "active" : ""}`}
+            onClick={() => setViewMode("spending")}
+          >
+            Spending Breakdown
           </button>
         </div>
 
@@ -550,6 +738,7 @@ export default function App() {
               onDatasetChange={(event) => setDataset(event.target.value)}
               level={level}
               onLevelChange={(event) => setLevel(event.target.value)}
+              availableLevels={datasetLevels}
               years={years}
               year={year}
               onYearChange={(event) => setYear(event.target.value)}
@@ -571,6 +760,24 @@ export default function App() {
             />
           )}
 
+          {tab === "filters" && viewMode === "spending" && (
+            <SpendingFiltersPanel
+              years={spendingYears}
+              metrics={spendingVariables.filter((item) => !item.includes("Per 1000"))}
+              perCapitaMetrics={spendingVariables.filter((item) => item.includes("Per 1000"))}
+              states={spendingStates}
+              year={spendingYear}
+              metric={spendingMetric}
+              state={spendingSelectedState}
+              viewType={spendingViewType}
+              onYearChange={setSpendingYear}
+              onMetricChange={setSpendingMetric}
+              onStateChange={setSpendingSelectedState}
+              onViewTypeChange={setSpendingViewType}
+              isLoading={spendingStatus.state === "loading"}
+            />
+          )}
+
           {tab === "insights" && viewMode === "atlas" && (
             <AtlasInsightsPanel
               dataset={dataset}
@@ -582,6 +789,17 @@ export default function App() {
 
           {tab === "insights" && viewMode === "flow" && (
             <FlowInsightsPanel flowStats={flowStats} thresholds={flowData?.thresholds} />
+          )}
+
+          {tab === "insights" && viewMode === "spending" && (
+            <SpendingInsightsPanel
+              selectedState={spendingSelectedState}
+              year={spendingYear}
+              metric={spendingMetric}
+              detailRecords={spendingDetailRecords}
+              selectedAgency={spendingSelectedAgency}
+              onAgencyChange={setSpendingSelectedAgency}
+            />
           )}
         </div>
 
@@ -597,40 +815,69 @@ export default function App() {
       </aside>
 
       <main className="main">
-        <div className="map-shell">
-          <div className="map-wrap">
-            {viewMode === "atlas" ? (
-              <AtlasMapPanel
-                enrichedGeo={enrichedGeo}
-                level={level}
-                dataset={dataset}
-                variable={variable}
-                year={year}
-                datasetLabel={datasetLabel}
-                selectedFeature={selectedFeature}
-                onSelectedFeatureChange={setSelectedFeature}
-                selectedId={selectedId}
-                selectedRank={selectedRank}
-                rankTotal={rankMeta.total}
-                thresholdSummary={thresholdSummary}
+        {viewMode === "spending" ? (
+          <div className="map-shell">
+            <div className="map-wrap">
+              <SpendingMapPanel
+                enrichedGeo={spendingEnrichedGeo}
+                metric={getVariableLabel("spending_breakdown", spendingMetric)}
+                year={spendingYear}
+                selectedFeature={spendingSelectedFeature}
+                onSelectedFeatureChange={(feature) => {
+                  setSpendingSelectedFeature(feature);
+                  if (!feature) {
+                    setSpendingSelectedState("ALL");
+                    return;
+                  }
+                  setSpendingSelectedState(String(feature.label || "").toUpperCase());
+                }}
+                selectedId={spendingSelectedId}
+                selectedRank={spendingSelectedRank}
+                rankTotal={spendingRankMeta.total}
                 sidebarWidth={sidebarWidth}
+                detailRecords={spendingDetailRecords}
+                detailLoading={spendingDetailLoading}
+                viewType={spendingViewType}
+                focusMode={spendingSelectedState !== "ALL"}
               />
-            ) : (
-              <FlowMapPanel
-                flows={flowDisplay}
-                flowLevel={flowLevel}
-                geoCache={geoCache}
-                flowFilters={flowFilters}
-                flowStatus={flowStatus}
-                flowSelected={flowSelected}
-                onFlowSelected={setFlowSelected}
-                sidebarWidth={sidebarWidth}
-                formatAmount={formatCurrencyRounded}
-                flowBucket={flowFilters.flowRange}
-              />
-            )}
+            </div>
           </div>
-        </div>
+        ) : (
+          <div className="map-shell">
+            <div className="map-wrap">
+              {viewMode === "atlas" ? (
+                <AtlasMapPanel
+                  enrichedGeo={enrichedGeo}
+                  level={level}
+                  dataset={dataset}
+                  variable={variable}
+                  year={year}
+                  datasetLabel={datasetLabel}
+                  selectedFeature={selectedFeature}
+                  onSelectedFeatureChange={setSelectedFeature}
+                  selectedId={selectedId}
+                  selectedRank={selectedRank}
+                  rankTotal={rankMeta.total}
+                  thresholdSummary={thresholdSummary}
+                  sidebarWidth={sidebarWidth}
+                />
+              ) : (
+                <FlowMapPanel
+                  flows={flowDisplay}
+                  flowLevel={flowLevel}
+                  geoCache={geoCache}
+                  flowFilters={flowFilters}
+                  flowStatus={flowStatus}
+                  flowSelected={flowSelected}
+                  onFlowSelected={setFlowSelected}
+                  sidebarWidth={sidebarWidth}
+                  formatAmount={formatCurrencyRounded}
+                  flowBucket={flowFilters.flowRange}
+                />
+              )}
+            </div>
+          </div>
+        )}
       </main>
       <TourOverlay
         tourOpen={tourOpen}

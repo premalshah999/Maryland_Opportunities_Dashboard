@@ -45,3 +45,12 @@ export const getVariableLabel = (datasetKey, variableKey) => {
   if (!variableKey) return "—";
   return VARIABLE_LABEL_OVERRIDES[datasetKey]?.[variableKey] || formatLabel(variableKey);
 };
+
+export const toTitleCase = (value) => {
+  if (!value) return "—";
+  return value
+    .toLowerCase()
+    .split(" ")
+    .map((word) => (word ? word[0].toUpperCase() + word.slice(1) : word))
+    .join(" ");
+};

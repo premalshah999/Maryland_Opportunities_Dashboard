@@ -1,3 +1,4 @@
+import { LEVEL_LABELS } from "../../constants.js";
 import { getVariableLabel } from "../../lib/formatters.js";
 
 export function AtlasFiltersPanel({
@@ -6,6 +7,7 @@ export function AtlasFiltersPanel({
   onDatasetChange,
   level,
   onLevelChange,
+  availableLevels = ["state", "county", "congress"],
   years,
   year,
   onYearChange,
@@ -37,9 +39,11 @@ export function AtlasFiltersPanel({
           <span>Level</span>
           <select className="select-input" value={level} onChange={onLevelChange}>
             <option value="">Select level</option>
-            <option value="state">State</option>
-            <option value="county">County</option>
-            <option value="congress">Congressional District</option>
+            {availableLevels.map((item) => (
+              <option key={item} value={item}>
+                {LEVEL_LABELS[item] || item}
+              </option>
+            ))}
           </select>
         </label>
       </div>

@@ -9,7 +9,9 @@ export function MapCanvas({
   selectedId,
   resizeKey,
   hoverMetaLabel,
-  formatHoverValue
+  formatHoverValue,
+  zoomToFeature,
+  focusMode = false
 }) {
   const containerRef = useRef(null);
   const tooltipRef = useRef(null);
@@ -214,6 +216,27 @@ export function MapCanvas({
     map.setFilter("choropleth-selected", ["==", ["get", "id"], selectedId || ""]);
   }, [selectedId]);
 
+  // Dim/blur non-selected states in focus mode
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !map.getLayer("choropleth-fill")) return;
+    if (focusMode && selectedId) {
+      map.setPaintProperty(
+        "choropleth-fill",
+        "fill-opacity",
+        ["case", ["==", ["get", "id"], selectedId], 0.9, 0.12]
+      );
+      if (map.getLayer("choropleth-line")) {
+        map.setPaintProperty("choropleth-line", "line-opacity", 0.25);
+      }
+    } else {
+      map.setPaintProperty("choropleth-fill", "fill-opacity", 0.82);
+      if (map.getLayer("choropleth-line")) {
+        map.setPaintProperty("choropleth-line", "line-opacity", 0.75);
+      }
+    }
+  }, [focusMode, selectedId]);
+
   useEffect(() => {
     if (mapRef.current) {
       mapRef.current.resize();
@@ -227,6 +250,53 @@ export function MapCanvas({
     fittedLevels.current[level] = true;
     map.fitBounds(US_BOUNDS, { padding: 40, duration: 800 });
   }, [geojson, level]);
+
+  // Zoom to selected feature
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !geojson) return;
+
+    if (!zoomToFeature) {
+      // Reset to US bounds when no feature selected
+      map.fitBounds(US_BOUNDS, { padding: 40, duration: 600 });
+      return;
+    }
+
+    // Find the feature matching the selected ID
+    const feature = geojson.features.find(
+      (f) => String(f.properties?.id) === String(zoomToFeature)
+    );
+    if (!feature || !feature.geometry) return;
+
+    // Calculate bounds from feature geometry
+    const coords = [];
+    const extractCoords = (geometry) => {
+      if (geometry.type === "Polygon") {
+        geometry.coordinates[0].forEach((coord) => coords.push(coord));
+      } else if (geometry.type === "MultiPolygon") {
+        geometry.coordinates.forEach((polygon) => {
+          polygon[0].forEach((coord) => coords.push(coord));
+        });
+      }
+    };
+    extractCoords(feature.geometry);
+
+    if (coords.length === 0) return;
+
+    const lngs = coords.map((c) => c[0]);
+    const lats = coords.map((c) => c[1]);
+    const bounds = [
+      [Math.min(...lngs), Math.min(...lats)],
+      [Math.max(...lngs), Math.max(...lats)]
+    ];
+
+    const padding = focusMode
+      ? { top: 80, bottom: 80, left: 60, right: 60 }
+      : { top: 60, bottom: 60, left: 60, right: 60 };
+    const offset = focusMode ? [-260, 0] : [0, 0];
+
+    map.fitBounds(bounds, { padding, offset, duration: 500, maxZoom: 5 });
+  }, [zoomToFeature, geojson, focusMode]);
 
   return (
     <div className="map-container" ref={containerRef}>

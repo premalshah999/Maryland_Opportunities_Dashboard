@@ -3,6 +3,7 @@ import logging
 import math
 import os
 import time
+from functools import lru_cache
 from threading import Lock
 from typing import Dict, List, Optional
 
@@ -26,6 +27,7 @@ ATLAS_PROCESSED_DIR = (
 )
 ATLAS_BOUNDARIES_DIR = os.path.join(ATLAS_DIR, "boundaries")
 FLOW_DATA_DIR = os.path.join(ROOT_DIR, "data")
+SPENDING_DATA_FILE = os.path.join(DATA_DIR, "spending_state_agency.xlsx")
 
 DATASETS = {
     "census": {
@@ -48,9 +50,16 @@ DATASETS = {
         "dir": "Finra",
         "prefix": "finra",
     },
+    "spending_breakdown": {
+        "label": "Federal Spending Breakdown",
+        "dir": "spending_breakdown",
+        "prefix": "spending",
+    },
 }
 
 LEVELS = {"state", "county", "congress"}
+DATASET_LEVELS = {key: set(LEVELS) for key in DATASETS}
+DATASET_LEVELS["spending_breakdown"] = {"state"}
 YEAR_COLUMN = "Year"
 CENSUS_INCOME_REPLACEMENTS = {
     "Income <$50K": "Income >$50K",
@@ -163,6 +172,33 @@ APP_START_TIME = time.time()
 limiter = Limiter(key_func=get_remote_address, default_limits=[RATE_LIMIT_DEFAULT])
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
+
+@lru_cache(maxsize=1)
+def load_spending_data() -> pd.DataFrame:
+    if not os.path.exists(SPENDING_DATA_FILE):
+        raise FileNotFoundError(SPENDING_DATA_FILE)
+    df = pd.read_excel(SPENDING_DATA_FILE)
+    df["state"] = df["state"].astype(str).str.strip().str.upper()
+    df["agency"] = df["agency"].astype(str).str.strip()
+    df["year"] = df["year"].astype(str).str.strip()
+    return df
+
+
+@lru_cache(maxsize=1)
+def spending_metric_sets() -> Dict[str, List[str]]:
+    df = load_spending_data()
+    numeric_cols = [
+        col
+        for col in df.select_dtypes(include="number").columns.tolist()
+        if col != "state_fips"
+    ]
+    per_capita = sorted([col for col in numeric_cols if "Per 1000" in col])
+    metrics = sorted([col for col in numeric_cols if col not in per_capita])
+    return {
+        "metrics": metrics,
+        "per_capita_metrics": per_capita,
+    }
 
 
 def _is_expired(timestamp: float) -> bool:
@@ -798,7 +834,11 @@ def build_records(
 def list_datasets():
     return {
         "datasets": [
-            {"key": key, "label": info["label"]}
+            {
+                "key": key,
+                "label": info["label"],
+                "levels": sorted(DATASET_LEVELS.get(key, LEVELS)),
+            }
             for key, info in DATASETS.items()
         ]
     }
@@ -821,8 +861,66 @@ def health(request: Request):
         "data_paths": {
             "atlas_processed": ATLAS_PROCESSED_DIR,
             "flow_data": FLOW_DATA_DIR,
+            "spending_data": SPENDING_DATA_FILE,
         },
         "rate_limit_default": RATE_LIMIT_DEFAULT,
+    }
+
+
+@app.get("/api/spending/metadata")
+def spending_metadata() -> dict:
+    df = load_spending_data()
+    columns = spending_metric_sets()
+    years = sorted(df["year"].unique().tolist())
+    states = sorted(df["state"].unique().tolist())
+    agencies = sorted(df["agency"].unique().tolist())
+    return {
+        "years": years,
+        "states": states,
+        "agencies": agencies,
+        **columns,
+    }
+
+
+@app.get("/api/spending/state-summary")
+def spending_state_summary(
+    year: str = Query(...),
+    metric: str = Query(...),
+) -> dict:
+    df = load_spending_data()
+    if metric not in df.columns:
+        raise HTTPException(status_code=400, detail="Unknown metric")
+    year_df = df[df["year"] == str(year)]
+    if year_df.empty:
+        raise HTTPException(status_code=404, detail="Year not found")
+    grouped = (
+        year_df.groupby(["state", "state_fips"], dropna=False)[metric]
+        .sum()
+        .reset_index()
+        .rename(columns={metric: "value"})
+        .sort_values("state")
+    )
+    return {
+        "year": str(year),
+        "metric": metric,
+        "values": grouped.to_dict(orient="records"),
+    }
+
+
+@app.get("/api/spending/state-detail")
+def spending_state_detail(
+    state: str = Query(...),
+    year: str = Query(...),
+) -> dict:
+    df = load_spending_data()
+    state_key = state.strip().upper()
+    detail = df[(df["state"] == state_key) & (df["year"] == str(year))]
+    if detail.empty:
+        raise HTTPException(status_code=404, detail="State/year not found")
+    return {
+        "state": state_key,
+        "year": str(year),
+        "records": detail.to_dict(orient="records"),
     }
 
 
@@ -834,6 +932,9 @@ def list_variables(
     if dataset not in DATASETS:
         raise HTTPException(status_code=404, detail="Unknown dataset")
     if level not in LEVELS:
+        raise HTTPException(status_code=404, detail="Unknown level")
+    allowed_levels = DATASET_LEVELS.get(dataset, LEVELS)
+    if level not in allowed_levels:
         raise HTTPException(status_code=404, detail="Unknown level")
     df = load_dataset(dataset, level)
     exclude = ID_COLUMNS[level]
@@ -862,6 +963,9 @@ def values(
     if dataset not in DATASETS:
         raise HTTPException(status_code=404, detail="Unknown dataset")
     if level not in LEVELS:
+        raise HTTPException(status_code=404, detail="Unknown level")
+    allowed_levels = DATASET_LEVELS.get(dataset, LEVELS)
+    if level not in allowed_levels:
         raise HTTPException(status_code=404, detail="Unknown level")
     df = load_dataset(dataset, level)
 

@@ -35,6 +35,22 @@ export const VARIABLE_LABEL_OVERRIDES = {
     fed_act_obl_per_1000: "Federal Contracts per 1,000 Residents",
     fed_act_obl_indirect_per_1000: "Federal Contracts (Indirect) per 1,000 Residents",
     subaward_amount_net_inflow_per_1000: "Net Sub-Contract per 1,000 Residents"
+  },
+  spending_breakdown: {
+    "Contracts": "Federal Contracts",
+    "Contracts Per 1000": "Federal Contracts per 1,000 Residents",
+    "Grants": "Federal Grants",
+    "Grants Per 1000": "Federal Grants per 1,000 Residents",
+    "Resident Wage": "Resident Wages",
+    "Resident Wage Per 1000": "Resident Wages per 1,000 Residents",
+    "Direct Payments": "Direct Payments",
+    "Direct Payments Per 1000": "Direct Payments per 1,000 Residents",
+    "Federal Residents": "Federal Residents",
+    "Federal Residents Per 1000": "Federal Residents per 1,000 Residents",
+    "Employees": "Federal Employees",
+    "Employees Per 1000": "Federal Employees per 1,000 Residents",
+    "Employees Wage": "Federal Employee Wages",
+    "Employees Wage Per 1000": "Federal Employee Wages per 1,000 Residents"
   }
 };
 

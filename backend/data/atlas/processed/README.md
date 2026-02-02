@@ -84,3 +84,17 @@ This project processes four primary datasets related to federal spending, demogr
 *   **`risk_averse`**: Indicator (0/1). 1 if respondent reports low willingness to take financial investment risk.
 *   **`too_much_debt`**: Indicator (0/1). 1 if respondent strongly agrees they currently have too much debt.
 *   **`high_fin_knowledge`**: Indicator (0/1). 1 if respondent self-assesses their overall financial knowledge as high.
+
+### E. Federal Spending Breakdown (State Agencies)
+**Source:** USAspending.gov + agency payroll aggregates
+**File Output:** `spending_state.xlsx`
+
+**Variables (Aggregated to State-Year):**
+*   **`Contracts`**: Total federal contract obligations.
+*   **`Grants`**: Total grant awards.
+*   **`Resident Wage`**: Total resident wages tied to federal activity.
+*   **`Direct Payments`**: Direct federal payments.
+*   **`Federal Residents`**: Federal resident counts.
+*   **`Employees`**: Federal employment counts.
+*   **`Employees Wage`**: Federal employee wage totals.
+*   **Per 1,000** variants for the above (columns ending in `Per 1000`).

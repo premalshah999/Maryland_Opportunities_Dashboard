@@ -10,6 +10,7 @@ Interactive data atlas to compare demographic, fiscal, contract, and financial c
   - `backend/data/atlas/processed/`: cleaned XLSX data.
   - `backend/data/atlas/boundaries/`: geojson boundaries.
   - `backend/data/reference/`: variable dictionary and source references.
+- `backend/data/spending_state_agency.xlsx`: raw state agency spending breakdown for charts.
 - `data/`: refreshed flow datasets (`state_flow.xlsx`, `county_flow.xlsx`, `congress_flow.xlsx`) with 2-digit NAICS labels for state + congress.
 
 ## Local Development
