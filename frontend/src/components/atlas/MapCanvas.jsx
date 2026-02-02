@@ -2,6 +2,38 @@ import { useEffect, useRef } from "react";
 import maplibregl from "maplibre-gl";
 import { BASE_STYLE, QUINTILE_COLORS, US_BOUNDS } from "../../constants.js";
 
+const FILL_COLOR_EXPR = [
+  "match",
+  ["to-number", ["get", "quintile"]],
+  1,
+  QUINTILE_COLORS[0],
+  2,
+  QUINTILE_COLORS[1],
+  3,
+  QUINTILE_COLORS[2],
+  4,
+  QUINTILE_COLORS[3],
+  5,
+  QUINTILE_COLORS[4],
+  "rgba(0,0,0,0)"
+];
+
+const FILL_COLOR_EXPR_FOCUS = [
+  "match",
+  ["to-number", ["get", "quintile"]],
+  1,
+  QUINTILE_COLORS[0],
+  2,
+  QUINTILE_COLORS[1],
+  3,
+  QUINTILE_COLORS[2],
+  4,
+  QUINTILE_COLORS[3],
+  5,
+  QUINTILE_COLORS[4],
+  "#f8fafc"
+];
+
 export function MapCanvas({
   geojson,
   level,
@@ -68,21 +100,7 @@ export function MapCanvas({
           type: "fill",
           source: "choropleth",
           paint: {
-            "fill-color": [
-              "match",
-              ["to-number", ["get", "quintile"]],
-              1,
-              QUINTILE_COLORS[0],
-              2,
-              QUINTILE_COLORS[1],
-              3,
-              QUINTILE_COLORS[2],
-              4,
-              QUINTILE_COLORS[3],
-              5,
-              QUINTILE_COLORS[4],
-              "rgba(0,0,0,0)"
-            ],
+            "fill-color": FILL_COLOR_EXPR,
             "fill-opacity": 0.82
           }
         });
@@ -223,18 +241,41 @@ export function MapCanvas({
     const map = mapRef.current;
     if (!map || !map.getLayer("choropleth-fill")) return;
     if (focusMode && selectedId) {
+      // Clear any stale hover state so hidden features don't keep an outline.
+      if (hoveredId.current) {
+        map.setFeatureState({ source: "choropleth", id: hoveredId.current }, { hover: false });
+        hoveredId.current = null;
+      }
+
+      map.setPaintProperty("choropleth-fill", "fill-color", FILL_COLOR_EXPR_FOCUS);
       map.setPaintProperty(
         "choropleth-fill",
         "fill-opacity",
-        ["case", ["==", ["get", "id"], selectedId], 0.9, 0.12]
+        0.92
       );
       if (map.getLayer("choropleth-line")) {
-        map.setPaintProperty("choropleth-line", "line-opacity", 0.25);
+        map.setPaintProperty("choropleth-line", "line-opacity", 0);
+      }
+      // Cut the map to just the selected feature while focused.
+      map.setFilter("choropleth-fill", ["==", ["get", "id"], selectedId]);
+      if (map.getLayer("choropleth-line")) {
+        map.setFilter("choropleth-line", ["==", ["get", "id"], selectedId]);
+      }
+      if (map.getLayer("choropleth-hover")) {
+        map.setFilter("choropleth-hover", ["==", ["get", "id"], selectedId]);
       }
     } else {
+      map.setPaintProperty("choropleth-fill", "fill-color", FILL_COLOR_EXPR);
       map.setPaintProperty("choropleth-fill", "fill-opacity", 0.82);
       if (map.getLayer("choropleth-line")) {
         map.setPaintProperty("choropleth-line", "line-opacity", 0.75);
+      }
+      map.setFilter("choropleth-fill", ["has", "id"]);
+      if (map.getLayer("choropleth-line")) {
+        map.setFilter("choropleth-line", ["has", "id"]);
+      }
+      if (map.getLayer("choropleth-hover")) {
+        map.setFilter("choropleth-hover", ["has", "id"]);
       }
     }
   }, [focusMode, selectedId]);
