@@ -69,6 +69,13 @@ export function SpendingMapPanel({
   viewType = "amount",
   focusMode = false
 }) {
+  const compactCharts = typeof window !== "undefined" && window.innerWidth < 1100;
+  const chartYAxisWidth = compactCharts ? 220 : 310;
+  const chartBarGap = compactCharts ? 18 : 24;
+  const chartBarSize = compactCharts ? 30 : 34;
+  const spendingChartHeight = compactCharts ? 420 : 560;
+  const jobsChartHeight = compactCharts ? 380 : 520;
+
   const spendingData = (detailRecords || [])
     .map((row) => {
       const contracts = Number(row["Contracts"]) || 0;
@@ -159,13 +166,13 @@ export function SpendingMapPanel({
                 </div>
                 <div className="spending-chart-axis-label">Agency</div>
                 <div className="spending-overlay-chart-body">
-                  <ResponsiveContainer width="100%" height={560}>
+                  <ResponsiveContainer width="100%" height={spendingChartHeight}>
                     <BarChart
                       data={spendingData}
                       layout="vertical"
                       margin={{ top: 10, right: 26, left: 6, bottom: 10 }}
-                      barCategoryGap={24}
-                      barSize={34}
+                      barCategoryGap={chartBarGap}
+                      barSize={chartBarSize}
                     >
                       <CartesianGrid strokeDasharray="4 6" stroke="#e5e7eb" horizontal={false} />
                       <XAxis
@@ -178,13 +185,13 @@ export function SpendingMapPanel({
                         domain={viewType === "percentage" ? [0, 100] : ["auto", "auto"]}
                         axisLine={false}
                         tickLine={false}
-                        tick={{ fill: "#111827", fontSize: 12, fontWeight: 500 }}
+                        tick={{ fill: "#111827", fontSize: compactCharts ? 11 : 12, fontWeight: 500 }}
                       />
                       <YAxis
                         dataKey="agency"
                         type="category"
-                        width={310}
-                        tick={{ fontSize: 13, fill: "#111827", fontWeight: 600 }}
+                        width={chartYAxisWidth}
+                        tick={{ fontSize: compactCharts ? 11 : 13, fill: "#111827", fontWeight: 600 }}
                         axisLine={false}
                         tickLine={false}
                         interval={0}
@@ -221,7 +228,7 @@ export function SpendingMapPanel({
                             position="center"
                             formatter={(value) => formatSegmentLabel(value, viewType)}
                             fill="#f8fafc"
-                            fontSize={13}
+                            fontSize={compactCharts ? 12 : 13}
                             fontWeight={700}
                           />
                         </Bar>
@@ -235,13 +242,13 @@ export function SpendingMapPanel({
                 <div className="spending-chart-title">Top 10 Federal Agencies by Resident Jobs</div>
                 <div className="spending-chart-axis-label">Agency</div>
                 <div className="spending-overlay-chart-body">
-                  <ResponsiveContainer width="100%" height={520}>
+                  <ResponsiveContainer width="100%" height={jobsChartHeight}>
                     <BarChart
                       data={jobsData}
                       layout="vertical"
                       margin={{ top: 10, right: 26, left: 6, bottom: 10 }}
-                      barCategoryGap={24}
-                      barSize={34}
+                      barCategoryGap={chartBarGap}
+                      barSize={chartBarSize}
                     >
                       <CartesianGrid strokeDasharray="4 6" stroke="#e5e7eb" horizontal={false} />
                       <XAxis
@@ -249,13 +256,13 @@ export function SpendingMapPanel({
                         tickFormatter={formatAxisThousands}
                         axisLine={false}
                         tickLine={false}
-                        tick={{ fill: "#111827", fontSize: 12, fontWeight: 500 }}
+                        tick={{ fill: "#111827", fontSize: compactCharts ? 11 : 12, fontWeight: 500 }}
                       />
                       <YAxis
                         dataKey="agency"
                         type="category"
-                        width={310}
-                        tick={{ fontSize: 13, fill: "#111827", fontWeight: 600 }}
+                        width={chartYAxisWidth}
+                        tick={{ fontSize: compactCharts ? 11 : 13, fill: "#111827", fontWeight: 600 }}
                         axisLine={false}
                         tickLine={false}
                         interval={0}
@@ -279,7 +286,7 @@ export function SpendingMapPanel({
                           position="center"
                           formatter={(value) => formatCountLabel(value)}
                           fill="#f8fafc"
-                          fontSize={14}
+                          fontSize={compactCharts ? 12 : 14}
                           fontWeight={700}
                         />
                       </Bar>
