@@ -45,7 +45,8 @@ export function MapCanvas({
   zoomToFeature,
   focusMode = false,
   focusBoundsPadding,
-  focusOffset
+  focusOffset,
+  focusMaxZoom
 }) {
   const containerRef = useRef(null);
   const tooltipRef = useRef(null);
@@ -365,8 +366,9 @@ export function MapCanvas({
       : { top: 60, bottom: 60, left: 60, right: 60 };
     const offset = focusMode ? (focusOffset || [0, 0]) : [0, 0];
 
-    map.fitBounds(bounds, { padding, offset, duration: 500, maxZoom: 5 });
-  }, [zoomToFeature, geojson, focusMode, focusBoundsPadding, focusOffset]);
+    const maxZoom = focusMode && typeof focusMaxZoom === "number" ? focusMaxZoom : 5;
+    map.fitBounds(bounds, { padding, offset, duration: 500, maxZoom });
+  }, [zoomToFeature, geojson, focusMode, focusBoundsPadding, focusOffset, focusMaxZoom]);
 
   return (
     <div className="map-container" ref={containerRef}>

@@ -3215,11 +3215,10 @@ body {
   flex-direction: column;
   z-index: 10;
   overflow: auto;
-  padding: 22px 28px;
-  background: rgba(255, 255, 255, 0.98);
-  border: 1px solid var(--border);
-  border-radius: 14px;
-  box-shadow: 0 18px 44px rgba(15, 23, 42, 0.12);
+  padding: 0;
+  background: transparent;
+  border: none;
+  box-shadow: none;
 }
 
 .spending-state-card {
@@ -3242,44 +3241,127 @@ body {
 .spending-charts {
   display: flex;
   flex-direction: column;
-  gap: 56px;
+  gap: 24px;
 }
 
-.spending-chart {
-  background: transparent;
-  border: none;
-  padding: 0;
+.spending-chart-card {
+  width: 100%;
+  background: #ffffff;
+  padding: 24px;
+  border-radius: 12px;
+  border: 1px solid #f1f5f9;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.08);
 }
 
-.spending-chart-title {
-  margin: 0 0 18px;
-  text-align: center;
-  font-size: 34px;
+.spending-chart-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 16px;
+  margin-bottom: 18px;
+}
+
+.spending-chart-card-title {
+  font-size: 18px;
   font-weight: 800;
-  color: #111827;
-  letter-spacing: -0.02em;
+  color: #1e293b;
+  letter-spacing: -0.01em;
 }
 
-.spending-chart-axis-label-row {
-  display: inline-flex;
+.spending-chart-card-subtitle {
+  margin-top: 6px;
+  font-size: 12px;
+  color: #64748b;
+}
+
+.spending-chart-frame {
+  position: relative;
+  width: 100%;
+}
+
+.spending-chart-y-header {
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: flex;
   align-items: center;
   gap: 8px;
-  margin: 0 auto 12px;
-  font-size: 18px;
+  font-size: 11px;
   font-weight: 700;
-  color: #111827;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  z-index: 2;
+  pointer-events: none;
 }
 
-.spending-chart-axis-icon {
-  width: 18px;
-  height: 18px;
+.spending-chart-y-icon {
+  width: 16px;
+  height: 16px;
   opacity: 0.65;
   background: center / contain no-repeat
-    url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A//www.w3.org/2000/svg%27%20width%3D%2718%27%20height%3D%2718%27%20viewBox%3D%270%200%2024%2024%27%20fill%3D%27none%27%20stroke%3D%27%23111827%27%20stroke-width%3D%272%27%20stroke-linecap%3D%27round%27%20stroke-linejoin%3D%27round%27%3E%3Cpath%20d%3D%27M4%206h16%27/%3E%3Cpath%20d%3D%27M4%2012h10%27/%3E%3Cpath%20d%3D%27M4%2018h7%27/%3E%3C/svg%3E");
+    url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A//www.w3.org/2000/svg%27%20width%3D%2716%27%20height%3D%2716%27%20viewBox%3D%270%200%2024%2024%27%20fill%3D%27none%27%20stroke%3D%27%2364748b%27%20stroke-width%3D%272%27%20stroke-linecap%3D%27round%27%20stroke-linejoin%3D%27round%27%3E%3Cpath%20d%3D%27M4%206h16%27/%3E%3Cpath%20d%3D%27M4%2012h10%27/%3E%3Cpath%20d%3D%27M4%2018h7%27/%3E%3C/svg%3E");
 }
 
-.spending-chart-body {
-  padding-bottom: 6px;
+.spending-tooltip {
+  background: #ffffff;
+  border: 1px solid #f1f5f9;
+  border-radius: 10px;
+  padding: 10px 12px;
+  box-shadow: 0 12px 24px rgba(15, 23, 42, 0.14);
+  min-width: 220px;
+}
+
+.spending-tooltip-title {
+  font-weight: 700;
+  color: #1e293b;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #f1f5f9;
+  margin-bottom: 8px;
+}
+
+.spending-tooltip-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  padding: 4px 0;
+  font-size: 12px;
+  color: #475569;
+}
+
+.spending-tooltip-key {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.spending-tooltip-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  flex-shrink: 0;
+}
+
+.spending-tooltip-value {
+  font-family: "IBM Plex Mono", monospace;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+.spending-tooltip-value--jobs {
+  color: #b34f07;
+  font-size: 14px;
+}
+
+.spending-tooltip-total {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid #f1f5f9;
+  display: flex;
+  justify-content: space-between;
+  font-weight: 800;
+  color: #1e293b;
 }
 
 /* Loading state */
@@ -3297,12 +3379,19 @@ body {
 /* Mobile adjustments */
 @media (max-width: 1100px) {
   .spending-charts-pane {
-    padding: 18px 18px;
+    padding: 0;
   }
 
-  .spending-chart-title {
-    font-size: 26px;
-    margin-bottom: 14px;
+  .spending-chart-card {
+    padding: 18px;
+  }
+
+  .spending-chart-card-title {
+    font-size: 16px;
+  }
+
+  .spending-chart-card-subtitle {
+    font-size: 11px;
   }
 }
 
@@ -3312,20 +3401,18 @@ body {
     right: 12px;
     top: 12px;
     bottom: 12px;
-    padding: 16px 16px;
+    padding: 0;
   }
 
-  .spending-chart-title {
-    font-size: 22px;
-    margin-bottom: 12px;
+  .spending-chart-card {
+    padding: 16px;
   }
 
-  .spending-chart-axis-label-row {
-    font-size: 14px;
-    margin-bottom: 10px;
+  .spending-chart-card-title {
+    font-size: 15px;
   }
 
-  .spending-chart-body {
-    padding-bottom: 0;
+  .spending-chart-y-header {
+    font-size: 10px;
   }
 }
