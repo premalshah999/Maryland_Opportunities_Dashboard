@@ -2476,13 +2476,15 @@ body {
   display: block;
   font-family: "Playfair Display", serif;
   font-size: 18px;
-  font-weight: 500;
+  font-weight: 400;
+  font-style: italic;
   color: var(--ink);
 }
 
 .spending-chart-card-subtitle {
   display: block;
   font-size: 11px;
+  font-weight: 400;
   color: var(--muted);
   margin-top: 4px;
   letter-spacing: 0.02em;
@@ -3271,7 +3273,8 @@ body {
 
 .spending-chart-card-title {
   font-size: 18px;
-  font-weight: 800;
+  font-weight: 400;
+  font-style: italic;
   color: #1e293b;
   letter-spacing: -0.01em;
   font-family: inherit;
@@ -3280,6 +3283,7 @@ body {
 .spending-chart-card-subtitle {
   margin-top: 6px;
   font-size: 12px;
+  font-weight: 400;
   color: #64748b;
   font-family: inherit;
 }
@@ -3297,7 +3301,7 @@ body {
   align-items: center;
   gap: 8px;
   font-size: 11px;
-  font-weight: 700;
+  font-weight: 500;
   color: #64748b;
   text-transform: uppercase;
   letter-spacing: 0.12em;

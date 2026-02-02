@@ -142,7 +142,7 @@ export function SpendingMapPanel({
 }) {
   const viewportWidth = typeof window !== "undefined" ? window.innerWidth : 1440;
   const compactCharts = viewportWidth < 1100;
-  const chartYAxisWidth = compactCharts ? 230 : 250;
+  const chartYAxisWidth = compactCharts ? 224 : 242;
   const spendingChartHeight = compactCharts ? 520 : 600;
   const jobsChartHeight = compactCharts ? 520 : 600;
   const mainWidth = Math.max(320, viewportWidth - sidebarWidth);
@@ -307,7 +307,7 @@ export function SpendingMapPanel({
                         data={spendingData}
                         layout="vertical"
                         margin={{ top: 30, right: 30, left: 20, bottom: 20 }}
-                        barSize={32}
+                        barSize={36}
                       >
                         <CartesianGrid horizontal={false} vertical={true} stroke="#f1f5f9" strokeDasharray="4 4" />
                         <XAxis
@@ -355,6 +355,8 @@ export function SpendingMapPanel({
                             dataKey={key}
                             stackId="a"
                             fill={SERIES[key].color}
+                            stroke="#ffffff"
+                            strokeWidth={0.8}
                             radius={[0, 0, 0, 0]}
                             animationDuration={1000}
                             isAnimationActive
@@ -386,7 +388,7 @@ export function SpendingMapPanel({
                         data={jobsData}
                         layout="vertical"
                         margin={{ top: 20, right: 50, left: 20, bottom: 20 }}
-                        barSize={32}
+                        barSize={36}
                       >
                         <CartesianGrid horizontal={false} vertical={true} stroke="#f1f5f9" strokeDasharray="4 4" />
                         <XAxis
@@ -423,7 +425,7 @@ export function SpendingMapPanel({
                             position="right"
                             fill={SERIES.jobs.color}
                             fontSize={13}
-                            fontWeight={700}
+                            fontWeight={500}
                             offset={10}
                             formatter={(value) => formatCountLabel(value)}
                           />
