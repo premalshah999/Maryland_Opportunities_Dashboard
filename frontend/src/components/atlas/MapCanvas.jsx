@@ -53,6 +53,7 @@ export function MapCanvas({
   const eventsBound = useRef(false);
   const fittedLevels = useRef({});
   const hoveredId = useRef(null);
+  const baseLayerVisibility = useRef(new Map());
 
   useEffect(() => {
     if (mapRef.current) return;
@@ -240,6 +241,26 @@ export function MapCanvas({
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !map.getLayer("choropleth-fill")) return;
+
+    const setBaseLayersHidden = (hidden) => {
+      const style = map.getStyle();
+      const layers = style?.layers || [];
+      layers.forEach((layer) => {
+        const layerId = layer.id;
+        if (!layerId) return;
+        if (layerId.startsWith("choropleth-")) return;
+        if (layer.type === "background") return;
+        if (!map.getLayer(layerId)) return;
+
+        if (!baseLayerVisibility.current.has(layerId)) {
+          const existing = map.getLayoutProperty(layerId, "visibility");
+          baseLayerVisibility.current.set(layerId, existing === "none" ? "none" : "visible");
+        }
+
+        map.setLayoutProperty(layerId, "visibility", hidden ? "none" : baseLayerVisibility.current.get(layerId));
+      });
+    };
+
     if (focusMode && selectedId) {
       // Clear any stale hover state so hidden features don't keep an outline.
       if (hoveredId.current) {
@@ -264,6 +285,9 @@ export function MapCanvas({
       if (map.getLayer("choropleth-hover")) {
         map.setFilter("choropleth-hover", ["==", ["get", "id"], selectedId]);
       }
+
+      // Hide basemap + all non-choropleth layers while focused.
+      setBaseLayersHidden(true);
     } else {
       map.setPaintProperty("choropleth-fill", "fill-color", FILL_COLOR_EXPR);
       map.setPaintProperty("choropleth-fill", "fill-opacity", 0.82);
@@ -277,6 +301,9 @@ export function MapCanvas({
       if (map.getLayer("choropleth-hover")) {
         map.setFilter("choropleth-hover", ["has", "id"]);
       }
+
+      // Restore basemap layers.
+      setBaseLayersHidden(false);
     }
   }, [focusMode, selectedId]);
 
