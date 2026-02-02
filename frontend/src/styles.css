@@ -3211,8 +3211,8 @@ body {
   top: 12px;
   right: 12px;
   bottom: 12px;
-  width: 640px;
-  max-width: 68vw;
+  width: 760px;
+  max-width: 74vw;
   display: flex;
   flex-direction: column;
   gap: 20px;
@@ -3351,8 +3351,24 @@ body {
   flex-shrink: 0;
 }
 
+.spending-chart-title {
+  padding: 18px 16px 6px;
+  text-align: center;
+  font-size: 22px;
+  font-weight: 800;
+  color: #111827;
+  letter-spacing: -0.02em;
+}
+
+.spending-chart-axis-label {
+  padding: 0 16px 10px;
+  font-size: 14px;
+  font-weight: 700;
+  color: #111827;
+}
+
 .spending-overlay-chart-body {
-  padding: 20px 16px 16px;
+  padding: 0 12px 18px;
 }
 
 /* Loading state */

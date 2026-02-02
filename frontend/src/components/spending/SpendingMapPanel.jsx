@@ -2,7 +2,6 @@ import {
   Bar,
   BarChart,
   CartesianGrid,
-  Cell,
   LabelList,
   ResponsiveContainer,
   Tooltip,
@@ -14,15 +13,15 @@ import { formatCurrency, formatNumber, toTitleCase } from "../../lib/formatters.
 
 const SPENDING_KEYS = ["Contracts", "Grants", "Resident Wage"];
 const STACK_COLORS = {
-  Contracts: "#1e293b",
-  Grants: "#64748b",
-  "Resident Wage": "#dc2626"
+  Contracts: "#1f2a44",
+  Grants: "#0b6aa8",
+  "Resident Wage": "#b45309"
 };
 
 const formatAgencyLabel = (value) => {
   if (!value) return "";
-  const max = 28;
-  return value.length > max ? `${value.slice(0, max - 2)}..` : value;
+  const max = 44;
+  return value.length > max ? `${value.slice(0, max - 3)}...` : value;
 };
 
 const isCurrencyMetric = (metric) => Boolean((metric || "").toLowerCase().match(/wage|contracts|grants|payments/));
@@ -34,8 +33,25 @@ const formatMetricValue = (value, metric) => {
 
 const formatSegmentLabel = (value, viewType) => {
   if (value === null || value === undefined) return "";
-  if (viewType !== "percentage") return "";
-  return value >= 12 ? `${Math.round(value)}%` : "";
+  if (viewType === "percentage") {
+    return value >= 12 ? `${Math.round(value)}%` : "";
+  }
+  return value >= 1e9 ? formatCurrency(value) : "";
+};
+
+const formatAxisNumber = (value) => {
+  if (value === null || value === undefined || Number.isNaN(value)) return "";
+  return Math.round(Number(value)).toLocaleString();
+};
+
+const formatAxisThousands = (value) => {
+  if (value === null || value === undefined || Number.isNaN(value)) return "";
+  return `${Math.round(Number(value) / 1000)}K`;
+};
+
+const formatCountLabel = (value) => {
+  if (value === null || value === undefined || Number.isNaN(value)) return "";
+  return Math.round(Number(value)).toLocaleString();
 };
 
 export function SpendingMapPanel({
@@ -69,7 +85,7 @@ export function SpendingMapPanel({
       };
     })
     .sort((a, b) => b.total - a.total)
-    .slice(0, 8);
+    .slice(0, 10);
 
   const jobsData = (detailRecords || [])
     .map((row) => ({
@@ -77,7 +93,7 @@ export function SpendingMapPanel({
       Employees: Number(row["Employees"]) || 0
     }))
     .sort((a, b) => b.Employees - a.Employees)
-    .slice(0, 8);
+    .slice(0, 10);
 
   return (
     <>
@@ -138,51 +154,41 @@ export function SpendingMapPanel({
           {!detailLoading && detailRecords && detailRecords.length > 0 && (
             <>
               <div className="spending-overlay-chart">
-                <div className="spending-overlay-chart-header">
-                  <span className="spending-overlay-chart-title">Top agencies by funding</span>
-                  <div className="spending-overlay-legend">
-                    {SPENDING_KEYS.map((key) => (
-                      <span key={key} className="spending-overlay-legend-item">
-                        <span
-                          className="spending-overlay-legend-dot"
-                          style={{ background: STACK_COLORS[key] }}
-                        />
-                        {key}
-                      </span>
-                    ))}
-                  </div>
+                <div className="spending-chart-title">
+                  Top 10 Federal Agencies by Spending (Contracts, Grants, and Wages)
                 </div>
+                <div className="spending-chart-axis-label">Agency</div>
                 <div className="spending-overlay-chart-body">
-                  <ResponsiveContainer width="100%" height={420}>
+                  <ResponsiveContainer width="100%" height={560}>
                     <BarChart
                       data={spendingData}
                       layout="vertical"
-                      margin={{ top: 8, right: 72, left: 8, bottom: 8 }}
-                      barCategoryGap={16}
+                      margin={{ top: 10, right: 26, left: 6, bottom: 10 }}
+                      barCategoryGap={24}
                       barSize={34}
                     >
-                      <CartesianGrid strokeDasharray="4 6" stroke="rgba(148, 163, 184, 0.2)" vertical={false} />
+                      <CartesianGrid strokeDasharray="4 6" stroke="#e5e7eb" horizontal={false} />
                       <XAxis
                         type="number"
                         tickFormatter={
                           viewType === "percentage"
                             ? (value) => `${Math.round(value)}%`
-                            : formatCurrency
+                            : formatAxisNumber
                         }
                         domain={viewType === "percentage" ? [0, 100] : ["auto", "auto"]}
                         axisLine={false}
                         tickLine={false}
-                        tick={{ fill: "#64748b", fontSize: 11 }}
+                        tick={{ fill: "#111827", fontSize: 12, fontWeight: 500 }}
                       />
                       <YAxis
                         dataKey="agency"
                         type="category"
-                        width={190}
-                        tick={{ fontSize: 11, fill: "#475569" }}
+                        width={310}
+                        tick={{ fontSize: 13, fill: "#111827", fontWeight: 600 }}
                         axisLine={false}
                         tickLine={false}
                         interval={0}
-                        tickMargin={12}
+                        tickMargin={16}
                         tickFormatter={formatAgencyLabel}
                       />
                       <Tooltip
@@ -207,29 +213,17 @@ export function SpendingMapPanel({
                           dataKey={key}
                           stackId="a"
                           fill={STACK_COLORS[key]}
-                          radius={idx === 0 ? [4, 0, 0, 4] : idx === SPENDING_KEYS.length - 1 ? [0, 4, 4, 0] : 0}
+                          radius={idx === 0 ? [3, 0, 0, 3] : idx === SPENDING_KEYS.length - 1 ? [0, 3, 3, 0] : 0}
                           isAnimationActive={false}
                         >
-                          {viewType === "percentage" && (
-                            <LabelList
-                              dataKey={key}
-                              position="center"
-                              formatter={(value) => formatSegmentLabel(value, viewType)}
-                              fill="#ffffff"
-                              fontSize={11}
-                              fontWeight={600}
-                            />
-                          )}
-                          {viewType !== "percentage" && idx === SPENDING_KEYS.length - 1 && (
-                            <LabelList
-                              dataKey="total"
-                              position="right"
-                              formatter={(value) => formatCurrency(value)}
-                              fill="#0f172a"
-                              fontSize={11}
-                              fontWeight={600}
-                            />
-                          )}
+                          <LabelList
+                            dataKey={key}
+                            position="center"
+                            formatter={(value) => formatSegmentLabel(value, viewType)}
+                            fill="#f8fafc"
+                            fontSize={13}
+                            fontWeight={700}
+                          />
                         </Bar>
                       ))}
                     </BarChart>
@@ -238,39 +232,38 @@ export function SpendingMapPanel({
               </div>
 
               <div className="spending-overlay-chart">
-                <div className="spending-overlay-chart-header">
-                  <span className="spending-overlay-chart-title">Top agencies by employees</span>
-                </div>
+                <div className="spending-chart-title">Top 10 Federal Agencies by Resident Jobs</div>
+                <div className="spending-chart-axis-label">Agency</div>
                 <div className="spending-overlay-chart-body">
-                  <ResponsiveContainer width="100%" height={360}>
+                  <ResponsiveContainer width="100%" height={520}>
                     <BarChart
                       data={jobsData}
                       layout="vertical"
-                      margin={{ top: 8, right: 72, left: 8, bottom: 8 }}
-                      barCategoryGap={16}
-                      barSize={32}
+                      margin={{ top: 10, right: 26, left: 6, bottom: 10 }}
+                      barCategoryGap={24}
+                      barSize={34}
                     >
-                      <CartesianGrid strokeDasharray="4 6" stroke="rgba(148, 163, 184, 0.2)" vertical={false} />
+                      <CartesianGrid strokeDasharray="4 6" stroke="#e5e7eb" horizontal={false} />
                       <XAxis
                         type="number"
-                        tickFormatter={formatNumber}
+                        tickFormatter={formatAxisThousands}
                         axisLine={false}
                         tickLine={false}
-                        tick={{ fill: "#64748b", fontSize: 11 }}
+                        tick={{ fill: "#111827", fontSize: 12, fontWeight: 500 }}
                       />
                       <YAxis
                         dataKey="agency"
                         type="category"
-                        width={190}
-                        tick={{ fontSize: 11, fill: "#475569" }}
+                        width={310}
+                        tick={{ fontSize: 13, fill: "#111827", fontWeight: 600 }}
                         axisLine={false}
                         tickLine={false}
                         interval={0}
-                        tickMargin={12}
+                        tickMargin={16}
                         tickFormatter={formatAgencyLabel}
                       />
                       <Tooltip
-                        formatter={(value) => [formatNumber(value), "Employees"]}
+                        formatter={(value) => [formatCountLabel(value), "Employees"]}
                         cursor={{ fill: "rgba(15, 23, 42, 0.03)" }}
                         contentStyle={{
                           background: "rgba(255,255,255,0.98)",
@@ -280,20 +273,14 @@ export function SpendingMapPanel({
                           fontSize: "12px"
                         }}
                       />
-                      <Bar dataKey="Employees" radius={[0, 5, 5, 0]} isAnimationActive={false}>
-                        {jobsData.map((entry, index) => (
-                          <Cell
-                            key={entry.agency}
-                            fill={index === 0 ? "#0f172a" : index === 1 ? "#334155" : index === 2 ? "#475569" : "#64748b"}
-                          />
-                        ))}
+                      <Bar dataKey="Employees" radius={[3, 3, 3, 3]} isAnimationActive={false} fill={STACK_COLORS["Resident Wage"]}>
                         <LabelList
                           dataKey="Employees"
-                          position="right"
-                          formatter={(value) => formatNumber(value)}
-                          fill="#0f172a"
-                          fontSize={11}
-                          fontWeight={600}
+                          position="center"
+                          formatter={(value) => formatCountLabel(value)}
+                          fill="#f8fafc"
+                          fontSize={14}
+                          fontWeight={700}
                         />
                       </Bar>
                     </BarChart>
