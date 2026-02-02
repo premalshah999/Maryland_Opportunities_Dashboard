@@ -13,14 +13,14 @@ import { formatCurrency, formatNumber, toTitleCase } from "../../lib/formatters.
 
 const SPENDING_KEYS = ["Contracts", "Grants", "Resident Wage"];
 const STACK_COLORS = {
-  Contracts: "#1f2a44",
+  Contracts: "#233047",
   Grants: "#0b6aa8",
   "Resident Wage": "#b45309"
 };
 
 const formatAgencyLabel = (value) => {
   if (!value) return "";
-  const max = 44;
+  const max = 64;
   return value.length > max ? `${value.slice(0, max - 3)}...` : value;
 };
 
@@ -31,32 +31,32 @@ const formatMetricValue = (value, metric) => {
   return isCurrencyMetric(metric) ? formatCurrency(value) : formatNumber(value);
 };
 
+const formatCurrencyChart = (value) => {
+  if (value === null || value === undefined || Number.isNaN(value)) return "";
+  const abs = Math.abs(value);
+  if (abs >= 1e12) return `$${(value / 1e12).toFixed(1)}T`;
+  if (abs >= 1e9) return `$${(value / 1e9).toFixed(1)}B`;
+  if (abs >= 1e6) return `$${(value / 1e6).toFixed(1)}M`;
+  if (abs >= 1e3) return `$${(value / 1e3).toFixed(1)}K`;
+  return `$${Math.round(value)}`;
+};
+
 const formatSegmentLabel = (value, viewType) => {
   if (value === null || value === undefined) return "";
   if (viewType === "percentage") {
     return value >= 12 ? `${Math.round(value)}%` : "";
   }
-  return value >= 1e9 ? formatCurrency(value) : "";
+  return value >= 1e9 ? formatCurrencyChart(value) : "";
 };
 
-const formatAxisMoneyCompact = (value) => {
+const formatAxisMoney = (value) => {
   if (value === null || value === undefined || Number.isNaN(value)) return "";
-  const numeric = Number(value);
-  const absValue = Math.abs(numeric);
-  if (absValue >= 1e12) return `${(numeric / 1e12).toFixed(absValue >= 1e13 ? 0 : 1)}T`;
-  if (absValue >= 1e9) return `${(numeric / 1e9).toFixed(absValue >= 1e10 ? 0 : 1)}B`;
-  if (absValue >= 1e6) return `${(numeric / 1e6).toFixed(absValue >= 1e7 ? 0 : 1)}M`;
-  if (absValue >= 1e3) return `${(numeric / 1e3).toFixed(absValue >= 1e4 ? 0 : 1)}K`;
-  return `${Math.round(numeric)}`;
+  return Math.round(Number(value)).toLocaleString();
 };
 
-const formatAxisCountCompact = (value) => {
+const formatAxisJobs = (value) => {
   if (value === null || value === undefined || Number.isNaN(value)) return "";
-  const numeric = Number(value);
-  const absValue = Math.abs(numeric);
-  if (absValue >= 1e6) return `${Math.round(numeric / 1e6)}M`;
-  if (absValue >= 1e3) return `${Math.round(numeric / 1e3)}K`;
-  return `${Math.round(numeric)}`;
+  return `${Math.round(Number(value) / 1000)}K`;
 };
 
 const formatCountLabel = (value) => {
@@ -81,15 +81,15 @@ export function SpendingMapPanel({
 }) {
   const viewportWidth = typeof window !== "undefined" ? window.innerWidth : 1440;
   const compactCharts = viewportWidth < 1100;
-  const chartYAxisWidth = compactCharts ? 200 : 270;
-  const chartBarGap = compactCharts ? 20 : 28;
-  const chartBarSize = compactCharts ? 34 : 42;
-  const spendingChartHeight = compactCharts ? 420 : 560;
-  const jobsChartHeight = compactCharts ? 420 : 520;
+  const chartYAxisWidth = compactCharts ? 260 : 420;
+  const chartBarGap = compactCharts ? 16 : 18;
+  const chartBarSize = compactCharts ? 30 : 34;
+  const spendingChartHeight = compactCharts ? 520 : 620;
+  const jobsChartHeight = compactCharts ? 480 : 560;
   const mainWidth = Math.max(320, viewportWidth - sidebarWidth);
   const chartsOverlayWidth = compactCharts
     ? Math.min(360, Math.round(mainWidth * 0.64))
-    : Math.min(720, Math.round(mainWidth * 0.56));
+    : Math.min(900, Math.round(mainWidth * 0.62));
   const focusBoundsPadding = focusMode
     ? {
       top: 70,
@@ -125,6 +125,24 @@ export function SpendingMapPanel({
     .sort((a, b) => b.Employees - a.Employees)
     .slice(0, 10);
 
+  const spendingMax = spendingData.reduce((max, row) => Math.max(max, row.total || 0), 0);
+  const spendingTickStep = 1e10;
+  const spendingTickMax = spendingMax
+    ? Math.ceil(spendingMax / spendingTickStep) * spendingTickStep
+    : spendingTickStep * 3;
+  const spendingTicks = Array.from(
+    { length: Math.max(1, Math.floor(spendingTickMax / spendingTickStep) + 1) },
+    (_, idx) => idx * spendingTickStep
+  );
+
+  const jobsMax = jobsData.reduce((max, row) => Math.max(max, row.Employees || 0), 0);
+  const jobsTickStep = 5000;
+  const jobsTickMax = jobsMax ? Math.ceil(jobsMax / jobsTickStep) * jobsTickStep : jobsTickStep * 10;
+  const jobsTicks = Array.from(
+    { length: Math.max(1, Math.floor(jobsTickMax / jobsTickStep) + 1) },
+    (_, idx) => idx * jobsTickStep
+  );
+
   return (
     <>
       <MapCanvas
@@ -147,38 +165,36 @@ export function SpendingMapPanel({
 
       {selectedFeature && (
         <>
-          <div className="spending-state-info">
-            <div className="spending-overlay-header">
-              <div className="spending-overlay-title-row">
-                <div>
-                  <span className="spending-overlay-state">
-                    {toTitleCase(selectedFeature.label)}
-                  </span>
-                  <span className="spending-overlay-meta">
-                    {metric || "Metric"}
-                    {year ? ` · ${year}` : ""}
-                  </span>
+          <div className="map-card spending-state-card">
+            <div className="map-card-header">
+              <div>
+                <div className="map-card-title">{toTitleCase(selectedFeature.label)}</div>
+                <div className="map-card-subtitle">
+                  {metric || "Metric"}
+                  {year ? ` · ${year}` : ""}
                 </div>
-                <button
-                  className="spending-overlay-close"
-                  type="button"
-                  onClick={() => onSelectedFeatureChange(null)}
-                >
-                  ×
-                </button>
               </div>
-              <div className="spending-overlay-value">
-                {formatMetricValue(selectedFeature.value, metric)}
-                {selectedRank && (
-                  <span className="spending-overlay-rank">
-                    Rank #{selectedRank.rank} of {rankTotal}
-                  </span>
-                )}
+              <button
+                className="map-card-close"
+                type="button"
+                onClick={() => onSelectedFeatureChange(null)}
+              >
+                ×
+              </button>
+            </div>
+            <div className="map-card-body">
+              <div className="map-card-row">
+                <span>Value</span>
+                <span>{formatMetricValue(selectedFeature.value, metric)}</span>
+              </div>
+              <div className="map-card-row">
+                <span>Rank</span>
+                <span>{selectedRank ? `${selectedRank.rank} of ${rankTotal}` : "—"}</span>
               </div>
             </div>
           </div>
 
-          <div className="spending-overlay-cards spending-overlay-cards--charts">
+          <div className="spending-charts-pane" style={{ width: chartsOverlayWidth }}>
             {detailLoading && (
               <div className="spending-overlay-loading">
                 <span>Loading agency data...</span>
@@ -186,142 +202,144 @@ export function SpendingMapPanel({
             )}
 
             {!detailLoading && detailRecords && detailRecords.length > 0 && (
-              <>
-              <div className="spending-overlay-chart">
-                <div className="spending-chart-title">
-                  Top 10 Federal Agencies by Spending (Contracts, Grants, and Wages)
-                </div>
-                <div className="spending-chart-axis-label">Agency</div>
-                <div className="spending-overlay-chart-body">
-                  <ResponsiveContainer width="100%" height={spendingChartHeight}>
-                    <BarChart
-                      data={spendingData}
-                      layout="vertical"
-                      margin={{ top: 10, right: 20, left: 0, bottom: 8 }}
-                      barCategoryGap={chartBarGap}
-                      barSize={chartBarSize}
-                    >
-                      <CartesianGrid strokeDasharray="4 6" stroke="#e5e7eb" horizontal={false} />
-                      <XAxis
-                        type="number"
-                        tickFormatter={
-                          viewType === "percentage"
-                            ? (value) => `${Math.round(value)}%`
-                            : formatAxisMoneyCompact
-                        }
-                        domain={viewType === "percentage" ? [0, 100] : ["auto", "auto"]}
-                        axisLine={false}
-                        tickLine={false}
-                        tick={{ fill: "#111827", fontSize: compactCharts ? 11 : 12, fontWeight: 500 }}
-                      />
-                      <YAxis
-                        dataKey="agency"
-                        type="category"
-                        width={chartYAxisWidth}
-                        tick={{ fontSize: compactCharts ? 11 : 13, fill: "#111827", fontWeight: 600 }}
-                        axisLine={false}
-                        tickLine={false}
-                        interval={0}
-                        tickMargin={18}
-                        tickFormatter={formatAgencyLabel}
-                      />
-                      <Tooltip
-                        formatter={(value, name) => [
-                          viewType === "percentage"
-                            ? `${Number(value).toFixed(1)}%`
-                            : formatCurrency(value),
-                          name
-                        ]}
-                        cursor={{ fill: "rgba(15, 23, 42, 0.03)" }}
-                        contentStyle={{
-                          background: "rgba(255,255,255,0.98)",
-                          border: "1px solid #e2e8f0",
-                          borderRadius: "8px",
-                          boxShadow: "0 4px 12px rgba(15, 23, 42, 0.08)",
-                          fontSize: "12px"
-                        }}
-                      />
-                      {SPENDING_KEYS.map((key, idx) => (
+              <div className="spending-charts">
+                <section className="spending-chart">
+                  <h2 className="spending-chart-title">
+                    Top 10 Federal Agencies by Spending (Contracts, Grants, and Wages)
+                  </h2>
+                  <div className="spending-chart-axis-label-row">
+                    <span>Agency</span>
+                    <span className="spending-chart-axis-icon" aria-hidden="true" />
+                  </div>
+                  <div className="spending-chart-body">
+                    <ResponsiveContainer width="100%" height={spendingChartHeight}>
+                      <BarChart
+                        data={spendingData}
+                        layout="vertical"
+                        margin={{ top: 8, right: 26, left: 8, bottom: 0 }}
+                        barCategoryGap={chartBarGap}
+                        barSize={chartBarSize}
+                      >
+                        <CartesianGrid stroke="#e5e7eb" horizontal={false} />
+                        <XAxis
+                          type="number"
+                          tickFormatter={
+                            viewType === "percentage"
+                              ? (value) => `${Math.round(value)}%`
+                              : formatAxisMoney
+                          }
+                          domain={viewType === "percentage" ? [0, 100] : [0, spendingTickMax]}
+                          ticks={viewType === "percentage" ? undefined : spendingTicks}
+                          axisLine={false}
+                          tickLine={false}
+                          tick={{ fill: "#111827", fontSize: 12 }}
+                        />
+                        <YAxis
+                          dataKey="agency"
+                          type="category"
+                          width={chartYAxisWidth}
+                          tick={{ fontSize: compactCharts ? 12 : 14, fill: "#111827", fontWeight: 600 }}
+                          axisLine={false}
+                          tickLine={false}
+                          interval={0}
+                          tickMargin={18}
+                          tickFormatter={formatAgencyLabel}
+                        />
+                        <Tooltip
+                          formatter={(value, name) => [
+                            viewType === "percentage"
+                              ? `${Number(value).toFixed(1)}%`
+                              : formatCurrencyChart(value),
+                            name
+                          ]}
+                          cursor={{ fill: "rgba(15, 23, 42, 0.04)" }}
+                        />
+                        {SPENDING_KEYS.map((key) => (
+                          <Bar
+                            key={key}
+                            dataKey={key}
+                            stackId="a"
+                            fill={STACK_COLORS[key]}
+                            stroke="#ffffff"
+                            strokeWidth={2}
+                            radius={0}
+                            isAnimationActive={false}
+                          >
+                            <LabelList
+                              dataKey={key}
+                              position="center"
+                              formatter={(value) => formatSegmentLabel(value, viewType)}
+                              fill="#ffffff"
+                              fontSize={compactCharts ? 12 : 18}
+                              fontWeight={700}
+                            />
+                          </Bar>
+                        ))}
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                </section>
+
+                <section className="spending-chart">
+                  <h2 className="spending-chart-title">Top 10 Federal Agencies by Resident Jobs</h2>
+                  <div className="spending-chart-axis-label-row">
+                    <span>Agency</span>
+                    <span className="spending-chart-axis-icon" aria-hidden="true" />
+                  </div>
+                  <div className="spending-chart-body">
+                    <ResponsiveContainer width="100%" height={jobsChartHeight}>
+                      <BarChart
+                        data={jobsData}
+                        layout="vertical"
+                        margin={{ top: 8, right: 26, left: 8, bottom: 0 }}
+                        barCategoryGap={chartBarGap}
+                        barSize={chartBarSize}
+                      >
+                        <CartesianGrid stroke="#e5e7eb" horizontal={false} />
+                        <XAxis
+                          type="number"
+                          tickFormatter={formatAxisJobs}
+                          ticks={jobsTicks}
+                          domain={[0, jobsTickMax]}
+                          axisLine={false}
+                          tickLine={false}
+                          tick={{ fill: "#111827", fontSize: 12 }}
+                        />
+                        <YAxis
+                          dataKey="agency"
+                          type="category"
+                          width={chartYAxisWidth}
+                          tick={{ fontSize: compactCharts ? 12 : 14, fill: "#111827", fontWeight: 600 }}
+                          axisLine={false}
+                          tickLine={false}
+                          interval={0}
+                          tickMargin={18}
+                          tickFormatter={formatAgencyLabel}
+                        />
+                        <Tooltip
+                          formatter={(value) => formatCountLabel(value)}
+                          cursor={{ fill: "rgba(15, 23, 42, 0.04)" }}
+                        />
                         <Bar
-                          key={key}
-                          dataKey={key}
-                          stackId="a"
-                          fill={STACK_COLORS[key]}
-                          radius={idx === 0 ? [3, 0, 0, 3] : idx === SPENDING_KEYS.length - 1 ? [0, 3, 3, 0] : 0}
+                          dataKey="Employees"
+                          fill={STACK_COLORS["Resident Wage"]}
+                          radius={0}
                           isAnimationActive={false}
                         >
                           <LabelList
-                            dataKey={key}
+                            dataKey="Employees"
                             position="center"
-                            formatter={(value) => formatSegmentLabel(value, viewType)}
-                            fill="#f8fafc"
-                            fontSize={compactCharts ? 12 : 13}
+                            formatter={(value) => formatCountLabel(value)}
+                            fill="#ffffff"
+                            fontSize={compactCharts ? 14 : 20}
                             fontWeight={700}
                           />
                         </Bar>
-                      ))}
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                </section>
               </div>
-
-              <div className="spending-overlay-chart">
-                <div className="spending-chart-title">Top 10 Federal Agencies by Resident Jobs</div>
-                <div className="spending-chart-axis-label">Agency</div>
-                <div className="spending-overlay-chart-body">
-                  <ResponsiveContainer width="100%" height={jobsChartHeight}>
-                    <BarChart
-                      data={jobsData}
-                      layout="vertical"
-                      margin={{ top: 10, right: 20, left: 0, bottom: 8 }}
-                      barCategoryGap={chartBarGap}
-                      barSize={chartBarSize}
-                    >
-                      <CartesianGrid strokeDasharray="4 6" stroke="#e5e7eb" horizontal={false} />
-                      <XAxis
-                        type="number"
-                        tickFormatter={formatAxisCountCompact}
-                        axisLine={false}
-                        tickLine={false}
-                        tick={{ fill: "#111827", fontSize: compactCharts ? 11 : 12, fontWeight: 500 }}
-                      />
-                      <YAxis
-                        dataKey="agency"
-                        type="category"
-                        width={chartYAxisWidth}
-                        tick={{ fontSize: compactCharts ? 11 : 13, fill: "#111827", fontWeight: 600 }}
-                        axisLine={false}
-                        tickLine={false}
-                        interval={0}
-                        tickMargin={18}
-                        tickFormatter={formatAgencyLabel}
-                      />
-                      <Tooltip
-                        formatter={(value) => [formatCountLabel(value), "Employees"]}
-                        cursor={{ fill: "rgba(15, 23, 42, 0.03)" }}
-                        contentStyle={{
-                          background: "rgba(255,255,255,0.98)",
-                          border: "1px solid #e2e8f0",
-                          borderRadius: "8px",
-                          boxShadow: "0 4px 12px rgba(15, 23, 42, 0.08)",
-                          fontSize: "12px"
-                        }}
-                      />
-                      <Bar dataKey="Employees" radius={[3, 3, 3, 3]} isAnimationActive={false} fill={STACK_COLORS["Resident Wage"]}>
-                        <LabelList
-                          dataKey="Employees"
-                          position="center"
-                          formatter={(value) => formatCountLabel(value)}
-                          fill="#f8fafc"
-                          fontSize={compactCharts ? 12 : 14}
-                          fontWeight={700}
-                        />
-                      </Bar>
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
-              </div>
-            </>
           )}
           </div>
         </>
