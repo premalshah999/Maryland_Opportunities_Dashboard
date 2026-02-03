@@ -50,16 +50,10 @@ DATASETS = {
         "dir": "Finra",
         "prefix": "finra",
     },
-    "spending_breakdown": {
-        "label": "Federal Spending Breakdown",
-        "dir": "spending_breakdown",
-        "prefix": "spending",
-    },
 }
 
 LEVELS = {"state", "county", "congress"}
 DATASET_LEVELS = {key: set(LEVELS) for key in DATASETS}
-DATASET_LEVELS["spending_breakdown"] = {"state"}
 YEAR_COLUMN = "Year"
 CENSUS_INCOME_REPLACEMENTS = {
     "Income <$50K": "Income >$50K",

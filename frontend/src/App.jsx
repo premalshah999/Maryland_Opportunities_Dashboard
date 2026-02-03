@@ -661,8 +661,7 @@ export default function App() {
       internalFlowAmount: internalFlowAmount || null
     };
   }, [flowData, flowDisplay, flowFilters.yearEnd, flowFilters.yearStart]);
-  const activeStatus =
-    viewMode === "flow" ? flowStatus : viewMode === "spending" ? spendingStatus : atlasStatus;
+  const activeStatus = viewMode === "flow" ? flowStatus : atlasStatus;
   return (
     <div className={`app ${tab === "insights" ? "insights-active" : ""}`}>
       <aside className="sidebar" style={{ width: sidebarWidth }}>
@@ -687,13 +686,6 @@ export default function App() {
             onClick={() => setViewMode("flow")}
           >
             Fund Flow
-          </button>
-          <button
-            type="button"
-            className={`view-btn ${viewMode === "spending" ? "active" : ""}`}
-            onClick={() => setViewMode("spending")}
-          >
-            Spending Breakdown
           </button>
         </div>
 
