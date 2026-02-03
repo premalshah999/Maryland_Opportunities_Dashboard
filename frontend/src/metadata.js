@@ -15,11 +15,11 @@ export const METADATA = {
       "description": "Government fiscal health, assets, liabilities, revenues, expenses, and per-capita measures."
     },
     "contract_static": {
-      "name": "Federal Spending",
+      "name": "Government Spending",
       "sourceName": "USAspending.gov",
       "sourceUrl": "https://usaspending.gov/",
-      "coverage": "Federal contract obligations and subaward flows by county, congressional district, and state (2020-2024 average and annual values where available).",
-      "description": "Direct obligations, indirect obligations, and subaward flows, including per-capita metrics."
+      "coverage": "Federal contracts, grants, resident wages, direct payments, and federal residents by county, congressional district, and state (annual values where available).",
+      "description": "Government spending activity and workforce indicators with per-1,000-resident measures."
     },
     "finra": {
       "name": "FINRA Financial Literacy",
@@ -93,16 +93,25 @@ export const METADATA = {
     },
     "contract_static": {
       "state": "State name",
-      "Federal Contracts": "Federal contract obligations (direct spending)",
-      "Federal Contracts (Indirect)": "Adjusted federal contract obligations (direct + net subaward inflow)",
-      "Sub-contract Out": "Subaward amount paid out (outflow)",
-      "Sub-Contract In": "Subaward amount received (inflow)",
-      "Net Sub-Contract": "Net subaward inflow (in minus out)",
-      "Federal Contracts per 1000 residents": "Federal contract obligations per 1,000 residents",
-      "Federal Contracts (Indirect) per 1000 residents": "Adjusted federal contract obligations per 1,000 residents",
-      "Net Sub-Contract per 1000 residents": "Net subaward inflow per 1,000 residents",
-      "Employees": "Federal government employment count",
-      "Resident": "Federal government resident employee count"
+      "state_fips": "State FIPS code",
+      "county": "County name",
+      "county_fips": "County FIPS code",
+      "cd_118": "Congressional district identifier (118th Congress)",
+      "year": "Fiscal year",
+      "Contracts": "Federal contract obligations",
+      "Contracts Per 1000": "Federal contracts per 1,000 residents",
+      "Grants": "Federal grant obligations",
+      "Grants Per 1000": "Federal grants per 1,000 residents",
+      "Resident Wage": "Wages paid to federal resident employees",
+      "Resident Wage Per 1000": "Resident wages per 1,000 residents",
+      "Direct Payments": "Federal direct payments",
+      "Direct Payments Per 1000": "Federal direct payments per 1,000 residents",
+      "Federal Residents": "Federal resident employee count",
+      "Federal Residents Per 1000": "Federal resident employees per 1,000 residents",
+      "Employees": "Federal employee count",
+      "Employees Per 1000": "Federal employees per 1,000 residents",
+      "Employees Wage": "Wages paid to federal employees",
+      "Employees Wage Per 1000": "Federal employee wages per 1,000 residents"
     },
     "finra": {
       "financial_constraint": "Financial Constraint (Normalized)",

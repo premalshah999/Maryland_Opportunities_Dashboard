@@ -36,7 +36,7 @@ DATASETS = {
         "prefix": "acs",
     },
     "contract_static": {
-        "label": "Federal Spending",
+        "label": "Government Spending",
         "dir": "contract_static",
         "prefix": "contract",
     },
@@ -73,9 +73,9 @@ CENSUS_DERIVED_VARIABLES = {
 }
 
 ID_COLUMNS = {
-    "state": {"state"},
-    "county": {"county", "state", "fips"},
-    "congress": {"cd_118"},
+    "state": {"state", "state_fips"},
+    "county": {"county", "state", "fips", "county_fips", "state_fips"},
+    "congress": {"cd_118", "state", "state_fips"},
 }
 
 STATE_META = [
@@ -293,6 +293,10 @@ def load_dataset(dataset: str, level: str) -> pd.DataFrame:
         if not os.path.exists(path):
             raise FileNotFoundError(path)
         df = pd.read_excel(path)
+        if "year" in df.columns and YEAR_COLUMN not in df.columns:
+            df = df.rename(columns={"year": YEAR_COLUMN})
+        if "county_fips" in df.columns and "fips" not in df.columns:
+            df = df.rename(columns={"county_fips": "fips"})
         if YEAR_COLUMN in df.columns:
             df[YEAR_COLUMN] = df[YEAR_COLUMN].apply(normalize_year_value)
         _DATA_CACHE[cache_key] = (df, time.time())
@@ -849,7 +853,7 @@ def build_records(
             record_id = STATE_NAME_TO_FIPS.get(name)
             label = name.title() if name else "Unknown"
         elif level == "county":
-            fips = row["fips"]
+            fips = row.get("fips", row.get("county_fips"))
             record_id = str(int(fips)).zfill(5) if not pd.isna(fips) else None
             county = str(row["county"]).strip().title() if row.get("county") else "Unknown"
             state = str(row["state"]).strip().lower() if row.get("state") else ""

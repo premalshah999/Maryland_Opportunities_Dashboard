@@ -27,14 +27,20 @@ export const US_BOUNDS = [
 
 export const VARIABLE_LABEL_OVERRIDES = {
   contract_static: {
-    fed_act_obl: "Federal Contracts",
-    fed_act_obl_indirect: "Federal Contracts (Indirect)",
-    subaward_amount_out: "Sub-Contract Out",
-    subaward_amount_in: "Sub-Contract In",
-    subaward_amount_net_inflow: "Net Sub-Contract",
-    fed_act_obl_per_1000: "Federal Contracts per 1,000 Residents",
-    fed_act_obl_indirect_per_1000: "Federal Contracts (Indirect) per 1,000 Residents",
-    subaward_amount_net_inflow_per_1000: "Net Sub-Contract per 1,000 Residents"
+    Contracts: "Contracts",
+    "Contracts Per 1000": "Contracts per 1,000 Residents",
+    Grants: "Grants",
+    "Grants Per 1000": "Grants per 1,000 Residents",
+    "Resident Wage": "Resident Wage",
+    "Resident Wage Per 1000": "Resident Wage per 1,000 Residents",
+    "Direct Payments": "Direct Payments",
+    "Direct Payments Per 1000": "Direct Payments per 1,000 Residents",
+    "Federal Residents": "Federal Residents",
+    "Federal Residents Per 1000": "Federal Residents per 1,000 Residents",
+    Employees: "Employees",
+    "Employees Per 1000": "Employees per 1,000 Residents",
+    "Employees Wage": "Employees Wage",
+    "Employees Wage Per 1000": "Employees Wage per 1,000 Residents"
   },
   spending_breakdown: {
     "Contracts": "Federal Contracts",
@@ -70,7 +76,7 @@ export const TOUR_STEPS = [
     bullets: [
       "Census (ACS): demographics, education, income, poverty",
       "Government Finances: assets, liabilities, revenue, expenses",
-      "Federal Spending: obligations and subaward flows",
+      "Government Spending: contracts, grants, wages, and residents",
       "FINRA: financial literacy and household health indices"
     ]
   },

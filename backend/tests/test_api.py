@@ -103,3 +103,35 @@ def test_spending_summary_invalid_metric():
         params={"year": "2024", "metric": "agency"},
     )
     assert response.status_code == 400
+
+
+def test_contract_static_new_schema_variables_and_values():
+    variables_response = client.get(
+        "/api/variables",
+        params={"dataset": "contract_static", "level": "state"},
+    )
+    assert variables_response.status_code == 200
+    payload = variables_response.json()
+    variables = payload["variables"]
+    years = payload["years"]
+    assert "Contracts" in variables
+    assert "Grants" in variables
+    assert "Resident Wage" in variables
+    assert "state_fips" not in variables
+    assert years
+
+    values_response = client.get(
+        "/api/values",
+        params={
+            "dataset": "contract_static",
+            "level": "county",
+            "variable": "Contracts",
+            "year": years[-1],
+        },
+    )
+    assert values_response.status_code == 200
+    values_payload = values_response.json()
+    assert values_payload["records"]
+    first = values_payload["records"][0]
+    assert first["id"] is not None
+    assert "value" in first
