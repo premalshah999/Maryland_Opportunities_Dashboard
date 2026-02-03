@@ -27,6 +27,13 @@ export const METADATA = {
       "sourceUrl": "https://www.usfinancialcapability.org/",
       "coverage": "County and congressional district (2021); state (2009, 2012, 2015, 2018, 2021).",
       "description": "Financial capability indices and survey responses."
+    },
+    "spending_breakdown": {
+      "name": "Federal Spending Breakdown",
+      "sourceName": "USAspending.gov + Federal payroll aggregates",
+      "sourceUrl": "https://www.usaspending.gov/",
+      "coverage": "State-level annual totals aggregated from agency records.",
+      "description": "Contracts, grants, wages, direct payments, and federal employment activity by state."
     }
   },
   "variables": {
@@ -112,6 +119,22 @@ export const METADATA = {
       "financial_literacy": "Financial Literacy (Normalized)",
       "satisfied": "Share Financially Satisfied",
       "risk_averse": "Share Risk Averse"
+    },
+    "spending_breakdown": {
+      "Contracts": "Total federal contract obligations",
+      "Contracts Per 1000": "Federal contracts per 1,000 residents",
+      "Grants": "Total federal grants awarded",
+      "Grants Per 1000": "Federal grants per 1,000 residents",
+      "Resident Wage": "Resident wages tied to federal activity",
+      "Resident Wage Per 1000": "Resident wages per 1,000 residents",
+      "Direct Payments": "Direct federal payments",
+      "Direct Payments Per 1000": "Direct payments per 1,000 residents",
+      "Federal Residents": "Federal resident counts",
+      "Federal Residents Per 1000": "Federal residents per 1,000 residents",
+      "Employees": "Federal employee counts",
+      "Employees Per 1000": "Federal employees per 1,000 residents",
+      "Employees Wage": "Federal employee wage totals",
+      "Employees Wage Per 1000": "Federal employee wages per 1,000 residents"
     }
   }
 };
