@@ -18,6 +18,9 @@ def test_list_datasets():
     data = response.json()
     assert "datasets" in data
     assert isinstance(data["datasets"], list)
+    keys = {item["key"] for item in data["datasets"]}
+    assert "spending_breakdown" not in keys
+    assert "contract_static" in keys
 
 
 def test_variables_invalid_level():

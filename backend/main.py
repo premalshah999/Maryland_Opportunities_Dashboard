@@ -886,14 +886,15 @@ def build_records(
 
 @app.get("/api/datasets")
 def list_datasets():
+    atlas_visible_dataset_keys = [key for key in DATASETS.keys() if key != "spending_breakdown"]
     return {
         "datasets": [
             {
                 "key": key,
-                "label": info["label"],
+                "label": DATASETS[key]["label"],
                 "levels": sorted(DATASET_LEVELS.get(key, LEVELS)),
             }
-            for key, info in DATASETS.items()
+            for key in atlas_visible_dataset_keys
         ]
     }
 
