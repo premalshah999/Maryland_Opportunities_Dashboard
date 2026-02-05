@@ -9,6 +9,7 @@ archive/
 newapp/
 /contract_static/
 /census/
+maryland-opportunity-project/
 Variable_Dictionary_Full.xlsx
 __pycache__/
 .pytest_cache/
