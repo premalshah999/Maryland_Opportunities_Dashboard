@@ -97,7 +97,7 @@ export function FlowMapPanel({
               onClick={onDownloadView}
               disabled={downloadDisabled}
             >
-              Download View
+              Download Displayed Data
             </button>
           )}
         </div>
