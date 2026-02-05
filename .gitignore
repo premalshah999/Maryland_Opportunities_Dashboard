@@ -8,6 +8,7 @@ frontend/.vite/
 archive/
 newapp/
 /contract_static/
+/census/
 Variable_Dictionary_Full.xlsx
 __pycache__/
 .pytest_cache/
