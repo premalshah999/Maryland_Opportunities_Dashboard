@@ -7,7 +7,7 @@ import {
   formatNumber,
   getVariableLabel
 } from "./lib/formatters.js";
-import { fetchJson } from "./lib/api.js";
+import { downloadFile, fetchJson } from "./lib/api.js";
 import { AtlasFiltersPanel } from "./components/atlas/AtlasFiltersPanel.jsx";
 import { FlowFiltersPanel } from "./components/flow/FlowFiltersPanel.jsx";
 import { AtlasInsightsPanel } from "./components/atlas/AtlasInsightsPanel.jsx";
@@ -74,6 +74,11 @@ export default function App() {
   const spendingMetaLoadedRef = useRef(false);
   const spendingValuesCacheRef = useRef(new Map());
   const spendingDetailCacheRef = useRef(new Map());
+
+  const buildFlowParams = () => {
+    const params = buildFlowParams();
+    return params;
+  };
 
   useEffect(() => {
     fetchJson("/api/datasets")
@@ -661,6 +666,60 @@ export default function App() {
       internalFlowAmount: internalFlowAmount || null
     };
   }, [flowData, flowDisplay, flowFilters.yearEnd, flowFilters.yearStart]);
+
+  const handleAtlasFullDownload = async () => {
+    if (!dataset || !level) return;
+    const params = new URLSearchParams({ dataset, level });
+    try {
+      await downloadFile(
+        `/api/download/atlas?${params.toString()}`,
+        `${dataset}_${level}.xlsx`
+      );
+    } catch (error) {
+      console.error("Atlas download failed", error);
+    }
+  };
+
+  const handleAtlasViewDownload = async () => {
+    if (!dataset || !level || !variable) return;
+    const params = new URLSearchParams({ dataset, level, variable });
+    if (year) {
+      params.set("year", year);
+    }
+    try {
+      await downloadFile(
+        `/api/download/atlas/view?${params.toString()}`,
+        `${dataset}_${level}_${variable}_${year || "latest"}.xlsx`
+      );
+    } catch (error) {
+      console.error("Atlas view download failed", error);
+    }
+  };
+
+  const handleFlowFullDownload = async () => {
+    if (!flowLevel) return;
+    try {
+      await downloadFile(
+        `/api/download/flow?level=${flowLevel}`,
+        `flow_${flowLevel}.xlsx`
+      );
+    } catch (error) {
+      console.error("Flow download failed", error);
+    }
+  };
+
+  const handleFlowViewDownload = async () => {
+    if (!flowLevel) return;
+    const params = buildFlowParams();
+    try {
+      await downloadFile(
+        `/api/download/flow/view?${params.toString()}`,
+        `flow_${flowLevel}_view.xlsx`
+      );
+    } catch (error) {
+      console.error("Flow view download failed", error);
+    }
+  };
   const activeStatus =
     viewMode === "flow" ? flowStatus : viewMode === "spending" ? spendingStatus : atlasStatus;
   return (
@@ -802,6 +861,8 @@ export default function App() {
               variables={variables}
               variable={variable}
               onVariableChange={(event) => setVariable(event.target.value)}
+              onDownloadDataset={handleAtlasFullDownload}
+              downloadDisabled={!dataset || !level}
               isLoading={atlasStatus.state === "loading"}
             />
           )}
@@ -813,6 +874,8 @@ export default function App() {
               flowFilters={flowFilters}
               onFlowFiltersChange={setFlowFilters}
               flowOptions={flowOptions}
+              onDownloadDataset={handleFlowFullDownload}
+              downloadDisabled={!flowLevel}
               isLoading={flowStatus.state === "loading"}
             />
           )}
@@ -917,6 +980,8 @@ export default function App() {
                   rankTotal={rankMeta.total}
                   thresholdSummary={thresholdSummary}
                   sidebarWidth={sidebarWidth}
+                  onDownloadView={handleAtlasViewDownload}
+                  downloadDisabled={!dataset || !level || !variable}
                 />
               ) : (
                 <FlowMapPanel
@@ -930,6 +995,8 @@ export default function App() {
                   sidebarWidth={sidebarWidth}
                   formatAmount={formatCurrencyRounded}
                   flowBucket={flowFilters.flowRange}
+                  onDownloadView={handleFlowViewDownload}
+                  downloadDisabled={!flowDisplay?.length}
                 />
               )}
             </div>

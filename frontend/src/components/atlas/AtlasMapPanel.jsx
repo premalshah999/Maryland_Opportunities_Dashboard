@@ -15,7 +15,9 @@ export function AtlasMapPanel({
   selectedRank,
   rankTotal,
   thresholdSummary,
-  sidebarWidth
+  sidebarWidth,
+  onDownloadView,
+  downloadDisabled
 }) {
   return (
     <>
@@ -82,7 +84,19 @@ export function AtlasMapPanel({
         </div>
       )}
       <div className="map-legend">
-        <span>Quintile Scale</span>
+        <div className="map-legend-header">
+          <span>Quintile Scale</span>
+          {onDownloadView && (
+            <button
+              className="map-legend-download"
+              type="button"
+              onClick={onDownloadView}
+              disabled={downloadDisabled}
+            >
+              Download View
+            </button>
+          )}
+        </div>
         <div className="legend-scale">
           <div className="legend-bar" />
           <div className="legend-labels">

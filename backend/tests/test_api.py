@@ -138,3 +138,27 @@ def test_contract_static_new_schema_variables_and_values():
     first = values_payload["records"][0]
     assert first["id"] is not None
     assert "value" in first
+
+
+def test_download_endpoints():
+    dataset_response = client.get("/api/download/atlas", params={"dataset": "census", "level": "state"})
+    assert dataset_response.status_code == 200
+    assert dataset_response.headers.get("content-type", "").startswith(
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    )
+
+    variables_payload = client.get("/api/variables", params={"dataset": "census", "level": "state"}).json()
+    variable = variables_payload["variables"][0]
+    year = variables_payload["years"][-1]
+
+    view_response = client.get(
+        "/api/download/atlas/view",
+        params={"dataset": "census", "level": "state", "variable": variable, "year": year},
+    )
+    assert view_response.status_code == 200
+
+    flow_response = client.get("/api/download/flow", params={"level": "state"})
+    assert flow_response.status_code == 200
+
+    flow_view_response = client.get("/api/download/flow/view", params={"level": "state", "limit": 5})
+    assert flow_view_response.status_code == 200

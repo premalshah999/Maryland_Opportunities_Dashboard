@@ -14,6 +14,8 @@ export function AtlasFiltersPanel({
   variables,
   variable,
   onVariableChange,
+  onDownloadDataset,
+  downloadDisabled,
   isLoading
 }) {
   return (
@@ -92,6 +94,18 @@ export function AtlasFiltersPanel({
             )}
           </select>
         </label>
+      </div>
+
+      <div className="section">
+        <div className="section-title">Download</div>
+        <button
+          className="download-btn"
+          type="button"
+          onClick={onDownloadDataset}
+          disabled={downloadDisabled}
+        >
+          Download Dataset
+        </button>
       </div>
 
       <div className="section">

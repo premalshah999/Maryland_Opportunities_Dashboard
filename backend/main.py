@@ -3,6 +3,7 @@ import logging
 import math
 import os
 import time
+from io import BytesIO
 from functools import lru_cache
 from threading import Lock
 from typing import Dict, List, Optional
@@ -11,7 +12,7 @@ import pandas as pd
 from fastapi import FastAPI, HTTPException, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from slowapi.util import get_remote_address
@@ -324,6 +325,18 @@ def list_years(df: pd.DataFrame) -> List[str]:
         seen.add(normalized)
         years.append(normalized)
     return years
+
+
+def filter_dataset_year(df: pd.DataFrame, year: Optional[str]) -> tuple[pd.DataFrame, Optional[str]]:
+    if YEAR_COLUMN not in df.columns:
+        return df, None
+    available_years = list_years(df)
+    selected_year = normalize_year_value(year) if year is not None else None
+    if not selected_year and available_years:
+        selected_year = available_years[-1]
+    if selected_year:
+        df = df[df[YEAR_COLUMN] == selected_year]
+    return df, selected_year
 
 
 def load_geo(level: str) -> dict:
@@ -1009,13 +1022,7 @@ def values(
         raise HTTPException(status_code=404, detail="Unknown level")
     df = load_dataset(dataset, level)
 
-    if YEAR_COLUMN in df.columns:
-        available_years = list_years(df)
-        selected_year = normalize_year_value(year) if year is not None else None
-        if not selected_year and available_years:
-            selected_year = available_years[-1]
-        if selected_year:
-            df = df[df[YEAR_COLUMN] == selected_year]
+    df, _ = filter_dataset_year(df, year)
 
     if dataset == "census" and variable in CENSUS_DERIVED_VARIABLES and variable not in df.columns:
         total_col, less_col = CENSUS_DERIVED_VARIABLES[variable]
@@ -1048,6 +1055,132 @@ def values(
         "top": top,
         "bottom": bottom,
     }
+
+
+@app.get("/api/download/atlas")
+def download_atlas_dataset(
+    dataset: str = Query(..., min_length=1, max_length=50),
+    level: str = Query(..., min_length=1, max_length=20),
+):
+    if dataset not in DATASETS or dataset == "spending_breakdown":
+        raise HTTPException(status_code=404, detail="Unknown dataset")
+    if level not in LEVELS:
+        raise HTTPException(status_code=404, detail="Unknown level")
+    allowed_levels = DATASET_LEVELS.get(dataset, LEVELS)
+    if level not in allowed_levels:
+        raise HTTPException(status_code=404, detail="Unknown level")
+    path = dataset_path(dataset, level)
+    if not os.path.exists(path):
+        raise HTTPException(status_code=404, detail="Dataset file not found")
+    filename = os.path.basename(path)
+    return FileResponse(
+        path,
+        filename=filename,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    )
+
+
+@app.get("/api/download/atlas/view")
+def download_atlas_view(
+    dataset: str = Query(..., min_length=1, max_length=50),
+    level: str = Query(..., min_length=1, max_length=20),
+    variable: str = Query(..., min_length=1, max_length=120),
+    year: Optional[str] = Query(None, max_length=32),
+):
+    if dataset not in DATASETS or dataset == "spending_breakdown":
+        raise HTTPException(status_code=404, detail="Unknown dataset")
+    if level not in LEVELS:
+        raise HTTPException(status_code=404, detail="Unknown level")
+    allowed_levels = DATASET_LEVELS.get(dataset, LEVELS)
+    if level not in allowed_levels:
+        raise HTTPException(status_code=404, detail="Unknown level")
+    df = load_dataset(dataset, level)
+    df, selected_year = filter_dataset_year(df, year)
+
+    if dataset == "census" and variable in CENSUS_DERIVED_VARIABLES and variable not in df.columns:
+        total_col, less_col = CENSUS_DERIVED_VARIABLES[variable]
+        if total_col not in df.columns or less_col not in df.columns:
+            raise HTTPException(status_code=404, detail="Unknown variable")
+        df = df.copy()
+        df[variable] = numeric_series(df[total_col]) - numeric_series(df[less_col])
+    elif variable not in df.columns:
+        raise HTTPException(status_code=404, detail="Unknown variable")
+
+    records, _ = build_records(df, level, variable, allowed_ids=boundary_ids(level))
+    export_df = pd.DataFrame(records)
+    if not export_df.empty:
+        export_df.insert(0, "dataset", dataset)
+        export_df.insert(1, "level", level)
+        export_df.insert(2, "variable", variable)
+        export_df.insert(3, "year", selected_year)
+
+    output = BytesIO()
+    with pd.ExcelWriter(output, engine="openpyxl") as writer:
+        export_df.to_excel(writer, index=False, sheet_name="map_data")
+    output.seek(0)
+    filename = f"{dataset}_{level}_{variable}_{selected_year or 'latest'}.xlsx"
+    return StreamingResponse(
+        output,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": f'attachment; filename=\"{filename}\"'},
+    )
+
+
+@app.get("/api/download/flow")
+def download_flow_dataset(
+    level: str = Query(..., min_length=1, max_length=20),
+):
+    if level not in FLOW_LEVELS:
+        raise HTTPException(status_code=404, detail="Unknown level")
+    path = os.path.join(FLOW_DATA_DIR, FLOW_FILES[level])
+    if not os.path.exists(path):
+        raise HTTPException(status_code=404, detail="Flow file not found")
+    filename = os.path.basename(path)
+    return FileResponse(
+        path,
+        filename=filename,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    )
+
+
+@app.get("/api/download/flow/view")
+def download_flow_view(
+    level: str = Query(..., min_length=1, max_length=20),
+    agency: str = Query("All", max_length=120),
+    state: str = Query("All", max_length=64),
+    direction: str = Query("All", max_length=12),
+    naics: str = Query("All", max_length=120),
+    year_start: Optional[int] = Query(None, ge=1900, le=2100),
+    year_end: Optional[int] = Query(None, ge=1900, le=2100),
+    flow_bucket: Optional[str] = Query(None, max_length=20),
+    offset: int = Query(0, ge=0, le=5000),
+    limit: int = Query(50, ge=1, le=1000),
+):
+    data = flow_data(
+        level=level,
+        agency=agency,
+        state=state,
+        direction=direction,
+        naics=naics,
+        year_start=year_start,
+        year_end=year_end,
+        flow_bucket=flow_bucket,
+        offset=offset,
+        limit=limit,
+    )
+    export_df = pd.DataFrame(data.get("flows", []))
+    if not export_df.empty:
+        export_df.insert(0, "level", level)
+    output = BytesIO()
+    with pd.ExcelWriter(output, engine="openpyxl") as writer:
+        export_df.to_excel(writer, index=False, sheet_name="map_data")
+    output.seek(0)
+    filename = f"flow_{level}_view.xlsx"
+    return StreamingResponse(
+        output,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": f'attachment; filename=\"{filename}\"'},
+    )
 
 
 @app.get("/api/geo/{level}")

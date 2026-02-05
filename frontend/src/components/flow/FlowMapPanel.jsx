@@ -12,7 +12,9 @@ export function FlowMapPanel({
   onFlowSelected,
   sidebarWidth,
   formatAmount,
-  flowBucket
+  flowBucket,
+  onDownloadView,
+  downloadDisabled
 }) {
   return (
     <>
@@ -86,6 +88,19 @@ export function FlowMapPanel({
         </div>
       )}
       <div className="map-legend flow-legend">
+        <div className="map-legend-header">
+          <span>Flow Index</span>
+          {onDownloadView && (
+            <button
+              className="map-legend-download"
+              type="button"
+              onClick={onDownloadView}
+              disabled={downloadDisabled}
+            >
+              Download View
+            </button>
+          )}
+        </div>
         <div className="flow-map-legend-content">
           <div className="flow-thickness-mini">
             <span className="flow-legend-type-label">In</span>

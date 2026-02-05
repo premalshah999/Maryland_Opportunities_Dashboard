@@ -1190,6 +1190,32 @@ body {
   box-shadow: none;
 }
 
+.map-legend-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  color: var(--ink);
+  font-weight: 600;
+}
+
+.map-legend-download {
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--ink);
+  font-size: 9px;
+  padding: 4px 6px;
+  border-radius: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  cursor: pointer;
+}
+
+.map-legend-download:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 .map-legend.flow-legend {
   min-width: 140px;
   right: auto;
@@ -2238,6 +2264,24 @@ body {
   cursor: pointer;
   font-size: 12px;
   color: var(--ink);
+}
+
+.download-btn {
+  width: 100%;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  padding: 10px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--ink);
+}
+
+.download-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
 }
 
 @media (max-width: 980px) {

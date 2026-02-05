@@ -11,8 +11,10 @@ const buildUrl = (base, path) => {
   return `${cleanBase}${path}`;
 };
 
+export const buildApiUrl = (path) => buildUrl(API_BASE, path);
+
 export const fetchJson = async (path, init = undefined) => {
-  const primaryUrl = buildUrl(API_BASE, path);
+  const primaryUrl = buildApiUrl(path);
   const fallbackUrl = path;
 
   let res;
@@ -33,4 +35,29 @@ export const fetchJson = async (path, init = undefined) => {
   }
 
   return res.json();
+};
+
+const getFilenameFromDisposition = (disposition) => {
+  if (!disposition) return null;
+  const match = /filename\\*?=(?:UTF-8''|\"?)([^\";]+)/i.exec(disposition);
+  return match ? decodeURIComponent(match[1].replace(/\"/g, "")) : null;
+};
+
+export const downloadFile = async (path, fallbackName = "dataset.xlsx") => {
+  const url = buildApiUrl(path);
+  const res = await fetch(url);
+  if (!res.ok) {
+    throw new Error(`Download failed: ${res.status}`);
+  }
+  const blob = await res.blob();
+  const disposition = res.headers.get("content-disposition");
+  const filename = getFilenameFromDisposition(disposition) || fallbackName;
+  const link = document.createElement("a");
+  const objectUrl = window.URL.createObjectURL(blob);
+  link.href = objectUrl;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  window.URL.revokeObjectURL(objectUrl);
 };

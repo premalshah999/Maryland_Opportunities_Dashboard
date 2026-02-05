@@ -6,6 +6,8 @@ export function FlowFiltersPanel({
   flowFilters,
   onFlowFiltersChange,
   flowOptions,
+  onDownloadDataset,
+  downloadDisabled,
   isLoading
 }) {
   return (
@@ -189,6 +191,18 @@ export function FlowFiltersPanel({
           </label>
         </div>
       )}
+
+      <div className="section">
+        <div className="section-title">Download</div>
+        <button
+          className="download-btn"
+          type="button"
+          onClick={onDownloadDataset}
+          disabled={downloadDisabled}
+        >
+          Download Dataset
+        </button>
+      </div>
 
       <div className="section">
         <div className="section-title">Flow Volume</div>
