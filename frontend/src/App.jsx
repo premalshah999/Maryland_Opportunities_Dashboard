@@ -74,6 +74,7 @@ export default function App() {
   const spendingMetaLoadedRef = useRef(false);
   const spendingValuesCacheRef = useRef(new Map());
   const spendingDetailCacheRef = useRef(new Map());
+  const urlStateRef = useRef(null);
 
   const buildFlowParams = () => {
     const params = buildFlowParams();
@@ -86,10 +87,46 @@ export default function App() {
       .catch(() => setAtlasStatus({ state: "error", message: "Failed to load datasets" }));
   }, []);
 
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const view = params.get("view");
+    const datasetParam = params.get("dataset");
+    const flowLevelParam = params.get("flowLevel");
+    urlStateRef.current = {
+      view,
+      dataset: datasetParam,
+      flowLevel: flowLevelParam,
+      datasetApplied: false
+    };
+    if (view === "flow") {
+      setViewMode("flow");
+    } else if (view === "spending") {
+      setViewMode("spending");
+    } else if (view === "atlas") {
+      setViewMode("atlas");
+    }
+    if (flowLevelParam && ["state", "county", "congress"].includes(flowLevelParam)) {
+      setFlowLevel(flowLevelParam);
+    }
+  }, []);
+
   const datasetLevels = useMemo(() => {
     const selected = datasets.find((item) => item.key === dataset);
     return selected?.levels?.length ? selected.levels : ["state", "county", "congress"];
   }, [datasets, dataset]);
+
+  useEffect(() => {
+    const urlState = urlStateRef.current;
+    if (!urlState || urlState.datasetApplied) return;
+    if (urlState.view && urlState.view !== "atlas") return;
+    if (!urlState.dataset) return;
+    if (!datasets.length) return;
+    if (dataset !== urlState.dataset) {
+      setDataset(urlState.dataset);
+    } else {
+      urlState.datasetApplied = true;
+    }
+  }, [datasets, dataset, viewMode]);
 
   useEffect(() => {
     if (!dataset || !datasetLevels.length) return;
@@ -773,6 +810,8 @@ export default function App() {
   };
   const activeStatus =
     viewMode === "flow" ? flowStatus : viewMode === "spending" ? spendingStatus : atlasStatus;
+  const websiteUrl =
+    import.meta.env.VITE_WEBSITE_URL || document.referrer || "/";
   return (
     <div className={`app ${tab === "insights" ? "insights-active" : ""}`}>
       <aside className="sidebar" style={{ width: sidebarWidth }}>
@@ -781,6 +820,9 @@ export default function App() {
             Maryland Opportunity<span className="sidebar-title-dot">.</span>
           </div>
           <div className="sidebar-subtitle">Analytics Platform</div>
+          <a className="sidebar-link" href={websiteUrl} target="_top" rel="noreferrer">
+            Go back to the website
+          </a>
         </div>
 
         <div className="view-toggle">

@@ -80,8 +80,8 @@ body {
 }
 
 .sidebar-header {
-  height: 80px;
-  padding: 0 24px;
+  min-height: 92px;
+  padding: 12px 24px;
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -107,6 +107,19 @@ body {
   text-transform: uppercase;
   letter-spacing: 0.2em;
   color: var(--muted-2);
+}
+
+.sidebar-link {
+  margin-top: 8px;
+  font-size: 11px;
+  color: var(--muted);
+  text-decoration: none;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.sidebar-link:hover {
+  color: var(--ink);
 }
 
 .view-toggle {
