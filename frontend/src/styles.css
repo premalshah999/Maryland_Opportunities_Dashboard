@@ -122,33 +122,6 @@ body {
   color: var(--ink);
 }
 
-.view-toggle {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 8px;
-  padding: 12px 20px;
-  border-bottom: 1px solid var(--border);
-  background: var(--surface);
-}
-
-.view-btn {
-  border: 1px solid var(--border);
-  background: #ffffff;
-  color: var(--muted);
-  padding: 8px 10px;
-  font-size: 11px;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  cursor: pointer;
-  transition: border 0.2s ease, color 0.2s ease, background 0.2s ease;
-}
-
-.view-btn.active {
-  border-color: rgba(239, 68, 68, 0.6);
-  color: var(--ink);
-  background: #fef2f2;
-}
-
 .tab-nav {
   display: flex;
   padding: 0 44px 0 12px;
@@ -429,6 +402,17 @@ body {
   background-position: calc(100% - 18px) calc(1em + 1px), calc(100% - 12px) calc(1em + 1px), calc(100% - 36px) 0.45em;
   background-size: 6px 6px, 6px 6px, 1px 1.6em;
   background-repeat: no-repeat;
+}
+
+.control .static-input {
+  width: 100%;
+  padding: 12px;
+  border-radius: 0;
+  border: 1px solid var(--border);
+  background: #f0f2ef;
+  font-size: 12px;
+  font-family: "Inter", system-ui, sans-serif;
+  color: var(--muted-2);
 }
 
 .control .select-input:hover {
@@ -3486,4 +3470,19 @@ body {
   .spending-chart-y-header {
     font-size: 10px;
   }
+}
+
+@keyframes fadeInSoft {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fadeIn {
+  animation: fadeInSoft 0.6s ease both;
 }

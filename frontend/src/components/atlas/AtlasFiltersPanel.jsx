@@ -5,6 +5,8 @@ export function AtlasFiltersPanel({
   datasets,
   dataset,
   onDatasetChange,
+  hideDatasetSelect = false,
+  datasetLabel = "",
   level,
   onLevelChange,
   availableLevels = ["state", "county", "congress"],
@@ -22,17 +24,26 @@ export function AtlasFiltersPanel({
     <div className={`panel ${isLoading ? "panel-loading" : ""}`}>
       <div className="section">
         <div className="section-title">Dataset</div>
-        <label className="control">
-          <span>Domain</span>
-          <select className="select-input" value={dataset} onChange={onDatasetChange}>
-            <option value="">Select dataset</option>
-            {datasets.map((item) => (
-              <option key={item.key} value={item.key}>
-                {item.label}
-              </option>
-            ))}
-          </select>
-        </label>
+        {hideDatasetSelect ? (
+          <div className="control">
+            <span>Domain</span>
+            <div className="static-input" aria-label="Dataset">
+              {datasetLabel || "—"}
+            </div>
+          </div>
+        ) : (
+          <label className="control">
+            <span>Domain</span>
+            <select className="select-input" value={dataset} onChange={onDatasetChange}>
+              <option value="">Select dataset</option>
+              {datasets.map((item) => (
+                <option key={item.key} value={item.key}>
+                  {item.label}
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
       </div>
 
       <div className="section">
