@@ -667,6 +667,35 @@ export default function App() {
     };
   }, [flowData, flowDisplay, flowFilters.yearEnd, flowFilters.yearStart]);
 
+  const downloadCsv = (rows, filename) => {
+    if (!rows?.length) return;
+    const headers = Object.keys(rows[0]);
+    const escapeValue = (value) => {
+      if (value === null || value === undefined) return "";
+      const raw = String(value);
+      if (raw.includes("\"")) {
+        return `"${raw.replace(/\"/g, "\"\"")}"`;
+      }
+      if (raw.includes(",") || raw.includes("\n")) {
+        return `"${raw}"`;
+      }
+      return raw;
+    };
+    const lines = [
+      headers.join(","),
+      ...rows.map((row) => headers.map((key) => escapeValue(row[key])).join(","))
+    ];
+    const blob = new Blob([lines.join("\n")], { type: "text/csv;charset=utf-8;" });
+    const link = document.createElement("a");
+    const objectUrl = window.URL.createObjectURL(blob);
+    link.href = objectUrl;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.URL.revokeObjectURL(objectUrl);
+  };
+
   const handleAtlasFullDownload = async () => {
     if (!dataset || !level) return;
     const params = new URLSearchParams({ dataset, level });
@@ -682,6 +711,20 @@ export default function App() {
 
   const handleAtlasViewDownload = async () => {
     if (!dataset || !level || !variable) return;
+    if (valuesData?.records?.length) {
+      const exportRows = valuesData.records.map((row) => ({
+        dataset,
+        level,
+        variable,
+        year: year || "latest",
+        ...row
+      }));
+      downloadCsv(
+        exportRows,
+        `atlas_${dataset}_${level}_${variable}_${year || "latest"}.csv`
+      );
+      return;
+    }
     const params = new URLSearchParams({ dataset, level, variable });
     if (year) {
       params.set("year", year);
@@ -710,6 +753,14 @@ export default function App() {
 
   const handleFlowViewDownload = async () => {
     if (!flowLevel) return;
+    if (flowDisplay?.length) {
+      const exportRows = flowDisplay.map((row) => ({
+        level: flowLevel,
+        ...row
+      }));
+      downloadCsv(exportRows, `flow_${flowLevel}_view.csv`);
+      return;
+    }
     const params = buildFlowParams();
     try {
       await downloadFile(
