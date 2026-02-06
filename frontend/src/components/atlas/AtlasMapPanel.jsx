@@ -19,6 +19,11 @@ export function AtlasMapPanel({
   onDownloadView,
   downloadDisabled
 }) {
+  const hasAnyValue = Boolean(
+    enrichedGeo?.features?.some(
+      (feature) => feature?.properties?.value !== null && feature?.properties?.value !== undefined
+    )
+  );
   return (
     <>
       <MapCanvas
@@ -33,6 +38,11 @@ export function AtlasMapPanel({
       {!enrichedGeo && (
         <div className="map-placeholder">
           <p>Select a dataset, level, and variable to begin.</p>
+        </div>
+      )}
+      {enrichedGeo && !hasAnyValue && (
+        <div className="map-placeholder">
+          <p>No data is available for this selection.</p>
         </div>
       )}
       {selectedFeature && (

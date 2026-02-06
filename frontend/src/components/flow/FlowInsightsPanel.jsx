@@ -1,6 +1,7 @@
 import { formatCurrencyRounded, formatNumber } from "../../lib/formatters.js";
 
 export function FlowInsightsPanel({ flowStats, thresholds }) {
+  const hasData = Boolean(flowStats && (flowStats.totalFlows ?? 0) > 0);
   const thresholdLabels = thresholds && thresholds.length >= 4
     ? [
         `≤ ${formatCurrencyRounded(thresholds[0])}`,
@@ -10,6 +11,21 @@ export function FlowInsightsPanel({ flowStats, thresholds }) {
         `> ${formatCurrencyRounded(thresholds[3])}`
       ]
     : ["≤ $1M", "$1M – $10M", "$10M – $100M", "$100M – $1B", "> $1B"];
+
+  if (!hasData) {
+    return (
+      <div className="panel">
+        <div className="insight-card">
+          <div className="insight-title">No Flow Data Loaded</div>
+          <p className="help-text">
+            Choose parameters in the sidebar filters to load fund flow data, then return here for
+            summary insights.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="panel">
       <div className="insight-card">

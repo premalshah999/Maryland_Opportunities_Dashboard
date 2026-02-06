@@ -23,7 +23,9 @@ export function SpendingInsightsPanel({
       <div className="panel">
         <div className="insight-card">
           <div className="insight-title">Getting Started</div>
-          <p className="spending-help-text">Select a metric from the filters above to view spending insights and statistics.</p>
+          <p className="help-text">
+            Select a metric from the filters above to view spending insights and statistics.
+          </p>
         </div>
       </div>
     );
@@ -54,7 +56,7 @@ export function SpendingInsightsPanel({
       <div className="insight-card">
         <div className="insight-title">Summary Statistics</div>
         {!filtered.length ? (
-          <p className="spending-help-text">Select a state to view statistics.</p>
+          <p className="help-text">Select a state to view statistics.</p>
         ) : (
           <>
             <div className="stat-row">

@@ -705,7 +705,9 @@ export default function DashboardApp() {
   }, [spendingSelectedState, spendingValuesData, spendingSelectedFeature]);
   const selectedId = selectedFeature?.id ? String(selectedFeature.id) : "";
   const selectedRank = selectedId ? rankMeta.map.get(selectedId) : null;
-  const thresholdSummary = thresholds.length
+  const atlasRecordCount = valuesData?.stats?.count ?? 0;
+  const atlasHasData = atlasRecordCount > 0;
+  const thresholdSummary = atlasHasData && thresholds.length
     ? `Q1 ≤ ${formatNumber(thresholds[0])} · Q2 ≤ ${formatNumber(thresholds[1])} · Q3 ≤ ${formatNumber(thresholds[2])} · Q4 ≤ ${formatNumber(thresholds[3])}`
     : "—";
   const spendingSelectedId = spendingSelectedFeature?.id
@@ -714,7 +716,9 @@ export default function DashboardApp() {
   const spendingSelectedRank = spendingSelectedId
     ? spendingRankMeta.map.get(spendingSelectedId)
     : null;
-  const spendingThresholdSummary = spendingThresholds.length
+  const spendingRecordCount = spendingValuesData?.stats?.count ?? 0;
+  const spendingHasData = spendingRecordCount > 0;
+  const spendingThresholdSummary = spendingHasData && spendingThresholds.length
     ? `Q1 ≤ ${formatNumber(spendingThresholds[0])} · Q2 ≤ ${formatNumber(spendingThresholds[1])} · Q3 ≤ ${formatNumber(spendingThresholds[2])} · Q4 ≤ ${formatNumber(spendingThresholds[3])}`
     : "—";
   const datasetMeta = dataset ? METADATA.datasets?.[dataset] : null;
@@ -788,20 +792,20 @@ export default function DashboardApp() {
     }
 
     return {
-      totalAmount: totalAmount || null,
-      totalFlows: totalFlows || null,
-      displayedFlows: displayFlows.length || null,
-      displayedAmount: displayedAmount || null,
+      totalAmount,
+      totalFlows,
+      displayedFlows: displayFlows.length,
+      displayedAmount,
       averageFlow,
-      locationsInvolved: uniqueLocations || null,
+      locationsInvolved: uniqueLocations,
       period,
       topAgencies,
       topOrigins,
       topDestinations,
       largestFlow,
       // Internal flows (same origin/dest - not visualizable as lines)
-      internalFlowCount: internalFlowCount || null,
-      internalFlowAmount: internalFlowAmount || null
+      internalFlowCount,
+      internalFlowAmount
     };
   }, [flowData, flowDisplay, flowFilters.yearEnd, flowFilters.yearStart]);
 
