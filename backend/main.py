@@ -3,13 +3,16 @@ import logging
 import math
 import os
 import time
+import hashlib
+from collections import OrderedDict
 from io import BytesIO
 from functools import lru_cache
 from threading import Lock
 from typing import Dict, List, Optional
 
 import pandas as pd
-from fastapi import FastAPI, HTTPException, Query, Request
+from fastapi import FastAPI, HTTPException, Query, Request, Response
+from fastapi.encoders import jsonable_encoder
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
@@ -157,26 +160,33 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-_DATA_CACHE: Dict[str, tuple[pd.DataFrame, float]] = {}
-_GEO_CACHE: Dict[str, tuple[dict, float]] = {}
+_DATA_CACHE: Dict[str, tuple[pd.DataFrame, float, float]] = {}
+_GEO_CACHE: Dict[str, tuple[dict, float, float]] = {}
 _GEO_CACHE_ORDER: List[str] = []
-_FLOW_CACHE: Dict[str, tuple[pd.DataFrame, float]] = {}
+_FLOW_CACHE: Dict[str, tuple[pd.DataFrame, float, float]] = {}
 _FLOW_CACHE_ORDER: List[str] = []
-_BOUNDARY_ID_CACHE: Dict[str, tuple[set, float]] = {}
+_BOUNDARY_ID_CACHE: Dict[str, tuple[set, float, float]] = {}
 _STATE_CENTROID_CACHE: Optional[Dict[str, tuple[float, float]]] = None
 GEO_CACHE_LIMIT = int(os.getenv("GEO_CACHE_LIMIT", "2"))
 CACHE_TTL_SECONDS = int(os.getenv("CACHE_TTL_SECONDS", "3600"))
+VALUES_CACHE_LIMIT = int(os.getenv("VALUES_CACHE_LIMIT", "256"))
+FLOW_RESULT_CACHE_LIMIT = int(os.getenv("FLOW_RESULT_CACHE_LIMIT", "128"))
+SHORT_CACHE_SECONDS = int(os.getenv("SHORT_CACHE_SECONDS", "300"))
+LONG_CACHE_SECONDS = int(os.getenv("LONG_CACHE_SECONDS", "3600"))
+FLOW_CACHE_SECONDS = int(os.getenv("FLOW_CACHE_SECONDS", "120"))
 RATE_LIMIT_DEFAULT = os.getenv("RATE_LIMIT_DEFAULT", "120/minute")
 _RATE_LIMIT_LOCK = Lock()
 APP_START_TIME = time.time()
+_VALUES_CACHE: OrderedDict[str, tuple[dict, float]] = OrderedDict()
+_FLOW_RESULT_CACHE: OrderedDict[str, tuple[dict, float]] = OrderedDict()
 
 limiter = Limiter(key_func=get_remote_address, default_limits=[RATE_LIMIT_DEFAULT])
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 
-@lru_cache(maxsize=1)
-def load_spending_data() -> pd.DataFrame:
+@lru_cache(maxsize=2)
+def _load_spending_data_cached(signature: str) -> pd.DataFrame:
     if not os.path.exists(SPENDING_DATA_FILE):
         raise FileNotFoundError(SPENDING_DATA_FILE)
     df = pd.read_excel(SPENDING_DATA_FILE)
@@ -190,9 +200,13 @@ def load_spending_data() -> pd.DataFrame:
     return df
 
 
-@lru_cache(maxsize=1)
-def spending_metric_sets() -> Dict[str, List[str]]:
-    df = load_spending_data()
+def load_spending_data() -> pd.DataFrame:
+    return _load_spending_data_cached(_spending_signature())
+
+
+@lru_cache(maxsize=2)
+def _spending_metric_sets_cached(signature: str) -> Dict[str, List[str]]:
+    df = _load_spending_data_cached(signature)
     numeric_cols = [
         col
         for col in df.select_dtypes(include="number").columns.tolist()
@@ -206,10 +220,14 @@ def spending_metric_sets() -> Dict[str, List[str]]:
     }
 
 
-@lru_cache(maxsize=1)
-def spending_metadata_payload() -> Dict[str, List[str]]:
-    df = load_spending_data()
-    columns = spending_metric_sets()
+def spending_metric_sets() -> Dict[str, List[str]]:
+    return _spending_metric_sets_cached(_spending_signature())
+
+
+@lru_cache(maxsize=2)
+def _spending_metadata_payload_cached(signature: str) -> Dict[str, List[str]]:
+    df = _load_spending_data_cached(signature)
+    columns = _spending_metric_sets_cached(signature)
     years = sorted(df["year"].dropna().astype(str).unique().tolist())
     states = sorted(df["state"].dropna().astype(str).unique().tolist())
     agencies = sorted(df["agency"].dropna().astype(str).unique().tolist())
@@ -221,8 +239,12 @@ def spending_metadata_payload() -> Dict[str, List[str]]:
     }
 
 
+def spending_metadata_payload() -> Dict[str, List[str]]:
+    return _spending_metadata_payload_cached(_spending_signature())
+
+
 @lru_cache(maxsize=512)
-def spending_state_summary_records(year: str, metric: str) -> List[dict]:
+def spending_state_summary_records(year: str, metric: str, signature: str) -> List[dict]:
     year_value = str(year).strip()
     df = load_spending_data()
     year_df = df[df["year"] == year_value]
@@ -239,7 +261,7 @@ def spending_state_summary_records(year: str, metric: str) -> List[dict]:
 
 
 @lru_cache(maxsize=2048)
-def spending_state_detail_records(state: str, year: str) -> List[dict]:
+def spending_state_detail_records(state: str, year: str, signature: str) -> List[dict]:
     state_key = state.strip().upper()
     year_value = str(year).strip()
     df = load_spending_data()
@@ -255,9 +277,91 @@ def _is_expired(timestamp: float) -> bool:
     return (time.time() - timestamp) > CACHE_TTL_SECONDS
 
 
+def _file_signature(path: str) -> str:
+    try:
+        stat = os.stat(path)
+    except FileNotFoundError:
+        return "missing"
+    return f"{int(stat.st_mtime)}-{stat.st_size}"
+
+
+def _dataset_signature(dataset: str, level: str) -> str:
+    return _file_signature(dataset_path(dataset, level))
+
+
+def _flow_signature(level: str) -> str:
+    return _file_signature(os.path.join(FLOW_DATA_DIR, FLOW_FILES[level]))
+
+
+def _geo_signature(level: str) -> str:
+    filename = {
+        "state": "states.geojson",
+        "county": "counties.geojson",
+        "congress": "congress.geojson",
+    }[level]
+    return _file_signature(os.path.join(ATLAS_BOUNDARIES_DIR, filename))
+
+
+def _spending_signature() -> str:
+    return _file_signature(SPENDING_DATA_FILE)
+
+
+def _build_etag(*parts: object) -> str:
+    raw = "|".join("" if p is None else str(p) for p in parts)
+    return hashlib.sha256(raw.encode("utf-8")).hexdigest()
+
+
+def _cache_get(cache: OrderedDict, key: str):
+    entry = cache.get(key)
+    if not entry:
+        return None
+    payload, timestamp = entry
+    if _is_expired(timestamp):
+        cache.pop(key, None)
+        return None
+    cache.move_to_end(key)
+    return payload
+
+
+def _cache_set(cache: OrderedDict, key: str, payload: dict, limit: int):
+    cache[key] = (payload, time.time())
+    cache.move_to_end(key)
+    while len(cache) > limit:
+        cache.popitem(last=False)
+
+
+def _cache_headers(etag: str, max_age: int) -> Dict[str, str]:
+    return {
+        "Cache-Control": f"public, max-age={max_age}",
+        "ETag": etag,
+        "Vary": "Accept-Encoding",
+    }
+
+
+def _sanitize_payload(value):
+    if isinstance(value, float):
+        if not math.isfinite(value):
+            return None
+        return value
+    if isinstance(value, list):
+        return [_sanitize_payload(item) for item in value]
+    if isinstance(value, dict):
+        return {key: _sanitize_payload(item) for key, item in value.items()}
+    return value
+
+
+def _cached_json_response(request: Request, payload: dict, etag: str, max_age: int):
+    headers = _cache_headers(etag, max_age)
+    if request.headers.get("if-none-match") == etag:
+        return Response(status_code=304, headers=headers)
+    safe_payload = _sanitize_payload(jsonable_encoder(payload))
+    return JSONResponse(content=safe_payload, headers=headers)
+
+
 @app.middleware("http")
 async def log_and_rate_limit(request: Request, call_next):
     start = time.time()
+    response = None
     try:
         response = await call_next(request)
     except Exception:
@@ -265,7 +369,8 @@ async def log_and_rate_limit(request: Request, call_next):
         raise
     finally:
         duration_ms = int((time.time() - start) * 1000)
-        logger.info("request path=%s status=%s duration_ms=%s", request.url.path, getattr(response, "status_code", "500"), duration_ms)
+        status_code = response.status_code if response is not None else 500
+        logger.info("request path=%s status=%s duration_ms=%s", request.url.path, status_code, duration_ms)
 
     return response
 
@@ -284,13 +389,14 @@ def dataset_path(dataset: str, level: str) -> str:
 
 def load_dataset(dataset: str, level: str) -> pd.DataFrame:
     cache_key = f"{dataset}:{level}"
+    path = dataset_path(dataset, level)
+    signature = _file_signature(path)
     entry = _DATA_CACHE.get(cache_key)
-    if entry is not None and not _is_expired(entry[1]):
+    if entry is not None and entry[2] == signature and not _is_expired(entry[1]):
         return entry[0]
-    if entry is not None and _is_expired(entry[1]):
+    if entry is not None and (_is_expired(entry[1]) or entry[2] != signature):
         _DATA_CACHE.pop(cache_key, None)
     if cache_key not in _DATA_CACHE:
-        path = dataset_path(dataset, level)
         if not os.path.exists(path):
             raise FileNotFoundError(path)
         df = pd.read_excel(path)
@@ -300,7 +406,7 @@ def load_dataset(dataset: str, level: str) -> pd.DataFrame:
             df = df.rename(columns={"county_fips": "fips"})
         if YEAR_COLUMN in df.columns:
             df[YEAR_COLUMN] = df[YEAR_COLUMN].apply(normalize_year_value)
-        _DATA_CACHE[cache_key] = (df, time.time())
+        _DATA_CACHE[cache_key] = (df, time.time(), signature)
     return _DATA_CACHE[cache_key][0]
 
 
@@ -341,7 +447,8 @@ def filter_dataset_year(df: pd.DataFrame, year: Optional[str]) -> tuple[pd.DataF
 
 def load_geo(level: str) -> dict:
     entry = _GEO_CACHE.get(level)
-    if entry is not None and _is_expired(entry[1]):
+    signature = _geo_signature(level)
+    if entry is not None and (_is_expired(entry[1]) or entry[2] != signature):
         _GEO_CACHE.pop(level, None)
         if level in _GEO_CACHE_ORDER:
             _GEO_CACHE_ORDER.remove(level)
@@ -364,7 +471,7 @@ def load_geo(level: str) -> dict:
         if not os.path.exists(path):
             raise FileNotFoundError(path)
         with open(path, "r", encoding="utf-8") as f:
-            _GEO_CACHE[level] = (json.load(f), time.time())
+            _GEO_CACHE[level] = (json.load(f), time.time(), signature)
         _GEO_CACHE_ORDER.append(level)
     else:
         if level in _GEO_CACHE_ORDER:
@@ -375,7 +482,8 @@ def load_geo(level: str) -> dict:
 
 def boundary_ids(level: str) -> set:
     entry = _BOUNDARY_ID_CACHE.get(level)
-    if entry is not None and not _is_expired(entry[1]):
+    signature = _geo_signature(level)
+    if entry is not None and entry[2] == signature and not _is_expired(entry[1]):
         return entry[0]
     geo = load_geo(level)
     ids = set()
@@ -395,7 +503,7 @@ def boundary_ids(level: str) -> set:
                 continue
         else:
             ids.add(str(raw_id).strip().upper())
-    _BOUNDARY_ID_CACHE[level] = (ids, time.time())
+    _BOUNDARY_ID_CACHE[level] = (ids, time.time(), signature)
     return ids
 
 
@@ -643,7 +751,8 @@ def load_flow(level: str) -> pd.DataFrame:
     if level not in FLOW_LEVELS:
         raise KeyError(level)
     entry = _FLOW_CACHE.get(level)
-    if entry is not None and _is_expired(entry[1]):
+    signature = _flow_signature(level)
+    if entry is not None and (_is_expired(entry[1]) or entry[2] != signature):
         _FLOW_CACHE.pop(level, None)
         if level in _FLOW_CACHE_ORDER:
             _FLOW_CACHE_ORDER.remove(level)
@@ -705,7 +814,7 @@ def load_flow(level: str) -> pd.DataFrame:
             "internal_flow_amount": internal_flow_amount,
         }
 
-        _FLOW_CACHE[level] = (normalized, time.time())
+        _FLOW_CACHE[level] = (normalized, time.time(), signature)
         _FLOW_CACHE_ORDER.append(level)
     else:
         if level in _FLOW_CACHE_ORDER:
@@ -898,9 +1007,9 @@ def build_records(
 
 
 @app.get("/api/datasets")
-def list_datasets():
+def list_datasets(request: Request):
     atlas_visible_dataset_keys = [key for key in DATASETS.keys() if key != "spending_breakdown"]
-    return {
+    payload = {
         "datasets": [
             {
                 "key": key,
@@ -910,6 +1019,8 @@ def list_datasets():
             for key in atlas_visible_dataset_keys
         ]
     }
+    etag = _build_etag("datasets", ",".join(atlas_visible_dataset_keys))
+    return _cached_json_response(request, payload, etag, LONG_CACHE_SECONDS)
 
 
 @app.get("/api/health")
@@ -936,12 +1047,15 @@ def health(request: Request):
 
 
 @app.get("/api/spending/metadata")
-def spending_metadata() -> dict:
-    return spending_metadata_payload()
+def spending_metadata(request: Request) -> dict:
+    payload = spending_metadata_payload()
+    etag = _build_etag("spending-metadata", _spending_signature())
+    return _cached_json_response(request, payload, etag, LONG_CACHE_SECONDS)
 
 
 @app.get("/api/spending/state-summary")
 def spending_state_summary(
+    request: Request,
     year: str = Query(...),
     metric: str = Query(...),
 ) -> dict:
@@ -950,35 +1064,41 @@ def spending_state_summary(
     if metric not in allowed_metrics:
         raise HTTPException(status_code=400, detail="Unknown metric")
     year_value = str(year).strip()
-    grouped = spending_state_summary_records(year_value, metric)
+    grouped = spending_state_summary_records(year_value, metric, _spending_signature())
     if not grouped:
         raise HTTPException(status_code=404, detail="Year not found")
-    return {
+    payload = {
         "year": year_value,
         "metric": metric,
         "values": grouped,
     }
+    etag = _build_etag("spending-summary", year_value, metric, _spending_signature())
+    return _cached_json_response(request, payload, etag, SHORT_CACHE_SECONDS)
 
 
 @app.get("/api/spending/state-detail")
 def spending_state_detail(
+    request: Request,
     state: str = Query(...),
     year: str = Query(...),
 ) -> dict:
     state_key = state.strip().upper()
     year_value = str(year).strip()
-    detail = spending_state_detail_records(state_key, year_value)
+    detail = spending_state_detail_records(state_key, year_value, _spending_signature())
     if not detail:
         raise HTTPException(status_code=404, detail="State/year not found")
-    return {
+    payload = {
         "state": state_key,
         "year": year_value,
         "records": detail,
     }
+    etag = _build_etag("spending-detail", state_key, year_value, _spending_signature())
+    return _cached_json_response(request, payload, etag, SHORT_CACHE_SECONDS)
 
 
 @app.get("/api/variables")
 def list_variables(
+    request: Request,
     dataset: str = Query(..., min_length=1, max_length=50),
     level: str = Query(..., min_length=1, max_length=20),
 ):
@@ -1003,26 +1123,25 @@ def list_variables(
             adjusted.append(col)
         columns = adjusted
     years = list_years(df)
-    return {"variables": columns, "years": years}
+    payload = {"variables": columns, "years": years}
+    etag = _build_etag("variables", dataset, level, _dataset_signature(dataset, level))
+    return _cached_json_response(request, payload, etag, LONG_CACHE_SECONDS)
 
 
-@app.get("/api/values")
-def values(
-    dataset: str = Query(..., min_length=1, max_length=50),
-    level: str = Query(..., min_length=1, max_length=20),
-    variable: str = Query(..., min_length=1, max_length=120),
-    year: Optional[str] = Query(None, max_length=32),
-):
-    if dataset not in DATASETS:
-        raise HTTPException(status_code=404, detail="Unknown dataset")
-    if level not in LEVELS:
-        raise HTTPException(status_code=404, detail="Unknown level")
-    allowed_levels = DATASET_LEVELS.get(dataset, LEVELS)
-    if level not in allowed_levels:
-        raise HTTPException(status_code=404, detail="Unknown level")
+def build_values_payload(
+    dataset: str,
+    level: str,
+    variable: str,
+    year: Optional[str],
+) -> dict:
+    signature = _dataset_signature(dataset, level)
+    cache_key = f"values:{dataset}:{level}:{variable}:{year}:{signature}"
+    cached = _cache_get(_VALUES_CACHE, cache_key)
+    if cached is not None:
+        return cached
     df = load_dataset(dataset, level)
 
-    df, _ = filter_dataset_year(df, year)
+    df, selected_year = filter_dataset_year(df, year)
 
     if dataset == "census" and variable in CENSUS_DERIVED_VARIABLES and variable not in df.columns:
         total_col, less_col = CENSUS_DERIVED_VARIABLES[variable]
@@ -1048,13 +1167,36 @@ def values(
         for r in sorted_records[-10:][::-1]
     ]
 
-    return {
+    payload = {
         "records": records,
         "thresholds": thresholds,
         "stats": stats,
         "top": top,
         "bottom": bottom,
+        "year": selected_year,
     }
+    _cache_set(_VALUES_CACHE, cache_key, payload, VALUES_CACHE_LIMIT)
+    return payload
+
+
+@app.get("/api/values")
+def values(
+    request: Request,
+    dataset: str = Query(..., min_length=1, max_length=50),
+    level: str = Query(..., min_length=1, max_length=20),
+    variable: str = Query(..., min_length=1, max_length=120),
+    year: Optional[str] = Query(None, max_length=32),
+):
+    if dataset not in DATASETS:
+        raise HTTPException(status_code=404, detail="Unknown dataset")
+    if level not in LEVELS:
+        raise HTTPException(status_code=404, detail="Unknown level")
+    allowed_levels = DATASET_LEVELS.get(dataset, LEVELS)
+    if level not in allowed_levels:
+        raise HTTPException(status_code=404, detail="Unknown level")
+    payload = build_values_payload(dataset, level, variable, year)
+    etag = _build_etag("values", dataset, level, variable, year, _dataset_signature(dataset, level))
+    return _cached_json_response(request, payload, etag, SHORT_CACHE_SECONDS)
 
 
 @app.get("/api/download/atlas")
@@ -1073,10 +1215,15 @@ def download_atlas_dataset(
     if not os.path.exists(path):
         raise HTTPException(status_code=404, detail="Dataset file not found")
     filename = os.path.basename(path)
+    headers = _cache_headers(
+        _build_etag("atlas-download", dataset, level, _dataset_signature(dataset, level)),
+        LONG_CACHE_SECONDS,
+    )
     return FileResponse(
         path,
         filename=filename,
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers=headers,
     )
 
 
@@ -1094,19 +1241,9 @@ def download_atlas_view(
     allowed_levels = DATASET_LEVELS.get(dataset, LEVELS)
     if level not in allowed_levels:
         raise HTTPException(status_code=404, detail="Unknown level")
-    df = load_dataset(dataset, level)
-    df, selected_year = filter_dataset_year(df, year)
-
-    if dataset == "census" and variable in CENSUS_DERIVED_VARIABLES and variable not in df.columns:
-        total_col, less_col = CENSUS_DERIVED_VARIABLES[variable]
-        if total_col not in df.columns or less_col not in df.columns:
-            raise HTTPException(status_code=404, detail="Unknown variable")
-        df = df.copy()
-        df[variable] = numeric_series(df[total_col]) - numeric_series(df[less_col])
-    elif variable not in df.columns:
-        raise HTTPException(status_code=404, detail="Unknown variable")
-
-    records, _ = build_records(df, level, variable, allowed_ids=boundary_ids(level))
+    payload = build_values_payload(dataset, level, variable, year)
+    records = payload.get("records", [])
+    selected_year = payload.get("year") or (year or "latest")
     export_df = pd.DataFrame(records)
     if not export_df.empty:
         export_df.insert(0, "dataset", dataset)
@@ -1119,10 +1256,15 @@ def download_atlas_view(
         export_df.to_excel(writer, index=False, sheet_name="map_data")
     output.seek(0)
     filename = f"{dataset}_{level}_{variable}_{selected_year or 'latest'}.xlsx"
+    headers = _cache_headers(
+        _build_etag("atlas-view", dataset, level, variable, year, _dataset_signature(dataset, level)),
+        SHORT_CACHE_SECONDS,
+    )
+    headers["Content-Disposition"] = f'attachment; filename=\"{filename}\"'
     return StreamingResponse(
         output,
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        headers={"Content-Disposition": f'attachment; filename=\"{filename}\"'},
+        headers=headers,
     )
 
 
@@ -1136,10 +1278,12 @@ def download_flow_dataset(
     if not os.path.exists(path):
         raise HTTPException(status_code=404, detail="Flow file not found")
     filename = os.path.basename(path)
+    headers = _cache_headers(_build_etag("flow-download", level, _flow_signature(level)), LONG_CACHE_SECONDS)
     return FileResponse(
         path,
         filename=filename,
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers=headers,
     )
 
 
@@ -1156,7 +1300,7 @@ def download_flow_view(
     offset: int = Query(0, ge=0, le=5000),
     limit: int = Query(50, ge=1, le=1000),
 ):
-    data = flow_data(
+    data = build_flow_payload(
         level=level,
         agency=agency,
         state=state,
@@ -1176,18 +1320,38 @@ def download_flow_view(
         export_df.to_excel(writer, index=False, sheet_name="map_data")
     output.seek(0)
     filename = f"flow_{level}_view.xlsx"
+    headers = _cache_headers(
+        _build_etag(
+            "flow-view",
+            level,
+            agency,
+            state,
+            direction,
+            naics,
+            year_start,
+            year_end,
+            flow_bucket,
+            offset,
+            limit,
+            _flow_signature(level),
+        ),
+        SHORT_CACHE_SECONDS,
+    )
+    headers["Content-Disposition"] = f'attachment; filename=\"{filename}\"'
     return StreamingResponse(
         output,
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        headers={"Content-Disposition": f'attachment; filename=\"{filename}\"'},
+        headers=headers,
     )
 
 
 @app.get("/api/geo/{level}")
-def geo(level: str):
+def geo(request: Request, level: str):
     if level not in LEVELS:
         raise HTTPException(status_code=404, detail="Unknown level")
-    return load_geo(level)
+    payload = load_geo(level)
+    etag = _build_etag("geo", level, _geo_signature(level))
+    return _cached_json_response(request, payload, etag, LONG_CACHE_SECONDS)
 
 
 def _apply_flow_filters(
@@ -1235,6 +1399,7 @@ def _apply_flow_filters(
 
 @app.get("/api/flow/options")
 def flow_options(
+    request: Request,
     level: str = Query(..., min_length=1, max_length=20),
     agency: str = Query("All", max_length=120),
     state: str = Query("All", max_length=64),
@@ -1253,29 +1418,36 @@ def flow_options(
     years: List[int] = []
     if level != "state":
         years = sorted({int(y) for y in df["year"].dropna().tolist()})
-    return {
+    payload = {
         "agencies": agencies,
         "states": states,
         "industries": industries,
         "years": years,
     }
+    etag = _build_etag("flow-options", level, _flow_signature(level))
+    return _cached_json_response(request, payload, etag, SHORT_CACHE_SECONDS)
 
 
-@app.get("/api/flow")
-def flow_data(
-    level: str = Query(..., min_length=1, max_length=20),
-    agency: str = Query("All", max_length=120),
-    state: str = Query("All", max_length=64),
-    direction: str = Query("All", max_length=12),
-    naics: str = Query("All", max_length=120),
-    year_start: Optional[int] = Query(None, ge=1900, le=2100),
-    year_end: Optional[int] = Query(None, ge=1900, le=2100),
-    flow_bucket: Optional[str] = Query(None, max_length=20),
-    offset: int = Query(0, ge=0, le=5000),
-    limit: int = Query(50, ge=1, le=1000),
-):
-    if level not in FLOW_LEVELS:
-        raise HTTPException(status_code=404, detail="Unknown level")
+def build_flow_payload(
+    level: str,
+    agency: str,
+    state: str,
+    direction: str,
+    naics: str,
+    year_start: Optional[int],
+    year_end: Optional[int],
+    flow_bucket: Optional[str],
+    offset: int,
+    limit: int,
+) -> dict:
+    signature = _flow_signature(level)
+    cache_key = (
+        f"flow:{level}:{agency}:{state}:{direction}:{naics}:{year_start}:{year_end}:"
+        f"{flow_bucket}:{offset}:{limit}:{signature}"
+    )
+    cached = _cache_get(_FLOW_RESULT_CACHE, cache_key)
+    if cached is not None:
+        return cached
     df = load_flow(level)
     filtered = _apply_flow_filters(
         df,
@@ -1360,19 +1532,64 @@ def flow_data(
             "width": width,
         })
 
-    # Get data quality stats for transparency
     data_quality = get_flow_data_quality_stats(level)
 
-    return {
+    payload = {
         "flows": flows,
         "stats": {
             "total_amount": total_amount,
             "total_flows": total_flows,
             "unique_locations": int(unique_locations),
             "max_amount": max_amount,
-            # Include internal flow info for transparency
             "internal_flow_count": data_quality.get("internal_flow_count", 0),
             "internal_flow_amount": data_quality.get("internal_flow_amount", 0.0),
         },
         "thresholds": flow_thresholds,
     }
+    _cache_set(_FLOW_RESULT_CACHE, cache_key, payload, FLOW_RESULT_CACHE_LIMIT)
+    return payload
+
+
+@app.get("/api/flow")
+def flow_data(
+    request: Request,
+    level: str = Query(..., min_length=1, max_length=20),
+    agency: str = Query("All", max_length=120),
+    state: str = Query("All", max_length=64),
+    direction: str = Query("All", max_length=12),
+    naics: str = Query("All", max_length=120),
+    year_start: Optional[int] = Query(None, ge=1900, le=2100),
+    year_end: Optional[int] = Query(None, ge=1900, le=2100),
+    flow_bucket: Optional[str] = Query(None, max_length=20),
+    offset: int = Query(0, ge=0, le=5000),
+    limit: int = Query(50, ge=1, le=1000),
+):
+    if level not in FLOW_LEVELS:
+        raise HTTPException(status_code=404, detail="Unknown level")
+    payload = build_flow_payload(
+        level=level,
+        agency=agency,
+        state=state,
+        direction=direction,
+        naics=naics,
+        year_start=year_start,
+        year_end=year_end,
+        flow_bucket=flow_bucket,
+        offset=offset,
+        limit=limit,
+    )
+    etag = _build_etag(
+        "flow",
+        level,
+        agency,
+        state,
+        direction,
+        naics,
+        year_start,
+        year_end,
+        flow_bucket,
+        offset,
+        limit,
+        _flow_signature(level),
+    )
+    return _cached_json_response(request, payload, etag, FLOW_CACHE_SECONDS)
