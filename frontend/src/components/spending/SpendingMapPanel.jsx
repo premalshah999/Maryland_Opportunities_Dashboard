@@ -372,7 +372,7 @@ export function SpendingMapPanel({
                 <div className="spending-chart-card">
                   <div className="spending-chart-card-header">
                     <div>
-                      <div className="spending-chart-card-title">Top 10 Federal Agencies by Resident Jobs</div>
+                      <div className="spending-chart-card-title">Top 10 Federal Agencies by Federal Employee Jobs</div>
                       <div className="spending-chart-card-subtitle">Full-time resident employees by agency</div>
                     </div>
                   </div>

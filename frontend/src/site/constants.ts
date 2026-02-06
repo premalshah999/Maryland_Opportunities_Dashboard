@@ -48,17 +48,7 @@ export const NAV_ITEMS: NavItem[] = [
         label: 'Maryland Business Climate Survey 2025',
         path: '/projects/business-survey',
         description: 'Maryland businesses report rising costs and relocation concerns'
-      },
-      {
-        label: 'The Effects of EWA Programs',
-        path: '/projects/ewa',
-        description: 'Impact of EWA products on financial stability'
-      },
-      {
-        label: 'Interactive Dashboard',
-        path: '/dashboard/fund-flow',
-        description: 'Tracking Federal Contracts and Subcontracts'
-      },
+      }
     ]
   },
   {
@@ -115,24 +105,7 @@ export const RESEARCH_PAPERS: ResearchPaper[] = [
     category: 'Business Research',
     dataLink: '/projects/business-survey'
   },
-  {
-    id: 'ewa-consumers',
-    title: 'The Effects of Earned Wage Access Programs on Maryland Consumers',
-    abstract: 'Explore the impact of EWA products on financial stability and consumer behavior across Maryland neighborhoods.',
-    date: 'March 2025',
-    authors: [],
-    category: 'Financial Inclusion',
-    dataLink: '/projects/ewa'
-  },
-  {
-    id: 'fed-dashboard',
-    title: 'Interactive Dashboard: Tracking Federal Contracts and Subcontracts',
-    abstract: 'Analyze the flow of federal contracts through primary and subcontracting linkages across the state.',
-    date: 'January 2025',
-    authors: [],
-    category: 'Data Tool',
-    dataLink: '/dashboard/fund-flow'
-  }
+  
 ];
 
 export const TEAM_MEMBERS: TeamMember[] = [

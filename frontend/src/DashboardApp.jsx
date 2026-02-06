@@ -18,7 +18,6 @@ import { FlowMapPanel } from "./components/flow/FlowMapPanel.jsx";
 import { SpendingFiltersPanel } from "./components/spending/SpendingFiltersPanel.jsx";
 import { SpendingInsightsPanel } from "./components/spending/SpendingInsightsPanel.jsx";
 import { SpendingMapPanel } from "./components/spending/SpendingMapPanel.jsx";
-import { TourOverlay } from "./components/common/TourOverlay.jsx";
 
 const DASHBOARD_SECTIONS = [
   {
@@ -158,8 +157,6 @@ export default function DashboardApp() {
   const [spendingViewType, setSpendingViewType] = useState("amount");
   const [spendingSelectedAgency, setSpendingSelectedAgency] = useState("ALL");
   const [spendingSelectedFeature, setSpendingSelectedFeature] = useState(null);
-  const [tourOpen, setTourOpen] = useState(false);
-  const [tourStep, setTourStep] = useState(0);
   const [infoOpen, setInfoOpen] = useState(false);
   const resizeRef = useRef({ startX: 0, startWidth: 360 });
   const spendingMetaLoadedRef = useRef(false);
@@ -283,11 +280,6 @@ export default function DashboardApp() {
       setLevel(datasetLevels[0]);
     }
   }, [dataset, datasetLevels, level]);
-
-  useEffect(() => {
-    setTourOpen(true);
-    setTourStep(0);
-  }, []);
 
   useEffect(() => {
     if (viewMode !== "atlas") {
@@ -1194,12 +1186,6 @@ export default function DashboardApp() {
           </div>
         )}
       </main>
-      <TourOverlay
-        tourOpen={tourOpen}
-        tourStep={tourStep}
-        setTourOpen={setTourOpen}
-        setTourStep={setTourStep}
-      />
     </div>
   );
 }
