@@ -10,6 +10,7 @@ export interface NavItem {
   label: string;
   path: string;
   subItems?: SubNavItem[];
+  disableNavigation?: boolean; // If true, clicking opens dropdown only
 }
 
 export interface ResearchPaper {

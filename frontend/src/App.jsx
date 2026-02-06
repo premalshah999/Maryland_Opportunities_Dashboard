@@ -49,7 +49,7 @@ const App = () => (
     <ScrollToTop />
     <Suspense fallback={<PageLoader />}>
       <Routes>
-        <Route path="/dashboard" element={<Navigate to="/dashboard/census" replace />} />
+        <Route path="/dashboard" element={<DashboardApp />} />
         <Route path="/dashboard/*" element={<DashboardApp />} />
         <Route path="/" element={withLayout(<Home />)} />
         <Route path="/about" element={withLayout(<About />)} />

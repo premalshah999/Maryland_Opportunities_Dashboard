@@ -131,21 +131,42 @@ const Header = () => {
                     onMouseEnter={() => setActiveDropdown(item.label)}
                     onMouseLeave={() => setActiveDropdown(null)}
                   >
-                    <Link
-                      to={item.path}
-                      className={`px-4 py-2.5 text-[11px] font-bold uppercase tracking-[0.08em] rounded-lg transition-all duration-200 flex items-center gap-2 ${isActive
-                        ? 'text-[#E03A3E] bg-red-50'
-                        : 'text-neutral-600 hover:text-[#E03A3E] hover:bg-red-50/50'
-                        }`}
-                    >
-                      {item.label}
-                      {item.subItems && (
+                    {item.subItems && item.disableNavigation ? (
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setActiveDropdown(activeDropdown === item.label ? null : item.label)
+                        }
+                        className={`px-4 py-2.5 text-[11px] font-bold uppercase tracking-[0.08em] rounded-lg transition-all duration-200 flex items-center gap-2 ${isActive
+                          ? 'text-[#E03A3E] bg-red-50'
+                          : 'text-neutral-600 hover:text-[#E03A3E] hover:bg-red-50/50'
+                          }`}
+                        aria-haspopup="menu"
+                        aria-expanded={activeDropdown === item.label}
+                      >
+                        {item.label}
                         <ChevronDown
                           size={14}
                           className={`transition-transform duration-300 ${activeDropdown === item.label ? 'rotate-180 text-[#E03A3E]' : 'text-neutral-400'}`}
                         />
-                      )}
-                    </Link>
+                      </button>
+                    ) : (
+                      <Link
+                        to={item.path}
+                        className={`px-4 py-2.5 text-[11px] font-bold uppercase tracking-[0.08em] rounded-lg transition-all duration-200 flex items-center gap-2 ${isActive
+                          ? 'text-[#E03A3E] bg-red-50'
+                          : 'text-neutral-600 hover:text-[#E03A3E] hover:bg-red-50/50'
+                          }`}
+                      >
+                        {item.label}
+                        {item.subItems && (
+                          <ChevronDown
+                            size={14}
+                            className={`transition-transform duration-300 ${activeDropdown === item.label ? 'rotate-180 text-[#E03A3E]' : 'text-neutral-400'}`}
+                          />
+                        )}
+                      </Link>
+                    )}
 
                     {/* Black Minimal Dropdown */}
                     {item.subItems && (

@@ -30,12 +30,23 @@ npm run dev
 
 Open `http://localhost:5173`.
 
+## Tests
+
+```bash
+python -m pip install -r backend/requirements-dev.txt
+python -m pytest backend/tests -q
+```
+
 ## Data Validation
 
 Run the dataset sanity checks (IDs, duplicates, missing boundaries):
 ```bash
 python backend/scripts/validate_data.py --warn-only
 ```
+
+## Production Deployment
+
+See `ops/README.md` for Nginx + systemd deployment on Ubuntu (Smith IT model).
 
 ## Data Sources
 

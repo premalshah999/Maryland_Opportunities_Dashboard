@@ -1,0 +1,14 @@
+# Example sudoers snippet (place in /etc/sudoers.d/mop)
+# Allows bmgtmopadmin to manage only the MOP services without full sudo access.
+#
+# Install (as root):
+#   install -m 0440 ops/sudoers/mop /etc/sudoers.d/mop
+#
+# Validate:
+#   visudo -c
+
+bmgtmopadmin ALL=(root) NOPASSWD: /bin/systemctl restart mop-api
+bmgtmopadmin ALL=(root) NOPASSWD: /bin/systemctl status mop-api
+bmgtmopadmin ALL=(root) NOPASSWD: /bin/systemctl reload nginx
+bmgtmopadmin ALL=(root) NOPASSWD: /usr/sbin/nginx -t
+

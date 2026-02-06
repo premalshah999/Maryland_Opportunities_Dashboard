@@ -26,12 +26,24 @@ DATA_DIR = os.path.join(BASE_DIR, "data")
 ATLAS_DIR = os.path.join(DATA_DIR, "atlas")
 DEFAULT_ATLAS_PROCESSED_DIR = os.path.join(ATLAS_DIR, "processed")
 ROOT_PROCESSED_DIR = os.path.join(ROOT_DIR, "processed")
-ATLAS_PROCESSED_DIR = (
-    ROOT_PROCESSED_DIR if os.path.exists(ROOT_PROCESSED_DIR) else DEFAULT_ATLAS_PROCESSED_DIR
+
+
+def _env_path(name: str, default: str) -> str:
+    raw = os.getenv(name) or os.getenv(f"MOP_{name}")
+    if not raw:
+        return default
+    return os.path.abspath(os.path.expanduser(raw))
+
+
+ATLAS_PROCESSED_DIR = _env_path(
+    "ATLAS_PROCESSED_DIR",
+    ROOT_PROCESSED_DIR if os.path.exists(ROOT_PROCESSED_DIR) else DEFAULT_ATLAS_PROCESSED_DIR,
 )
-ATLAS_BOUNDARIES_DIR = os.path.join(ATLAS_DIR, "boundaries")
-FLOW_DATA_DIR = os.path.join(ROOT_DIR, "data")
-SPENDING_DATA_FILE = os.path.join(DATA_DIR, "spending_state_agency.xlsx")
+ATLAS_BOUNDARIES_DIR = _env_path("ATLAS_BOUNDARIES_DIR", os.path.join(ATLAS_DIR, "boundaries"))
+FLOW_DATA_DIR = _env_path("FLOW_DATA_DIR", os.path.join(ROOT_DIR, "data"))
+SPENDING_DATA_FILE = _env_path(
+    "SPENDING_DATA_FILE", os.path.join(DATA_DIR, "spending_state_agency.xlsx")
+)
 
 DATASETS = {
     "census": {
@@ -152,10 +164,20 @@ logger = logging.getLogger("atlas")
 
 app = FastAPI(title="Opportunity Atlas API")
 app.add_middleware(GZipMiddleware, minimum_size=1024)
+
+
+def _parse_allowed_origins(raw: Optional[str]) -> List[str]:
+    if not raw:
+        return ["*"]
+    cleaned = [item.strip() for item in raw.split(",") if item.strip()]
+    return cleaned or ["*"]
+
+
+_CORS_ALLOWED_ORIGINS = _parse_allowed_origins(os.getenv("CORS_ALLOWED_ORIGINS"))
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
+    allow_origins=_CORS_ALLOWED_ORIGINS,
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -180,7 +202,14 @@ APP_START_TIME = time.time()
 _VALUES_CACHE: OrderedDict[str, tuple[dict, float]] = OrderedDict()
 _FLOW_RESULT_CACHE: OrderedDict[str, tuple[dict, float]] = OrderedDict()
 
-limiter = Limiter(key_func=get_remote_address, default_limits=[RATE_LIMIT_DEFAULT])
+def _client_ip(request: Request) -> str:
+    forwarded = request.headers.get("x-forwarded-for")
+    if forwarded:
+        return forwarded.split(",")[0].strip()
+    return get_remote_address(request)
+
+
+limiter = Limiter(key_func=_client_ip, default_limits=[RATE_LIMIT_DEFAULT])
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
@@ -797,13 +826,13 @@ def load_flow(level: str) -> pd.DataFrame:
         normalized = normalized[normalized["amount"] > 0]
 
         # Calculate internal flow stats before filtering them out
-        internal_mask = normalized["origin_name"] == normalized["dest_name"]
+        internal_mask = (
+            (normalized["origin_name"] == normalized["dest_name"])
+            & (normalized["origin_state"] == normalized["dest_state"])
+        )
         internal_flows = normalized[internal_mask]
         internal_flow_count = len(internal_flows)
         internal_flow_amount = float(internal_flows["amount"].sum()) if len(internal_flows) > 0 else 0.0
-
-        # Filter out internal flows (can't visualize as lines)
-        normalized = normalized[~internal_mask]
 
         # Store data quality stats for this level
         _FLOW_STATS_CACHE[level] = {
@@ -1465,6 +1494,16 @@ def build_flow_payload(
         pd.concat([filtered["origin_name"], filtered["dest_name"]], ignore_index=True).dropna()
     ).size
 
+    internal_mask = (
+        (filtered["origin_name"] == filtered["dest_name"])
+        & (filtered["origin_state"] == filtered["dest_state"])
+    )
+    internal_flow_count = int(internal_mask.sum())
+    internal_flow_amount = (
+        float(filtered.loc[internal_mask, "amount"].sum()) if internal_flow_count > 0 else 0.0
+    )
+    filtered = filtered[~internal_mask]
+
     group_fields = [
         "origin_name",
         "dest_name",
@@ -1496,12 +1535,17 @@ def build_flow_payload(
             agency_series = agency_series.astype("string")
         grouped["agency_label"] = agency_series.fillna("Multiple Agencies")
 
-    grouped = grouped.sort_values(by="amount_sum", ascending=False)
+    if offset:
+        grouped = grouped.sort_values(by="amount_sum", ascending=False)
+    elif limit and limit > 0:
+        grouped = grouped.nlargest(limit, "amount_sum")
+    else:
+        grouped = grouped.sort_values(by="amount_sum", ascending=False)
     max_amount = float(grouped["amount_sum"].max()) if len(grouped) else 0.0
 
     if offset:
         grouped = grouped.iloc[offset:]
-    if limit and limit > 0:
+    if offset and limit and limit > 0:
         grouped = grouped.head(limit)
 
     if flow_bucket:
@@ -1532,8 +1576,6 @@ def build_flow_payload(
             "width": width,
         })
 
-    data_quality = get_flow_data_quality_stats(level)
-
     payload = {
         "flows": flows,
         "stats": {
@@ -1541,8 +1583,8 @@ def build_flow_payload(
             "total_flows": total_flows,
             "unique_locations": int(unique_locations),
             "max_amount": max_amount,
-            "internal_flow_count": data_quality.get("internal_flow_count", 0),
-            "internal_flow_amount": data_quality.get("internal_flow_amount", 0.0),
+            "internal_flow_count": internal_flow_count,
+            "internal_flow_amount": internal_flow_amount,
         },
         "thresholds": flow_thresholds,
     }
