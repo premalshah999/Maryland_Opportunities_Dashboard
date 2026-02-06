@@ -104,8 +104,7 @@ export const RESEARCH_PAPERS: ResearchPaper[] = [
     authors: [],
     category: 'Business Research',
     dataLink: '/projects/business-survey'
-  },
-  
+  }
 ];
 
 export const TEAM_MEMBERS: TeamMember[] = [
