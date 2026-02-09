@@ -11,7 +11,7 @@ const projects = [
         category: 'Financial Inclusion',
         image: 'https://images.unsplash.com/photo-1579621970563-ebec7560ff3e?auto=format&fit=crop&q=80&w=800&h=600',
         dataLink: '/data/maryland/finra',
-        materialsLink: 'https://www.rhsmith.umd.edu/news/smith-school-students-equip-maryland-legislators-key-insights-earned-wage-access'
+        materialsLink: '/assets/reports/ewa-presentation-3-25-2025-disclaimer.pdf'
     },
     {
         id: 'fed-spending',
