@@ -32,6 +32,14 @@ body {
   min-height: 100vh;
 }
 
+.site-soft-weights .font-bold {
+  font-weight: 600;
+}
+
+.site-soft-weights .font-semibold {
+  font-weight: 500;
+}
+
 .app {
   display: flex;
   min-height: 100vh;

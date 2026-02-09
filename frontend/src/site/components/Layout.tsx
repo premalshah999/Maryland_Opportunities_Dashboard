@@ -419,8 +419,13 @@ const Footer = () => {
 };
 
 export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const location = useLocation();
+  const isHomeRoute = location.pathname === '/';
+
   return (
-    <div className="flex flex-col min-h-screen font-sans bg-white text-gray-900 selection:bg-red-50 selection:text-umd-red">
+    <div
+      className={`flex flex-col min-h-screen font-sans bg-white text-gray-900 selection:bg-red-50 selection:text-umd-red ${isHomeRoute ? '' : 'site-soft-weights'}`}
+    >
       <Header />
       {/* Padding for two-bar nav */}
       <main className="flex-grow pt-[72px] md:pt-[100px] lg:pt-[112px]">
