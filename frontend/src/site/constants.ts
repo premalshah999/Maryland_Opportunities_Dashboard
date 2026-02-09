@@ -77,6 +77,7 @@ export const RESEARCH_PAPERS: ResearchPaper[] = [
     date: 'October 2023',
     authors: [],
     category: 'Earned Wage Access',
+    pdfUrl: 'https://www.rhsmith.umd.edu/news/smith-school-students-equip-maryland-legislators-key-insights-earned-wage-access',
     dataLink: 'https://maryland-opportunities-dashboardv1.vercel.app/#/dashboard/government-spending'
   },
   {
@@ -86,6 +87,7 @@ export const RESEARCH_PAPERS: ResearchPaper[] = [
     date: 'January 2024',
     authors: [],
     category: 'Federal Contracts',
+    pdfUrl: 'https://www.marylandcomptroller.gov/content/dam/mdcomp/md/reports/research/federal-spending-in-md.pdf',
     dataLink: 'https://maryland-opportunities-dashboardv1.vercel.app/#/dashboard/fund-flow'
   },
   {
@@ -95,6 +97,7 @@ export const RESEARCH_PAPERS: ResearchPaper[] = [
     date: 'March 2024',
     authors: [],
     category: 'Government Shutdown',
+    pdfUrl: '/assets/reports/data-source-url.pdf',
     dataLink: 'https://maryland-opportunities-dashboardv1.vercel.app/#/dashboard/federal-spending-breaks'
   },
   {
@@ -103,7 +106,8 @@ export const RESEARCH_PAPERS: ResearchPaper[] = [
     abstract: 'Maryland businesses report rising costs, federal policy disruptions, and growing relocation concerns.',
     date: 'February 2025',
     authors: [],
-    category: 'Business Research'
+    category: 'Business Research',
+    pdfUrl: '/assets/reports/2025-maryland-business-climate-survey.pdf'
   }
 ];
 

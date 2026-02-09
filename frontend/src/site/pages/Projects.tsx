@@ -31,7 +31,7 @@ const projects = [
         category: 'Business Research',
         image: 'https://images.unsplash.com/photo-1556761175-5973dc0f32e7?auto=format&fit=crop&q=80&w=800&h=600',
         dataLink: null,
-        reportLink: 'https://drive.google.com/file/d/1OVzidNHvqx6KCuHRfrdvW2Efni-DbdqB/view?usp=drive_link'
+        reportLink: '/assets/reports/2025-maryland-business-climate-survey.pdf'
     },
     {
         id: 'veterans-housing',
@@ -41,7 +41,7 @@ const projects = [
         category: 'Tax Policy Analysis',
         image: 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?auto=format&fit=crop&q=80&w=800&h=600',
         dataLink: null,
-        materialsLink: 'https://docs.google.com/document/d/13gjWeK9ZUHnuTMv3rEdh9w6d_IU1Ycra/edit?usp=drive_link&ouid=112758075781785915787&rtpof=true&sd=true'
+        materialsLink: '/assets/reports/mdva-final-report-research-methods-and-technical-notes.pdf'
     }
 ];
 

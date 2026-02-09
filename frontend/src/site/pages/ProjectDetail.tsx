@@ -201,7 +201,7 @@ const projectContent: Record<string, {
         date: 'February 2025',
         image: 'https://images.unsplash.com/photo-1556761175-5973dc0f32e7?auto=format&fit=crop&q=80&w=1200&h=600',
         summary: 'Comprehensive survey examining the current state of business conditions, challenges, and opportunities across Maryland industries.',
-        reportLink: 'https://drive.google.com/file/d/1OVzidNHvqx6KCuHRfrdvW2Efni-DbdqB/view?usp=drive_link',
+        reportLink: '/assets/reports/2025-maryland-business-climate-survey.pdf',
         content: (
             <>
                 <p className="text-lg text-gray-600 leading-relaxed mb-6">
@@ -258,7 +258,7 @@ const projectContent: Record<string, {
         date: 'December 2024',
         image: 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?auto=format&fit=crop&q=80&w=1200&h=600',
         summary: 'Research on military retirees in Maryland: factors influencing residence choice and economic impact analysis of military retirement income tax exemption.',
-        materialsLink: 'https://docs.google.com/document/d/13gjWeK9ZUHnuTMv3rEdh9w6d_IU1Ycra/edit?usp=drive_link&ouid=112758075781785915787&rtpof=true&sd=true',
+        materialsLink: '/assets/reports/mdva-final-report-research-methods-and-technical-notes.pdf',
         content: (
             <>
                 <p className="text-lg text-gray-600 leading-relaxed mb-6">

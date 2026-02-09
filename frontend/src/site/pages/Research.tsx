@@ -1,9 +1,18 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { RESEARCH_PAPERS } from '../constants';
-import { FileText, Download, Filter, BarChart3, ArrowRight } from 'lucide-react';
+import { Paperclip, BarChart3, ArrowRight } from 'lucide-react';
 
 export const Research = () => {
+  const actionButtonClass =
+    'inline-flex items-center gap-2 px-3.5 py-2 rounded-md border text-[11px] font-semibold tracking-[0.08em] uppercase transition-colors';
+
+  const materialsButtonClass =
+    `${actionButtonClass} border-gray-300 text-gray-600 hover:border-gray-500 hover:text-gray-900 hover:bg-gray-50`;
+
+  const exploreButtonClass =
+    `${actionButtonClass} border-gray-300 text-gray-600 hover:border-umd-red hover:text-umd-red hover:bg-red-50/40`;
+
   return (
     <div className="animate-fadeIn">
       {/* Header */}
@@ -46,30 +55,42 @@ export const Research = () => {
 
 
                 <div className="flex flex-wrap items-center gap-3 mt-4">
-                  <button className="flex items-center gap-2 text-gray-900 font-bold hover:text-umd-red transition-colors border border-gray-200 px-4 py-2 rounded-sm hover:border-umd-red">
-                    <Download size={16} />
-                    <span>Download PDF</span>
-                  </button>
+                  {paper.pdfUrl ? (
+                    <a
+                      href={paper.pdfUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className={materialsButtonClass}
+                    >
+                      <Paperclip size={14} />
+                      <span>Materials</span>
+                    </a>
+                  ) : (
+                    <span className={`${materialsButtonClass} opacity-50 cursor-not-allowed`}>
+                      <Paperclip size={14} />
+                      <span>Materials</span>
+                    </span>
+                  )}
                   {paper.dataLink && (
                     paper.dataLink.startsWith('http') ? (
                       <a
                         href={paper.dataLink}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="flex items-center gap-2 bg-umd-red text-white font-bold px-4 py-2 rounded-sm hover:bg-umd-red/90 transition-colors"
+                        className={exploreButtonClass}
                       >
-                        <BarChart3 size={16} />
+                        <BarChart3 size={14} />
                         <span>Explore Data</span>
-                        <ArrowRight size={14} />
+                        <ArrowRight size={12} />
                       </a>
                     ) : (
                       <Link
                         to={paper.dataLink}
-                        className="flex items-center gap-2 bg-umd-red text-white font-bold px-4 py-2 rounded-sm hover:bg-umd-red/90 transition-colors"
+                        className={exploreButtonClass}
                       >
-                        <BarChart3 size={16} />
+                        <BarChart3 size={14} />
                         <span>Explore Data</span>
-                        <ArrowRight size={14} />
+                        <ArrowRight size={12} />
                       </Link>
                     )
                   )}
