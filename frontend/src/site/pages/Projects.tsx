@@ -20,7 +20,7 @@ const projects = [
         description: 'Federal Spending in Maryland - Historical Analysis on Federal Spending in MD and Scenario analysis on how proposed cuts would impact Maryland\'s economy',
         category: 'Economic Analysis',
         image: 'https://images.unsplash.com/photo-1541888946425-d81bb19240f5?auto=format&fit=crop&q=80&w=800&h=600',
-        dataLink: '/dashboard/federal-spending-breaks',
+        dataLink: '/dashboard/government-spending',
         reportLink: 'https://www.marylandcomptroller.gov/content/dam/mdcomp/md/reports/research/federal-spending-in-md.pdf'
     },
     {

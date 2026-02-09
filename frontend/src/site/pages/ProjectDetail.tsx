@@ -28,7 +28,12 @@ const projectContent: Record<string, {
         materialsLink: 'https://www.rhsmith.umd.edu/news/smith-school-students-equip-maryland-legislators-key-insights-earned-wage-access',
         content: (
             <>
-                <img src="/assets/ewa_team.jpg" alt="EWA Team" className="w-full h-auto rounded-lg mb-8 shadow-sm" />
+                <figure className="mb-8">
+                    <img src="/assets/ewa_team.jpg" alt="EWA Team" className="w-full h-auto rounded-lg mb-3 shadow-sm" />
+                    <figcaption className="text-sm text-gray-500 leading-relaxed italic">
+                        First row (from left to right): Shrenik Kalambur (UMD), Amy Heenen (Labor), Commissioner Antonio Salazar, Kat Kyland (Labor), Secretary Portia Wu, Liu Yang (UMD), Yun Wang (UMD); second row (from left to right): Sai Shashank Gorthy (UMD), Yentell James (UMD), Pranay Upreti (UMD), and Rivado Edah (UMD).
+                    </figcaption>
+                </figure>
                 <h2 className="text-2xl font-serif font-bold text-gray-900 mt-10 mb-4">Project Overview</h2>
                 <p className="text-gray-600 leading-relaxed mb-4">
                     Beginning in October 2024 and continuing into the 2025 spring semester, a team of students from the Master of Finance and Master of Quantitative Finance programs, led by Professor Liu Yang and Professor Vojislav Maksimovic, conducted in-depth research and provided policy recommendations on the state's earned wage access (EWA) regulations.
@@ -78,10 +83,16 @@ const projectContent: Record<string, {
         date: 'January 2025',
         image: 'https://images.unsplash.com/photo-1541888946425-d81bb19240f5?auto=format&fit=crop&q=80&w=1200&h=600',
         summary: 'Federal Spending in Maryland - Historical Analysis on Federal Spending in MD and Scenario analysis on how proposed cuts would impact Maryland\'s economy',
+        dataLink: '/dashboard/government-spending',
         reportLink: 'https://www.marylandcomptroller.gov/content/dam/mdcomp/md/reports/research/federal-spending-in-md.pdf',
         content: (
             <>
-                <img src="/assets/fed_spending_team.jpg" alt="Federal Spending Team" className="w-full h-auto rounded-lg mb-8 shadow-sm" />
+                <figure className="mb-8">
+                    <img src="/assets/fed_spending_team.jpg" alt="Federal Spending Team" className="w-full h-auto rounded-lg mb-3 shadow-sm" />
+                    <figcaption className="text-sm text-gray-500 leading-relaxed italic">
+                        From left to right: Haotian Shi (UMD), Vojislav Maksimovic (UMD), Liu Yang (UMD), Comptroller Brook Lierman, Pablo Gomez (Comptroller), Pranshu Sahasrabuddhe (UMD), Annie Alexander (Comptroller), Deputy Comptroller Ben Siegel.
+                    </figcaption>
+                </figure>
                 <h2 className="text-2xl font-serif font-bold text-gray-900 mt-10 mb-4">Project Overview</h2>
                 <p className="text-gray-600 leading-relaxed mb-4">
                     In 2025, the University of Maryland's Robert H. Smith School of Business partnered with the Maryland Comptroller's Office to examine the role of federal government spending and employment in Maryland's economy. Led by Professor Liu Yang and Professor Vojislav Maksimovic, the project analyzed how federal wages, contracts, grants, and direct payments shape economic activity across the state.

@@ -31,19 +31,19 @@ export const NAV_ITEMS: NavItem[] = [
         label: 'Earned Wage Access',
         path: '/research/earned-wage-access',
         description: 'Empirical analysis of EWA product availability and neighborhood characteristics',
-        dataLink: '/data/maryland/finra'
+        dataLink: 'https://maryland-opportunities-dashboardv1.vercel.app/#/dashboard/government-spending'
       },
       {
-        label: 'Federal Spending in Maryland',
+        label: 'Federal Contracts in Maryland',
         path: '/research/federal-spending',
         description: 'Direct and indirect effects through primary contracts and subcontracting linkages',
-        dataLink: '/dashboard/federal-spending-breaks'
+        dataLink: 'https://maryland-opportunities-dashboardv1.vercel.app/#/dashboard/fund-flow'
       },
       {
         label: 'Government Shutdown Cost',
         path: '/research/shutdown-cost',
         description: 'Economic cost of 2025 shutdown through employment, contracts, and federal spending',
-        dataLink: '/data/maryland/employment'
+        dataLink: 'https://maryland-opportunities-dashboardv1.vercel.app/#/dashboard/federal-spending-breaks'
       },
       {
         label: 'Maryland Business Climate Survey 2025',
@@ -77,16 +77,16 @@ export const RESEARCH_PAPERS: ResearchPaper[] = [
     date: 'October 2023',
     authors: [],
     category: 'Earned Wage Access',
-    dataLink: '/data/maryland/finra'
+    dataLink: 'https://maryland-opportunities-dashboardv1.vercel.app/#/dashboard/government-spending'
   },
   {
     id: 'fed-002',
-    title: 'Federal Spending in Maryland',
+    title: 'Federal Contracts in Maryland',
     abstract: 'An analysis of the direct and indirect effects of federal spending through primary contracts and subcontracting linkages.',
     date: 'January 2024',
     authors: [],
-    category: 'Federal Spending',
-    dataLink: '/dashboard/federal-spending-breaks'
+    category: 'Federal Contracts',
+    dataLink: 'https://maryland-opportunities-dashboardv1.vercel.app/#/dashboard/fund-flow'
   },
   {
     id: 'shutdown-003',
@@ -95,7 +95,7 @@ export const RESEARCH_PAPERS: ResearchPaper[] = [
     date: 'March 2024',
     authors: [],
     category: 'Government Shutdown',
-    dataLink: '/data/maryland/employment'
+    dataLink: 'https://maryland-opportunities-dashboardv1.vercel.app/#/dashboard/federal-spending-breaks'
   },
   {
     id: 'business-2025',
@@ -103,8 +103,7 @@ export const RESEARCH_PAPERS: ResearchPaper[] = [
     abstract: 'Maryland businesses report rising costs, federal policy disruptions, and growing relocation concerns.',
     date: 'February 2025',
     authors: [],
-    category: 'Business Research',
-    dataLink: '/projects/business-survey'
+    category: 'Business Research'
   }
 ];
 
