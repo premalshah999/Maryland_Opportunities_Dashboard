@@ -77,7 +77,7 @@ export const RESEARCH_PAPERS: ResearchPaper[] = [
     date: 'October 2023',
     authors: [],
     category: 'Earned Wage Access',
-    pdfUrl: 'https://www.rhsmith.umd.edu/news/smith-school-students-equip-maryland-legislators-key-insights-earned-wage-access',
+    pdfUrl: '/assets/reports/ewa-presentation-3-25-2025-disclaimer.pdf',
     dataLink: 'https://maryland-opportunities-dashboardv1.vercel.app/#/dashboard/government-spending'
   },
   {
@@ -97,7 +97,6 @@ export const RESEARCH_PAPERS: ResearchPaper[] = [
     date: 'March 2024',
     authors: [],
     category: 'Government Shutdown',
-    pdfUrl: '/assets/reports/data-source-url.pdf',
     dataLink: 'https://maryland-opportunities-dashboardv1.vercel.app/#/dashboard/federal-spending-breaks'
   },
   {
