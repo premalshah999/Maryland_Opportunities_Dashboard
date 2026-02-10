@@ -13,6 +13,10 @@ export const Research = () => {
   const exploreButtonClass =
     `${actionButtonClass} border-gray-300 text-gray-600 hover:border-umd-red hover:text-umd-red hover:bg-red-50/40`;
 
+  const paperDetailRoute: Record<string, string | undefined> = {
+    "ewa-001": "/research/earned-wage-access",
+  };
+
   return (
     <div className="animate-fadeIn">
       {/* Header */}
@@ -44,9 +48,18 @@ export const Research = () => {
                   <span className="text-gray-400 text-xs font-medium uppercase tracking-wider">{paper.date}</span>
                 </div>
 
-                <h2 className="text-3xl font-serif font-bold text-gray-900 mb-4 group-hover:text-umd-red transition-colors cursor-pointer">
-                  {paper.title}
-                </h2>
+                {paperDetailRoute[paper.id] ? (
+                  <Link
+                    to={paperDetailRoute[paper.id] as string}
+                    className="block mb-4 text-3xl font-serif font-bold text-gray-900 transition-colors group-hover:text-umd-red"
+                  >
+                    {paper.title}
+                  </Link>
+                ) : (
+                  <h2 className="text-3xl font-serif font-bold text-gray-900 mb-4 group-hover:text-umd-red transition-colors cursor-pointer">
+                    {paper.title}
+                  </h2>
+                )}
 
                 <p className="text-gray-600 mb-6 leading-relaxed max-w-3xl font-light">
                   {paper.abstract}

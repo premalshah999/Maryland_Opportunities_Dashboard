@@ -161,7 +161,7 @@ const datasets: Dataset[] = [
   {
     id: "financial_literacy",
     name: "Financial Literacy",
-    title: "Zip Codes: Financial Literacy",
+    title: "Financial Literacy",
     xAxisLabel: "Financial literacy score",
     yAxisLabel: "Transactions per 1000 residents",
     data: financialLiteracyData,
@@ -169,7 +169,7 @@ const datasets: Dataset[] = [
   {
     id: "hh_income",
     name: "Household Income",
-    title: "Zip Codes: Income",
+    title: "Income",
     xAxisLabel: "Median household income ($000s)",
     yAxisLabel: "Transactions per 1000 residents",
     data: hhIncomeData,
@@ -177,7 +177,7 @@ const datasets: Dataset[] = [
   {
     id: "pct_bchlor",
     name: "Education",
-    title: "Zip Codes: Education",
+    title: "Education",
     xAxisLabel: "Percentage of bachelor degree and above",
     yAxisLabel: "Transactions per 1000 residents",
     data: pctBchlorData,
@@ -185,7 +185,7 @@ const datasets: Dataset[] = [
   {
     id: "pct_minority",
     name: "Race (Minority)",
-    title: "Zip Codes: Race",
+    title: "Race",
     xAxisLabel: "Percentage of minority",
     yAxisLabel: "Transactions per 1000 residents",
     data: pctMinorityData,
@@ -308,7 +308,7 @@ export const EwaResearchScatter = () => {
               Earned Wage Access
             </span>
             <h1 className="mb-4 text-4xl font-serif font-bold text-gray-900 md:text-5xl">
-              Zip Code Scatterplot Analysis
+              Scatterplot Analysis
             </h1>
             <p className="text-lg text-gray-500">
               Explore relationships between transactions per 1000 residents and key socio-economic indicators.
