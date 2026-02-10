@@ -14,6 +14,9 @@ const Contact = lazy(() =>
 const Research = lazy(() =>
   import("./site/pages/Research").then((m) => ({ default: m.Research }))
 );
+const EwaResearchScatter = lazy(() =>
+  import("./site/pages/EwaResearchScatter").then((m) => ({ default: m.EwaResearchScatter }))
+);
 const Data = lazy(() => import("./site/pages/Data").then((m) => ({ default: m.Data })));
 const Projects = lazy(() =>
   import("./site/pages/Projects").then((m) => ({ default: m.Projects }))
@@ -56,6 +59,7 @@ const App = () => (
         <Route path="/about/team" element={withLayout(<Team />)} />
         <Route path="/about/team/:memberId" element={withLayout(<TeamMemberBio />)} />
         <Route path="/about/contact" element={withLayout(<Contact />)} />
+        <Route path="/research/earned-wage-access" element={withLayout(<EwaResearchScatter />)} />
         <Route path="/research" element={withLayout(<Research />)} />
         <Route path="/research/*" element={withLayout(<Research />)} />
         <Route path="/data" element={withLayout(<Data />)} />
