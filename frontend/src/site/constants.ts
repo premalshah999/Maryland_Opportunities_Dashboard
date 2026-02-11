@@ -11,15 +11,13 @@ export const NAV_ITEMS: NavItem[] = [
     ]
   },
   {
-    label: 'Data Dashboard',
-    path: '/dashboards',
+    label: 'Projects',
+    path: '/projects',
     subItems: [
-      { label: 'Census (ACS Demographics)', path: '/dashboard/census' },
-      { label: 'Government Spending', path: '/dashboard/government-spending' },
-      { label: 'Government Finances', path: '/dashboard/government-finances' },
-      { label: 'FINRA Financial Literacy', path: '/dashboard/finra-financial-literacy' },
-      { label: 'Fund Flow', path: '/dashboard/fund-flow' },
-      { label: 'Federal Spending Breaks', path: '/dashboard/federal-spending-breaks' },
+      { label: 'Earned Wage Access', path: '/projects/ewa', partner: 'Dept. of Labor' },
+      { label: 'Federal Spending in Maryland', path: '/projects/fed-spending', partner: "Comptroller's Office" },
+      { label: 'MD Business Climate Survey 2025', path: '/projects/business-survey' },
+      { label: 'State of Residence Choice of Veterans', path: '/projects/veterans-housing', partner: 'Veterans Affairs' },
     ]
   },
   {
@@ -47,13 +45,15 @@ export const NAV_ITEMS: NavItem[] = [
     ]
   },
   {
-    label: 'Projects',
-    path: '/projects',
+    label: 'Data Dashboard',
+    path: '/dashboards',
     subItems: [
-      { label: 'Earned Wage Access', path: '/projects/ewa', partner: 'Dept. of Labor' },
-      { label: 'Federal Spending in Maryland', path: '/projects/fed-spending', partner: "Comptroller's Office" },
-      { label: 'MD Business Climate Survey 2025', path: '/projects/business-survey' },
-      { label: 'State of Residence Choice of Veterans', path: '/projects/veterans-housing', partner: 'Veterans Affairs' },
+      { label: 'Census (ACS Demographics)', path: '/dashboard/census' },
+      { label: 'Government Spending', path: '/dashboard/government-spending' },
+      { label: 'Government Finances', path: '/dashboard/government-finances' },
+      { label: 'FINRA Financial Literacy', path: '/dashboard/finra-financial-literacy' },
+      { label: 'Fund Flow', path: '/dashboard/fund-flow' },
+      { label: 'Federal Spending Breaks', path: '/dashboard/federal-spending-breaks' },
     ]
   },
   {
