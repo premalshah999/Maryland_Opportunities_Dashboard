@@ -12,8 +12,7 @@ export const NAV_ITEMS: NavItem[] = [
   },
   {
     label: 'Data Dashboard',
-    path: '/dashboard',
-    disableNavigation: true,
+    path: '/dashboards',
     subItems: [
       { label: 'Census (ACS Demographics)', path: '/dashboard/census' },
       { label: 'Government Spending', path: '/dashboard/government-spending' },
