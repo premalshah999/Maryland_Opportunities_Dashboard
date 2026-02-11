@@ -144,7 +144,7 @@ export const TEAM_MEMBERS: TeamMember[] = [
   },
   {
     id: 'premal-shah',
-    name: 'Premal Shah',
+    name: 'Premal Paragbhai Shah',
     role: 'Developer',
     bio: 'Premal supports the Maryland Opportunity Project as its website developer, designing and maintaining the project’s digital platform to ensure clarity, accessibility, and effective communication of research findings.',
     imageUrl: '/assets/PremalParagbhaiShah.jpeg',

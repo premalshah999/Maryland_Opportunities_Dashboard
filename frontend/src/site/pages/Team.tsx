@@ -3,6 +3,8 @@ import { Link } from 'react-router-dom';
 import { TEAM_MEMBERS } from '../constants';
 
 export const Team = () => {
+    const zoomOutMemberIds = new Set(['kislaya-prasad', 'haotian-shi']);
+
     return (
         <div className="animate-fadeIn">
             {/* Hero */}
@@ -30,7 +32,7 @@ export const Team = () => {
                                     <img
                                         src={member.imageUrl}
                                         alt={member.name}
-                                        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                                        className={`w-full h-full object-cover transition-transform duration-500 group-hover:scale-105 ${zoomOutMemberIds.has(member.id) ? 'scale-95' : ''}`}
                                     />
                                 </div>
                                 <h3 className="text-xl font-bold text-gray-900 mb-2 font-serif group-hover:text-umd-red transition-colors">
