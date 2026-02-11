@@ -226,7 +226,7 @@ export const Home = () => {
               <p className="text-gray-500 text-sm font-light mb-4">
                 Analyze the flow of federal contracts through primary and subcontracting linkages across the state.
               </p>
-              <Link to="/dashboards" className="mt-auto inline-flex items-center text-[11px] font-bold uppercase tracking-[0.2em] text-gray-900 border-b border-gray-200 pb-1 hover:border-umd-red hover:text-umd-red transition-colors w-fit">
+              <Link to="/dashboard-reports" className="mt-auto inline-flex items-center text-[11px] font-bold uppercase tracking-[0.2em] text-gray-900 border-b border-gray-200 pb-1 hover:border-umd-red hover:text-umd-red transition-colors w-fit">
                 Explore the Tool
               </Link>
             </div>

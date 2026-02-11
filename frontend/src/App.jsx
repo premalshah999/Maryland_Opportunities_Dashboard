@@ -17,6 +17,9 @@ const Research = lazy(() =>
 const Dashboards = lazy(() =>
   import("./site/pages/Dashboards").then((m) => ({ default: m.Dashboards }))
 );
+const DashboardReports = lazy(() =>
+  import("./site/pages/DashboardReports").then((m) => ({ default: m.DashboardReports }))
+);
 const EwaResearchScatter = lazy(() =>
   import("./site/pages/EwaResearchScatter").then((m) => ({ default: m.EwaResearchScatter }))
 );
@@ -66,6 +69,7 @@ const App = () => (
         <Route path="/research" element={withLayout(<Research />)} />
         <Route path="/research/*" element={withLayout(<Research />)} />
         <Route path="/dashboards" element={withLayout(<Dashboards />)} />
+        <Route path="/dashboard-reports" element={withLayout(<DashboardReports />)} />
         <Route path="/data" element={withLayout(<Data />)} />
         <Route path="/data/*" element={withLayout(<Data />)} />
         <Route path="/projects" element={withLayout(<Projects />)} />

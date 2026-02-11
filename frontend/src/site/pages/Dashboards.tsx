@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { BarChart3, ArrowRight } from 'lucide-react';
+import { BarChart3, ArrowRight, FileText } from 'lucide-react';
 
 const dashboards = [
   {
@@ -46,12 +46,21 @@ export const Dashboards = () => {
     <div className="animate-fadeIn">
       <div className="bg-white py-16 md:py-24 border-b border-gray-100">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="max-w-3xl">
-            <span className="text-umd-red font-bold uppercase tracking-widest text-xs mb-4 block">Data Dashboard</span>
-            <h1 className="text-4xl md:text-6xl font-serif font-bold text-gray-900 mb-6">Dashboards</h1>
-            <p className="text-xl text-gray-500 font-light">
-              Interactive tools to explore Maryland’s economic data and policy insights.
-            </p>
+          <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-6">
+            <div className="max-w-3xl">
+              <span className="text-umd-red font-bold uppercase tracking-widest text-xs mb-4 block">Data Dashboard</span>
+              <h1 className="text-4xl md:text-6xl font-serif font-bold text-gray-900 mb-6">Dashboards</h1>
+              <p className="text-xl text-gray-500 font-light">
+                Interactive tools to explore Maryland’s economic data and policy insights.
+              </p>
+            </div>
+            <Link
+              to="/dashboard-reports"
+              className="inline-flex items-center justify-center gap-2 px-5 py-3 border border-gray-300 text-gray-700 hover:border-umd-red hover:text-umd-red transition-colors text-[11px] font-semibold tracking-[0.08em] uppercase self-start"
+            >
+              <FileText size={14} />
+              Dashboard Reports
+            </Link>
           </div>
         </div>
       </div>
