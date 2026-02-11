@@ -379,29 +379,25 @@ export const ResearchDetail: React.FC = () => {
                 ) : null}
 
                 {article.slug === 'earned-wage-access' && section.title === '4. Repeat Usage, Delinquencies, and Financial Outcomes' ? (
-                  <figure className="mt-8 border border-gray-100 p-4 bg-white">
+                  <figure className="mt-8">
                     <img src={EWA_FIGURES.fig1.src} alt={EWA_FIGURES.fig1.alt} className="w-full h-auto" />
-                    <figcaption className="mt-3 text-sm text-gray-500 italic">{EWA_FIGURES.fig1.caption}</figcaption>
                   </figure>
                 ) : null}
 
                 {article.slug === 'earned-wage-access' && section.title === '5. Demographic and Socioeconomic Patterns' ? (
                   <>
-                    <figure className="mt-8 border border-gray-100 p-4 bg-white">
+                    <figure className="mt-8">
                       <img src={EWA_FIGURES.fig2.src} alt={EWA_FIGURES.fig2.alt} className="w-full h-auto" />
-                      <figcaption className="mt-3 text-sm text-gray-500 italic">{EWA_FIGURES.fig2.caption}</figcaption>
                     </figure>
-                    <figure className="mt-6 border border-gray-100 p-4 bg-white">
+                    <figure className="mt-6">
                       <img src={EWA_FIGURES.fig3.src} alt={EWA_FIGURES.fig3.alt} className="w-full h-auto" />
-                      <figcaption className="mt-3 text-sm text-gray-500 italic">{EWA_FIGURES.fig3.caption}</figcaption>
                     </figure>
                   </>
                 ) : null}
 
                 {article.slug === 'earned-wage-access' && section.title === '6. Financial Access and Policy Implications' ? (
-                  <figure className="mt-8 border border-gray-100 p-4 bg-white">
+                  <figure className="mt-8">
                     <img src={EWA_FIGURES.fig4.src} alt={EWA_FIGURES.fig4.alt} className="w-full h-auto" />
-                    <figcaption className="mt-3 text-sm text-gray-500 italic">{EWA_FIGURES.fig4.caption}</figcaption>
                   </figure>
                 ) : null}
               </section>
