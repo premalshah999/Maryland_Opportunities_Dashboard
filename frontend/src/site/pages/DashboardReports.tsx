@@ -236,6 +236,20 @@ export const DashboardReports = () => {
           ))}
         </div>
 
+        <div className="mb-14 bg-white border border-gray-100 p-6 md:p-8">
+          <h2 className="text-2xl font-serif text-gray-900 mb-3">Interface Reference</h2>
+          <p className="text-sm text-gray-500 font-light mb-6">
+            The Parameters and Insights tabs are the core interaction model across dashboards.
+          </p>
+          <img
+            src="/assets/dashboard-reports/dashboard-report-07.png"
+            alt="Parameters and insights sidebar reference"
+            className="w-full border border-gray-100"
+            loading="lazy"
+            decoding="async"
+          />
+        </div>
+
         <div className="space-y-14">
           {dashboardGuides.map((guide) => (
             <section key={guide.id} className="bg-white border border-gray-100 p-8 md:p-10">
@@ -314,4 +328,3 @@ export const DashboardReports = () => {
     </div>
   );
 };
-
