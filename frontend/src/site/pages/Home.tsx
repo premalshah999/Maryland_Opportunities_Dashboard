@@ -87,11 +87,11 @@ export const Home = () => {
         <div className="max-w-[1400px] mx-auto px-6 lg:px-12">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
 
-            <Link to="/data" className="group p-10 bg-white border border-gray-100 hover:shadow-soft transition-all duration-500">
+            <Link to="/dashboard/fund-flow" className="group p-10 bg-white border border-gray-100 hover:shadow-soft transition-all duration-500">
               <div className="w-12 h-12 bg-gray-50 text-gray-900 flex items-center justify-center mb-8 group-hover:bg-umd-red group-hover:text-white transition-colors">
                 <BarChart2 size={20} strokeWidth={1.5} />
               </div>
-              <h3 className="text-2xl font-serif text-gray-900 mb-4 group-hover:text-umd-red transition-colors">Big Data Analysis</h3>
+              <h3 className="text-2xl font-serif text-gray-900 mb-4 group-hover:text-umd-red transition-colors">Fund Flow Analysis</h3>
               <p className="text-gray-500 leading-relaxed mb-8 text-sm font-light">
                 Uncovering trends in federal spending, wage access, and local economic health through rigorous data analysis.
               </p>
