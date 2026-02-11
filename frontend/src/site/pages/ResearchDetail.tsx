@@ -14,6 +14,7 @@ type ResearchArticle = {
   category: string;
   date: string;
   institution: string;
+  hideSummary?: boolean;
   preparedBy?: {
     faculty: string[];
     students: string[];
@@ -33,6 +34,7 @@ const RESEARCH_ARTICLES: Record<string, ResearchArticle> = {
     category: 'Earned Wage Access',
     date: 'February 2026',
     institution: 'University of Maryland, Robert H. Smith School of Business',
+    hideSummary: true,
     preparedBy: {
       faculty: ['Dr. Vojislav Maksimovic', 'Dr. Liu Yang'],
       students: [
@@ -56,8 +58,7 @@ const RESEARCH_ARTICLES: Record<string, ResearchArticle> = {
       '6. Financial Access and Policy Implications',
       '7. Conclusion'
     ],
-    summary:
-      'This report evaluates Earned Wage Access adoption, pricing, repeat use, financial outcomes, and community-level correlates in Maryland using provider transaction data and socioeconomic indicators.',
+    summary: 'The Effects of Earned Wage Access Programs on Maryland Consumers',
     pdfUrl: '/assets/reports/research-ewa.pdf',
     dataLink: 'https://maryland-opportunities-dashboardv1.vercel.app/#/dashboard/government-spending',
     companionLink: '/research/earned-wage-access/scatter',
@@ -66,94 +67,98 @@ const RESEARCH_ARTICLES: Record<string, ResearchArticle> = {
         title: 'Executive Summary',
         paragraphs: [
           'This study examines the growth and implications of Earned Wage Access (EWA) along five dimensions: adoption trends, pricing, repeat use and repayment frictions, user correlates, and links to financial access.',
-          'Using firm-level EWA transaction metrics and ZIP-code-level socioeconomic and financial-infrastructure measures, we document sharp growth in usage over time, with recurring users driving much of the increase.',
-          'Although many providers advertise free options, expedited transfer fees and tipping are widespread, implying meaningful effective borrowing costs for a substantial share of transactions.',
-          'Heavy repeat usage and repayment difficulty indicators suggest EWA often functions as a recurring short-term liquidity tool for financially constrained households.',
-          'EWA usage is more concentrated in lower-income and financially constrained communities and is associated with local access to traditional banking and other forms of alternative financing.'
+          'Using firm-level EWA transaction metrics and ZIP-code-level socioeconomic and financial-infrastructure measures, we document a sharp increase in EWA usage over time, driven largely by recurring users rather than one-off borrowing. Although many providers advertise "free" options, fees for expedited transfers and tipping are widespread, implying meaningful effective borrowing costs for a substantial share of transactions.',
+          'We find heavy repeat usage and nontrivial repayment difficulties on some platforms (e.g., payment delays and non-repayment), suggesting EWA often functions as a short-term liquidity management tool for financially constrained households rather than an occasional emergency bridge. EWA usage is disproportionately concentrated among lower-income and financially constrained communities and is correlated with demographic characteristics in provider-specific data.',
+          'Finally, EWA adoption is positively associated with local access to traditional financial institutions and with other forms of alternative credit usage, indicating that EWA complements, rather than purely substitutes for, existing financial services in the areas where it is most prevalent.'
         ]
       },
       {
         title: '1. Introduction',
         paragraphs: [
-          'Earned Wage Access programs allow workers to obtain a portion of earned but unpaid wages before traditional payday. Supporters argue EWA can reduce overdraft and alternative credit usage, while critics highlight repeated use, optional fee structures, and transparency concerns.',
-          'In Maryland, adoption has reached substantial scale from January 2019 to September 2024.'
+          'Earned Wage Access (EWA) programs allow workers to obtain a portion of their earned but unpaid wages prior to the traditional payday. These services have expanded rapidly in recent years and are often marketed as tools that help households manage short-term liquidity needs. Advocates argue that EWA can reduce reliance on overdrafts or high-cost alternative credit products, while critics express concern that repeated use, optional fees, and limited transparency may exacerbate financial vulnerability.',
+          'The growth of EWA in Maryland illustrates this broader trend. From January 2019 to September 2024, EWA providers operating in the state have reached substantial scale:',
+          'This article examines aggregate patterns of EWA usage, pricing structures, and consumer outcomes in Maryland. Drawing on market inquiry responses and transaction-level evidence aggregated across multiple providers, the analysis focuses on economic mechanisms rather than firm-specific behavior. The discussion addresses five broad questions:'
         ],
         bullets: [
           'Total transactions: 11 million',
           'Total transaction volume: $108 million',
-          'Total unique customers: 345,000'
+          'Total unique customers: 345,000',
+          'How has EWA usage evolved over time?',
+          'Are EWA services effectively free?',
+          'What is the extent of repeat usage and repayment difficulties?',
+          'What are the demographic and socioeconomic correlates of usage?',
+          'What is the relationship between EWA adoption and financial access?'
         ]
       },
       {
         title: '2. Growth and Market Structure of EWA Services',
         paragraphs: [
-          'Usage has increased sharply in both user counts and transaction frequency, indicating that growth is not only adoption breadth but also usage intensity.',
-          'The evidence suggests EWA is frequently used as part of regular cash-flow management, not only for infrequent emergency liquidity.',
-          'Providers operate through two primary models.'
+          'EWA usage has increased sharply over time, both in the number of users and in transaction frequency. The parallel increase in users and transactions suggests that rising adoption is accompanied by greater transaction intensity. Rather than serving solely as an emergency liquidity tool, EWA appears to have become part of regular cash-flow management for many households.',
+          'EWA services operate under two primary business models:',
+          'In Maryland, the D2C model dominates, accounting for more than half of the approximately 345,000 unique users.'
         ],
         bullets: [
-          'Business-to-Business (B2B): employer and payroll-integrated model',
-          'Direct-to-Consumer (D2C): direct worker onboarding through linked bank data',
-          'In Maryland, D2C accounts for more than half of approximately 345,000 unique users'
+          'Business-to-Business (B2B): Providers partner with employers and integrate with payroll systems to facilitate wage advances directly through the workplace.',
+          'Direct-to-Consumer (D2C): Providers work directly with workers by linking to their bank accounts to verify earnings, without requiring employer participation.'
         ]
       },
       {
         title: '3. Is Earned Wage Access a "Free" Service?',
         paragraphs: [
-          'Marketing often frames EWA as no-cost, but transaction evidence indicates substantial user-paid costs across a large subset of providers.',
-          'In the sample, providers reported approximately $35 million in revenue from around 5.5 million consumer payments, representing roughly half of all transactions in the covered data.',
-          'Cost channels include expedited transfer fees, high implied APR on small-dollar advances, and widespread tipping behavior.',
-          'Given common transaction sizes between $25 and $100, flat fees often translate to high annualized cost measures, with average APR estimates exceeding 100% in provider-level calculations.'
+          'Although EWA services are often marketed as free, the data tell a different story. In our sample, a subset of EWA providers generated $35 million in total revenue from roughly 5.5 million consumer payments, accounting for about 50% of all transactions. Three primary factors contribute to the actual costs borne by users:'
         ],
         bullets: [
-          'Expedited transfer fees: typically $2 to $5 for faster disbursement',
-          'Implied APR range in sample: roughly 42% to more than 200%, depending on provider',
-          'Average cumulative tip per user in reporting providers: more than $280 over five years'
+          'Expedited Transfer Fees: Most providers offer a no-cost option requiring up to two business days for disbursement. To receive funds faster, users pay fees ranging from $2 to $5 per advance.',
+          'High Effective APR: Given that most transactions fall between $25 and $100, flat fees translate into substantial annualized costs. The average APR across providers exceeds 100%, ranging from 42% to over 200%, depending on the firm.',
+          'Voluntary Tips: While framed as optional, tips are common in practice. Among providers reporting detailed data, the average cumulative tip per user reached over $280 over the sample period of five years.'
         ]
       },
       {
         title: '4. Repeat Usage, Delinquencies, and Financial Outcomes',
         paragraphs: [
-          'A central finding is heavy repeat use, which is more consistent with recurring liquidity stress than one-time emergencies.',
-          'Most users in the sample recorded 51 or more repeat transactions over a five-year period, and about 23% used EWA at least once every two weeks.',
-          'Despite repeated use, a large share of users remained financially fragile: nearly half still reported inability to cover emergency expenses.',
-          'Survey evidence also indicates labor supply adjustments, with 46% of users reporting additional hours or shifts linked to EWA usage.'
+          'A striking feature of EWA usage is the prevalence of repeat transactions. This pattern suggests reliance rather than episodic use, raising concerns about whether EWA alleviates or perpetuates financial strain. Three key findings emerge:'
+        ],
+        bullets: [
+          'Persistent Reliance: Rather than serving as an occasional emergency tool, EWA appears embedded in regular cash-flow management. Most users have 51 or more repeat transactions during a five-year period, and 23% use the service at least once every two weeks.',
+          'Limited Financial Improvement: Despite repeated usage, EWA does not appear to alleviate underlying financial constraints. Nearly 50% of users remain unable to cover emergency expenses even after using the service.',
+          'Behavioral Consequences: EWA usage is associated with changes in work behavior. Among surveyed users, 46% reported working more hours or taking on additional shifts as a result of using EWA services.'
         ]
       },
       {
         title: '5. Demographic and Socioeconomic Patterns',
         paragraphs: [
-          'EWA usage differs systematically by community characteristics, indicating structural rather than purely transitory demand patterns.',
-          'Younger workers are overrepresented, with notable concentration among users aged 25 to 33.',
-          'Usage correlates negatively with median income and educational attainment at the ZIP-code level, and positively with ZIP-code shares of Black and Hispanic residents.'
+          'EWA usage varies systematically across demographic and socioeconomic groups, suggesting that adoption reflects structural constraints rather than purely transitory shocks. Three key demographic correlates emerge:'
+        ],
+        bullets: [
+          'Age: Younger workers are more likely to adopt EWA services. Notably, 32% of EWA users are between the ages of 25 and 33, indicating concentration among those early in their careers with limited savings buffers.',
+          'Income and Education: EWA usage is disproportionately concentrated among lower-income households. Zip codes with higher median income and education levels exhibit negative correlations with EWA uptake.',
+          'Race: Zip codes with higher percentages of Black and Hispanic residents use EWA services more frequently, pointing to racial disparities in financial access.'
         ]
       },
       {
         title: 'Financial Constraints and Financial Literacy',
         paragraphs: [
-          'Using FINRA National Financial Capability Survey responses for Maryland, the team constructed zip-code-level indices for financial constraint, financial literacy, and alternative financing usage.',
-          'EWA usage is positively associated with measured financial constraints and negatively associated with financial literacy scores.',
-          'This pattern is consistent with demand being tied to underlying vulnerability rather than purely deliberate optimization by financially resilient households.'
+          'To further examine the relationship between financial vulnerability and EWA usage, we construct zip code-level indices using the National Financial Capability Survey (FINRA, 2009-2021), which includes approximately 2,500 respondents in Maryland. Three indices are computed:',
+          'EWA usage is positively correlated with financial constraints and negatively correlated with financial literacy. This pattern suggests that demand for EWA services is closely tied to underlying economic vulnerability, rather than reflecting informed or deliberate financial decision-making.'
         ],
         bullets: [
-          'Financial Constraint Index: 0-6 points across bill stress and shortfall indicators',
-          'Financial Literacy Index: 0-5 points based on objective knowledge questions',
-          'Alternative Financing Index: 0-5 points across payday, pawn, title, and related products'
+          'Financial Constraint (0-6 points): Aggregates indicators of spending exceeding income, difficulty paying bills, lack of emergency funds, retirement account hardship withdrawals, late mortgage payments, and credit card payment difficulties.',
+          'Financial Literacy (0-5 points): Based on objective questions assessing respondents\' financial knowledge.',
+          'Alternative Financing (0-5 points): Captures frequent use of auto title loans, payday loans, pawn shops, rent-to-own stores, or subprime auto loans.'
         ]
       },
       {
         title: '6. Financial Access and Policy Implications',
         paragraphs: [
-          'EWA usage is positively associated with local access to traditional banks and credit unions, indicating adoption is not mainly driven by complete exclusion from formal banking.',
-          'There is also a positive association between EWA usage and alternative financing prevalence, suggesting a layered liquidity toolkit rather than simple one-for-one substitution.',
-          'Policy design should therefore evaluate EWA within a broader household liquidity ecosystem and address transparency, affordability, and repeated-use risk.'
+          'Access to traditional financial institutions plays a nuanced role in EWA usage. While bank access is typically required to use EWA services, greater availability of banks and credit unions is associated with higher EWA adoption. This suggests that EWA adoption does not primarily arise from exclusion from the formal banking system.',
+          'Instead, EWA appears to be used by individuals who already have access to traditional financial institutions. In addition, there is a positive association between EWA use and the prevalence of alternative financing, indicating that EWA is part of a broader set of short-term liquidity tools used by financially constrained households. Taken jointly, these patterns imply that EWA functions as a complementary liquidity instrument within a layered financial ecosystem: consumers stack EWA on top of bank accounts and alternative credit products to manage cash-flow volatility.'
         ]
       },
       {
         title: '7. Conclusion',
         paragraphs: [
-          'EWA now plays a meaningful role in Maryland household liquidity management. The evidence indicates many users face nontrivial costs and repeated usage patterns that can align with persistent financial strain.',
-          'Policy responses should preserve useful short-term liquidity benefits while strengthening disclosure, fee clarity, and consumer protections that support long-term financial well-being.'
+          'Earned Wage Access programs have become an increasingly prominent feature of the consumer financial landscape. While they offer flexibility and immediacy, the evidence suggests that EWA services are often neither costless nor used solely for emergencies. Instead, they are frequently embedded in the financial lives of economically vulnerable households, with repeated usage, meaningful costs, and nontrivial risks of repayment difficulty.',
+          'Understanding EWA, therefore, requires a careful assessment of both its benefits and its risks. Effective policy responses should balance the short-term liquidity advantages of EWA against the need to promote transparency, affordability, and long-term financial well-being.'
         ]
       }
     ]
@@ -270,6 +275,7 @@ const EWA_FIGURES = {
 export const ResearchDetail: React.FC = () => {
   const { researchSlug } = useParams<{ researchSlug: string }>();
   const article = researchSlug ? RESEARCH_ARTICLES[researchSlug] : null;
+  const isEwaArticle = article?.slug === 'earned-wage-access';
 
   if (!article) {
     return <Navigate to="/research" replace />;
@@ -288,7 +294,14 @@ export const ResearchDetail: React.FC = () => {
           </Link>
           <div className="text-umd-red text-xs font-semibold uppercase tracking-[0.18em] mb-3">{article.category}</div>
           <h1 className="text-3xl md:text-5xl font-serif font-semibold text-gray-900 mb-4 leading-tight">{article.title}</h1>
-          <p className="text-sm text-gray-500">{article.institution} · {article.date}</p>
+          {isEwaArticle ? (
+            <div className="space-y-1 text-sm text-gray-600">
+              <p>{article.institution}</p>
+              <p>Date: {article.date}</p>
+            </div>
+          ) : (
+            <p className="text-sm text-gray-500">{article.institution} · {article.date}</p>
+          )}
         </div>
       </div>
 
@@ -338,15 +351,17 @@ export const ResearchDetail: React.FC = () => {
         </div>
 
         <article className="max-w-none">
-          <div className="mb-8 p-6 border border-gray-100 bg-gray-50/70">
-            <p className="text-xl text-gray-500 font-light">{article.summary}</p>
-          </div>
+          {!article.hideSummary && (
+            <div className="mb-8 p-6 border border-gray-100 bg-gray-50/70">
+              <p className="text-xl text-gray-500 font-light">{article.summary}</p>
+            </div>
+          )}
 
           {article.preparedBy && (
             <div className="not-prose mb-10 bg-gray-50 border border-gray-100 p-6">
-              <h2 className="text-lg font-serif text-gray-900 mb-4">Prepared by</h2>
-              <p className="text-sm text-gray-600 mb-2"><span className="font-medium text-gray-800">Faculty:</span> {article.preparedBy.faculty.join(', ')}</p>
-              <p className="text-sm text-gray-600"><span className="font-medium text-gray-800">Students:</span> {article.preparedBy.students.join(', ')}</p>
+              <p className="text-base text-gray-900 mb-2">Prepared by:</p>
+              <p className="text-base text-gray-700 mb-2">Faculty: {article.preparedBy.faculty.join(', ')}</p>
+              <p className="text-base text-gray-700">Students: {article.preparedBy.students.join(', ')}</p>
             </div>
           )}
 
@@ -371,17 +386,27 @@ export const ResearchDetail: React.FC = () => {
                   ))}
                 </div>
                 {section.bullets?.length ? (
-                  <ul className="mt-5 list-disc pl-6 space-y-2 text-gray-700 leading-7">
-                    {section.bullets.map((bullet) => (
-                      <li key={`${section.title}-${bullet}`}>{bullet}</li>
-                    ))}
-                  </ul>
-                ) : null}
-
-                {article.slug === 'earned-wage-access' && section.title === '4. Repeat Usage, Delinquencies, and Financial Outcomes' ? (
-                  <figure className="mt-8">
-                    <img src={EWA_FIGURES.fig1.src} alt={EWA_FIGURES.fig1.alt} className="w-full h-auto" />
-                  </figure>
+                  article.slug === 'earned-wage-access' && section.title === '4. Repeat Usage, Delinquencies, and Financial Outcomes' ? (
+                    <>
+                      <ul className="mt-5 list-disc pl-6 space-y-2 text-gray-700 leading-7">
+                        <li>{section.bullets[0]}</li>
+                      </ul>
+                      <figure className="mt-8">
+                        <img src={EWA_FIGURES.fig1.src} alt={EWA_FIGURES.fig1.alt} className="w-full h-auto" />
+                      </figure>
+                      <ul className="mt-6 list-disc pl-6 space-y-2 text-gray-700 leading-7">
+                        {section.bullets.slice(1).map((bullet) => (
+                          <li key={`${section.title}-${bullet}`}>{bullet}</li>
+                        ))}
+                      </ul>
+                    </>
+                  ) : (
+                    <ul className="mt-5 list-disc pl-6 space-y-2 text-gray-700 leading-7">
+                      {section.bullets.map((bullet) => (
+                        <li key={`${section.title}-${bullet}`}>{bullet}</li>
+                      ))}
+                    </ul>
+                  )
                 ) : null}
 
                 {article.slug === 'earned-wage-access' && section.title === '5. Demographic and Socioeconomic Patterns' ? (
