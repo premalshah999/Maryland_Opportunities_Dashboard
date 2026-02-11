@@ -6,37 +6,37 @@ const dashboards = [
   {
     id: 'census',
     title: 'Census (ACS Demographics)',
-    description: 'Explore demographic patterns across Maryland communities with ACS data.',
+    description: 'Visualizes demographic and socioeconomic data from the American Community Survey (ACS) to analyze population characteristics across the United States.',
     path: '/dashboard/census'
   },
   {
     id: 'government-spending',
     title: 'Government Spending',
-    description: 'Track federal spending across contracts, grants, wages, and direct payments.',
+    description: 'Visualizes the distribution of federal funding across the United States using data from the USAspending, tracking key economic drivers including federal contracts, grants, direct payments, and federal employee wages.',
     path: '/dashboard/government-spending'
   },
   {
     id: 'government-finances',
     title: 'Government Finances',
-    description: 'Review government finance indicators and trends across regions.',
+    description: 'Analyzes the financial health of local governments across the United States using national data from the Reason Foundation.',
     path: '/dashboard/government-finances'
   },
   {
     id: 'finra-financial-literacy',
     title: 'FINRA Financial Literacy',
-    description: 'Analyze financial literacy measures using FINRA survey data.',
+    description: 'Evaluates financial literacy and capability nationwide using data from the FINRA Investor Education Foundation.',
     path: '/dashboard/finra-financial-literacy'
   },
   {
     id: 'fund-flow',
     title: 'Fund Flow',
-    description: 'Follow federal contracts and subcontracts across agencies and regions.',
+    description: 'Visualizes the flow of federal funds by merging prime contract and subcontract data from System for Award Management (SAM). Tracks the directional movement of contracts, including inflows and outflows, between agencies, states, and industries.',
     path: '/dashboard/fund-flow'
   },
   {
     id: 'federal-spending-breaks',
     title: 'Federal Spending Breaks',
-    description: 'Assess federal spending breakdowns and scenario impacts.',
+    description: 'Provides a detailed breakdown of federal funding categories, including contracts, grants, and federal employee wages for each State, using data from the USAspending.',
     path: '/dashboard/federal-spending-breaks'
   }
 ];
