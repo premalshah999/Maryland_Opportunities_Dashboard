@@ -381,7 +381,31 @@ export const DashboardReports = () => {
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 md:py-20">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-14">
+        <div className="grid grid-cols-1 lg:grid-cols-[220px_1fr] gap-10">
+          <aside className="hidden lg:block">
+            <div className="sticky top-24">
+              <div className="text-[10px] font-semibold uppercase tracking-[0.2em] text-gray-400 mb-4">
+                On This Page
+              </div>
+              <nav className="space-y-2 text-sm text-gray-600">
+                <a className="block hover:text-umd-red transition-colors" href="#overview">Overview</a>
+                <a className="block hover:text-umd-red transition-colors" href="#interface">Interface Reference</a>
+                <div className="pt-2 text-[10px] uppercase tracking-[0.18em] text-gray-400">Dashboards</div>
+                {dashboardGuides.map((guide) => (
+                  <a
+                    key={`nav-${guide.id}`}
+                    className="block hover:text-umd-red transition-colors"
+                    href={`#${guide.id}`}
+                  >
+                    {guide.title}
+                  </a>
+                ))}
+              </nav>
+            </div>
+          </aside>
+
+          <div>
+        <div id="overview" className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-14 scroll-mt-24">
           {workflowSteps.map((step, index) => (
             <div key={step.title} className="bg-white border border-gray-100 p-6">
               <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-umd-red mb-2">Step {index + 1}</div>
@@ -391,7 +415,7 @@ export const DashboardReports = () => {
           ))}
         </div>
 
-        <div className="mb-14 bg-white border border-gray-100 p-6 md:p-8">
+        <div id="interface" className="mb-14 bg-white border border-gray-100 p-6 md:p-8 scroll-mt-24">
           <h2 className="text-2xl font-serif text-gray-900 mb-3">Interface Reference</h2>
           <p className="text-sm text-gray-500 font-light mb-4">
             Every dashboard uses the same two-tab workflow in the sidebar:
@@ -406,7 +430,7 @@ export const DashboardReports = () => {
 
         <div className="space-y-14">
           {dashboardGuides.map((guide) => (
-            <section key={guide.id} className="bg-white border border-gray-100 p-8 md:p-10">
+            <section key={guide.id} id={guide.id} className="bg-white border border-gray-100 p-8 md:p-10 scroll-mt-24">
               <div className="flex flex-col lg:flex-row lg:items-start gap-10">
                 <div className="lg:w-[46%]">
                   <h2 className="text-3xl font-serif text-gray-900 mb-3">{guide.title}</h2>
@@ -485,6 +509,8 @@ export const DashboardReports = () => {
               </div>
             </section>
           ))}
+        </div>
+          </div>
         </div>
       </div>
     </div>
