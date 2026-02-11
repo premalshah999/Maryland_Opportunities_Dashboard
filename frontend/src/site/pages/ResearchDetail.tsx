@@ -425,6 +425,11 @@ export const ResearchDetail: React.FC = () => {
                   <p>Age: Younger workers are more likely to adopt EWA services. Notably, 32% of EWA users are between the ages of 25 and 33, indicating concentration among those early in their careers with limited savings buffers.</p>
                   <p>Income and Education: EWA usage is disproportionately concentrated among lower-income households. Zip codes with higher median income and education levels exhibit negative correlations with EWA uptake.</p>
                   <p>Race: Zip codes with higher percentages of Black and Hispanic residents use EWA services more frequently, pointing to racial disparities in financial access.</p>
+                </div>
+                <figure className="mt-8">
+                  <img src={EWA_FIGURES.fig2.src} alt={EWA_FIGURES.fig2.alt} className="w-full h-auto" />
+                </figure>
+                <div className="space-y-4 text-gray-700 leading-8 mt-6">
                   <h3 className="text-xl font-serif font-semibold text-gray-900 pt-2">Financial Constraints and Financial Literacy</h3>
                   <p>To further examine the relationship between financial vulnerability and EWA usage, we construct zip code-level indices using the National Financial Capability Survey (FINRA, 2009-2021), which includes approximately 2,500 respondents in Maryland. Three indices are computed:</p>
                   <p>Financial Constraint (0-6 points): Aggregates indicators of spending exceeding income, difficulty paying bills, lack of emergency funds, retirement account hardship withdrawals, late mortgage payments, and credit card payment difficulties.</p>
@@ -432,9 +437,6 @@ export const ResearchDetail: React.FC = () => {
                   <p>Alternative Financing (0-5 points): Captures frequent use of auto title loans, payday loans, pawn shops, rent-to-own stores, or subprime auto loans.</p>
                   <p>EWA usage is positively correlated with financial constraints and negatively correlated with financial literacy. This pattern suggests that demand for EWA services is closely tied to underlying economic vulnerability, rather than reflecting informed or deliberate financial decision-making.</p>
                 </div>
-                <figure className="mt-8">
-                  <img src={EWA_FIGURES.fig2.src} alt={EWA_FIGURES.fig2.alt} className="w-full h-auto" />
-                </figure>
                 <figure className="mt-6">
                   <img src={EWA_FIGURES.fig3.src} alt={EWA_FIGURES.fig3.alt} className="w-full h-auto" />
                 </figure>
