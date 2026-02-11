@@ -110,13 +110,6 @@ export const Research = () => {
                 </div>
               </div>
             ))}
-
-            {/* Pagination Placeholder */}
-            <div className="pt-8">
-              <button className="text-sm font-bold uppercase tracking-widest text-gray-400 cursor-not-allowed">
-                No More Entries
-              </button>
-            </div>
           </div>
 
         </div>

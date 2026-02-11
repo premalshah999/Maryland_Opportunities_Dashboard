@@ -44,11 +44,6 @@ export const NAV_ITEMS: NavItem[] = [
         path: '/research/shutdown-cost',
         description: 'Economic cost of 2025 shutdown through employment, contracts, and federal spending',
         dataLink: '/dashboard/federal-spending-breaks'
-      },
-      {
-        label: 'Maryland Business Climate Survey 2025',
-        path: '/projects/business-survey',
-        description: 'Maryland businesses report rising costs and relocation concerns'
       }
     ]
   },
@@ -77,6 +72,7 @@ export const RESEARCH_PAPERS: ResearchPaper[] = [
     date: 'October 2023',
     authors: [],
     category: 'Earned Wage Access',
+    pdfUrl: '/assets/reports/research-ewa.pdf',
     dataLink: 'https://maryland-opportunities-dashboardv1.vercel.app/#/dashboard/government-spending'
   },
   {
@@ -86,7 +82,7 @@ export const RESEARCH_PAPERS: ResearchPaper[] = [
     date: 'January 2024',
     authors: [],
     category: 'Federal Contracts',
-    pdfUrl: 'https://www.marylandcomptroller.gov/content/dam/mdcomp/md/reports/research/federal-spending-in-md.pdf',
+    pdfUrl: '/assets/reports/research-federal-contract-flows-md.pdf',
     dataLink: 'https://maryland-opportunities-dashboardv1.vercel.app/#/dashboard/fund-flow'
   },
   {
@@ -96,16 +92,8 @@ export const RESEARCH_PAPERS: ResearchPaper[] = [
     date: 'March 2024',
     authors: [],
     category: 'Government Shutdown',
+    pdfUrl: '/assets/reports/research-government-shutdown-2025-md.pdf',
     dataLink: '/dashboard/federal-spending-breaks'
-  },
-  {
-    id: 'business-2025',
-    title: 'Maryland Business Climate Survey 2025',
-    abstract: 'Maryland businesses report rising costs, federal policy disruptions, and growing relocation concerns.',
-    date: 'February 2025',
-    authors: [],
-    category: 'Business Research',
-    pdfUrl: '/assets/reports/2025-maryland-business-climate-survey.pdf'
   }
 ];
 

@@ -24,7 +24,8 @@ const projectContent: Record<string, {
         date: 'March 2025',
         image: 'https://images.unsplash.com/photo-1554224155-6726b3ff858f?auto=format&fit=crop&q=80&w=1200&h=600',
         summary: 'Smith School students provide Maryland legislators with key insights on earned wage access regulations and consumer protection.',
-        dataLink: '/data/maryland/finra',
+        dataLink: '/research/earned-wage-access',
+        materialsLink: '/assets/reports/research-ewa.pdf',
         content: (
             <>
                 <figure className="mb-8">

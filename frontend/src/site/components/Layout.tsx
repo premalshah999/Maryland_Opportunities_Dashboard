@@ -361,7 +361,7 @@ const Footer = () => {
   return (
     <footer className="bg-white border-t border-gray-200 pt-24 pb-12">
       <div className="max-w-[1400px] mx-auto px-6 lg:px-12">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-16 mb-20">
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-12 mb-20">
 
           <div className="md:col-span-1">
             <Link to="/" className="flex items-center gap-4 mb-8">
@@ -379,10 +379,20 @@ const Footer = () => {
             <h4 className="font-bold text-xs uppercase tracking-[0.15em] text-gray-900 mb-8 pb-2 border-b border-gray-100 inline-block">Navigation</h4>
             <ul className="space-y-4 text-sm font-light text-gray-600">
               <li><Link to="/about" className="hover:text-umd-red transition-colors">Mission</Link></li>
-              <li><Link to="/data/maryland" className="hover:text-umd-red transition-colors">Maryland Data</Link></li>
-              <li><Link to="/data/national" className="hover:text-umd-red transition-colors">National Data</Link></li>
               <li><Link to="/research" className="hover:text-umd-red transition-colors">Research</Link></li>
               <li><Link to="/projects" className="hover:text-umd-red transition-colors">Projects</Link></li>
+            </ul>
+          </div>
+
+          <div className="md:col-span-1">
+            <h4 className="font-bold text-xs uppercase tracking-[0.15em] text-gray-900 mb-8 pb-2 border-b border-gray-100 inline-block">Dashboards</h4>
+            <ul className="space-y-4 text-sm font-light text-gray-600">
+              <li><Link to="/dashboard/census" className="hover:text-umd-red transition-colors">Census (ACS Demographics)</Link></li>
+              <li><Link to="/dashboard/government-spending" className="hover:text-umd-red transition-colors">Government Spending</Link></li>
+              <li><Link to="/dashboard/government-finances" className="hover:text-umd-red transition-colors">Government Finances</Link></li>
+              <li><Link to="/dashboard/finra-financial-literacy" className="hover:text-umd-red transition-colors">FINRA Financial Literacy</Link></li>
+              <li><Link to="/dashboard/fund-flow" className="hover:text-umd-red transition-colors">Fund Flow</Link></li>
+              <li><Link to="/dashboard/federal-spending-breaks" className="hover:text-umd-red transition-colors">Federal Spending Breaks</Link></li>
             </ul>
           </div>
 
@@ -390,8 +400,6 @@ const Footer = () => {
             <h4 className="font-bold text-xs uppercase tracking-[0.15em] text-gray-900 mb-8 pb-2 border-b border-gray-100 inline-block">Connect</h4>
             <ul className="space-y-4 text-sm font-light text-gray-600">
               <li><a href="mailto:mop@rhsmith.umd.edu" className="hover:text-umd-red transition-colors border-b border-transparent hover:border-umd-red">mop@rhsmith.umd.edu</a></li>
-              <li><a href="#" className="hover:text-umd-red transition-colors">Twitter / X</a></li>
-              <li><a href="#" className="hover:text-umd-red transition-colors">LinkedIn</a></li>
             </ul>
           </div>
 
