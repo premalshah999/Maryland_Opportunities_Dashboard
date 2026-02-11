@@ -77,7 +77,6 @@ export const RESEARCH_PAPERS: ResearchPaper[] = [
     date: 'October 2023',
     authors: [],
     category: 'Earned Wage Access',
-    pdfUrl: '/assets/reports/ewa-presentation-3-25-2025-disclaimer.pdf',
     dataLink: 'https://maryland-opportunities-dashboardv1.vercel.app/#/dashboard/government-spending'
   },
   {
