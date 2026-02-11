@@ -15,6 +15,8 @@ export const Research = () => {
 
   const paperDetailRoute: Record<string, string | undefined> = {
     "ewa-001": "/research/earned-wage-access",
+    "fed-002": "/research/federal-spending",
+    "shutdown-003": "/research/shutdown-cost",
   };
 
   return (
@@ -76,12 +78,12 @@ export const Research = () => {
                       className={materialsButtonClass}
                     >
                       <Paperclip size={14} />
-                      <span>Materials</span>
+                      <span>Download Report</span>
                     </a>
                   ) : (
                     <span className={`${materialsButtonClass} opacity-50 cursor-not-allowed`}>
                       <Paperclip size={14} />
-                      <span>Materials</span>
+                      <span>Download Report</span>
                     </span>
                   )}
                   {paper.dataLink && (

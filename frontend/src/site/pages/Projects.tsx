@@ -10,7 +10,7 @@ const projects = [
         description: 'Analyzing where Earned Wage Access products are offered and how their availability relates to neighborhood characteristics and financial literacy.',
         category: 'Financial Inclusion',
         image: 'https://images.unsplash.com/photo-1579621970563-ebec7560ff3e?auto=format&fit=crop&q=80&w=800&h=600',
-        dataLink: '/research/earned-wage-access',
+        dataLink: '/research/earned-wage-access/scatter',
         materialsLink: '/assets/reports/research-ewa.pdf'
     },
     {
