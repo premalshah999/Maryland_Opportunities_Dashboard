@@ -244,6 +244,29 @@ const RESEARCH_ARTICLES: Record<string, ResearchArticle> = {
   }
 };
 
+const EWA_FIGURES = {
+  fig1: {
+    src: '/assets/reports/ewa-figures/fig1-transaction-distribution.png',
+    alt: 'Figure 1. Distribution of Earned Wage Access transaction amounts.',
+    caption: 'Fig. 1: Distribution of Earned Wage Access transaction amounts.'
+  },
+  fig2: {
+    src: '/assets/reports/ewa-figures/fig2-demographic-patterns.png',
+    alt: 'Figure 2. Demographic and Socioeconomic Correlates of EWA Usage.',
+    caption: 'Fig. 2: Demographic and Socioeconomic Correlates of EWA Usage. (a) Income, (b) Education, (c) Black, (d) Hispanic.'
+  },
+  fig3: {
+    src: '/assets/reports/ewa-figures/fig3-finra-indices.png',
+    alt: 'Figure 3. FINRA Indices: Financial Constraints and Financial Literacy.',
+    caption: 'Fig. 3: FINRA Indices: Financial Constraints and Financial Literacy.'
+  },
+  fig4: {
+    src: '/assets/reports/ewa-figures/fig4-financial-access.png',
+    alt: 'Figure 4. Financial Access and Alternative Financing.',
+    caption: 'Fig. 4: Financial Access and Alternative Financing. (a) Nearby Banks, (b) Alternative Financing.'
+  }
+};
+
 export const ResearchDetail: React.FC = () => {
   const { researchSlug } = useParams<{ researchSlug: string }>();
   const article = researchSlug ? RESEARCH_ARTICLES[researchSlug] : null;
@@ -314,8 +337,10 @@ export const ResearchDetail: React.FC = () => {
           )}
         </div>
 
-        <article className="prose prose-lg max-w-none prose-headings:font-serif prose-headings:text-gray-900 prose-p:text-gray-600 prose-p:leading-relaxed">
-          <p className="text-xl text-gray-500 font-light not-prose mb-8">{article.summary}</p>
+        <article className="max-w-none">
+          <div className="mb-8 p-6 border border-gray-100 bg-gray-50/70">
+            <p className="text-xl text-gray-500 font-light">{article.summary}</p>
+          </div>
 
           {article.preparedBy && (
             <div className="not-prose mb-10 bg-gray-50 border border-gray-100 p-6">
@@ -325,30 +350,63 @@ export const ResearchDetail: React.FC = () => {
             </div>
           )}
 
-          <div className="not-prose mb-10">
-            <h2 className="text-lg font-serif text-gray-900 mb-4">Table of Contents</h2>
-            <ol className="list-decimal list-inside space-y-1 text-sm text-gray-600">
+          <div className="not-prose mb-12 border border-gray-100 bg-white p-6 md:p-8">
+            <h2 className="text-2xl font-serif text-gray-900 mb-6">Table of Contents</h2>
+            <div className="space-y-3 text-gray-700 leading-relaxed">
               {article.toc.map((item) => (
-                <li key={item}>{item}</li>
+                <div key={item} className="text-base">{item}</div>
               ))}
-            </ol>
+            </div>
           </div>
 
-          {article.sections.map((section) => (
-            <section key={section.title} className="mb-10">
-              <h2>{section.title}</h2>
-              {section.paragraphs.map((paragraph) => (
-                <p key={`${section.title}-${paragraph.slice(0, 24)}`}>{paragraph}</p>
-              ))}
-              {section.bullets?.length ? (
-                <ul>
-                  {section.bullets.map((bullet) => (
-                    <li key={`${section.title}-${bullet}`}>{bullet}</li>
+          <div className="space-y-10">
+            {article.sections.map((section) => (
+              <section key={section.title} className="border-b border-gray-100 pb-8">
+                <h2 className="text-2xl font-serif font-semibold text-gray-900 mb-4">{section.title}</h2>
+                <div className="space-y-4">
+                  {section.paragraphs.map((paragraph) => (
+                    <p key={`${section.title}-${paragraph.slice(0, 24)}`} className="text-gray-700 leading-8">
+                      {paragraph}
+                    </p>
                   ))}
-                </ul>
-              ) : null}
-            </section>
-          ))}
+                </div>
+                {section.bullets?.length ? (
+                  <ul className="mt-5 list-disc pl-6 space-y-2 text-gray-700 leading-7">
+                    {section.bullets.map((bullet) => (
+                      <li key={`${section.title}-${bullet}`}>{bullet}</li>
+                    ))}
+                  </ul>
+                ) : null}
+
+                {article.slug === 'earned-wage-access' && section.title === '4. Repeat Usage, Delinquencies, and Financial Outcomes' ? (
+                  <figure className="mt-8 border border-gray-100 p-4 bg-white">
+                    <img src={EWA_FIGURES.fig1.src} alt={EWA_FIGURES.fig1.alt} className="w-full h-auto" />
+                    <figcaption className="mt-3 text-sm text-gray-500 italic">{EWA_FIGURES.fig1.caption}</figcaption>
+                  </figure>
+                ) : null}
+
+                {article.slug === 'earned-wage-access' && section.title === '5. Demographic and Socioeconomic Patterns' ? (
+                  <>
+                    <figure className="mt-8 border border-gray-100 p-4 bg-white">
+                      <img src={EWA_FIGURES.fig2.src} alt={EWA_FIGURES.fig2.alt} className="w-full h-auto" />
+                      <figcaption className="mt-3 text-sm text-gray-500 italic">{EWA_FIGURES.fig2.caption}</figcaption>
+                    </figure>
+                    <figure className="mt-6 border border-gray-100 p-4 bg-white">
+                      <img src={EWA_FIGURES.fig3.src} alt={EWA_FIGURES.fig3.alt} className="w-full h-auto" />
+                      <figcaption className="mt-3 text-sm text-gray-500 italic">{EWA_FIGURES.fig3.caption}</figcaption>
+                    </figure>
+                  </>
+                ) : null}
+
+                {article.slug === 'earned-wage-access' && section.title === '6. Financial Access and Policy Implications' ? (
+                  <figure className="mt-8 border border-gray-100 p-4 bg-white">
+                    <img src={EWA_FIGURES.fig4.src} alt={EWA_FIGURES.fig4.alt} className="w-full h-auto" />
+                    <figcaption className="mt-3 text-sm text-gray-500 italic">{EWA_FIGURES.fig4.caption}</figcaption>
+                  </figure>
+                ) : null}
+              </section>
+            ))}
+          </div>
         </article>
       </div>
     </div>
