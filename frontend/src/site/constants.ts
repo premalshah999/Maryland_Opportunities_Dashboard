@@ -43,7 +43,7 @@ export const NAV_ITEMS: NavItem[] = [
         label: 'Government Shutdown Cost',
         path: '/research/shutdown-cost',
         description: 'Economic cost of 2025 shutdown through employment, contracts, and federal spending',
-        dataLink: 'https://maryland-opportunities-dashboardv1.vercel.app/#/dashboard/federal-spending-breaks'
+        dataLink: '/dashboard/federal-spending-breaks'
       },
       {
         label: 'Maryland Business Climate Survey 2025',
@@ -97,7 +97,7 @@ export const RESEARCH_PAPERS: ResearchPaper[] = [
     date: 'March 2024',
     authors: [],
     category: 'Government Shutdown',
-    dataLink: 'https://maryland-opportunities-dashboardv1.vercel.app/#/dashboard/federal-spending-breaks'
+    dataLink: '/dashboard/federal-spending-breaks'
   },
   {
     id: 'business-2025',
@@ -140,7 +140,7 @@ export const TEAM_MEMBERS: TeamMember[] = [
     name: 'Haotian Shi',
     role: 'Research Fellow',
     bio: 'Haotian Shi is a graduate research fellow with the Maryland Opportunity Project, working on quantitative analysis and empirical studies that contribute to the project’s policy-focused research.',
-    imageUrl: '/assets/HaotianShi.jpg',
+    imageUrl: '/assets/Haotian_latest_pic.png',
   },
   {
     id: 'premal-shah',
