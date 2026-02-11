@@ -366,6 +366,9 @@ const workflowSteps = [
 ];
 
 export const DashboardReports = () => {
+  const [activeSection, setActiveSection] = React.useState('overview');
+
+  const activeGuide = dashboardGuides.find((guide) => guide.id === activeSection);
   return (
     <div className="animate-fadeIn">
       <div className="bg-white py-16 md:py-24 border-b border-gray-100">
@@ -381,31 +384,61 @@ export const DashboardReports = () => {
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 md:py-20">
-        <div className="grid grid-cols-1 lg:grid-cols-[220px_1fr] gap-10">
-          <aside className="hidden lg:block">
-            <div className="sticky top-24">
-              <div className="text-[10px] font-semibold uppercase tracking-[0.2em] text-gray-400 mb-4">
-                On This Page
+        <div className="grid grid-cols-1 lg:grid-cols-[240px_1fr] gap-10">
+          <aside className="lg:block">
+            <div className="lg:sticky lg:top-24 space-y-6">
+              <div>
+                <div className="text-[10px] font-semibold uppercase tracking-[0.2em] text-gray-400 mb-3">
+                  Documentation
+                </div>
+                <div className="space-y-2 text-sm">
+                  {[
+                    { id: 'overview', label: 'Overview' },
+                    { id: 'interface', label: 'Interface Reference' }
+                  ].map((item) => (
+                    <button
+                      key={item.id}
+                      type="button"
+                      onClick={() => setActiveSection(item.id)}
+                      className={`w-full text-left px-3 py-2 rounded-md border transition-colors ${
+                        activeSection === item.id
+                          ? 'border-umd-red text-umd-red bg-red-50/60'
+                          : 'border-gray-200 text-gray-600 hover:border-umd-red hover:text-umd-red'
+                      }`}
+                    >
+                      {item.label}
+                    </button>
+                  ))}
+                </div>
               </div>
-              <nav className="space-y-2 text-sm text-gray-600">
-                <a className="block hover:text-umd-red transition-colors" href="#overview">Overview</a>
-                <a className="block hover:text-umd-red transition-colors" href="#interface">Interface Reference</a>
-                <div className="pt-2 text-[10px] uppercase tracking-[0.18em] text-gray-400">Dashboards</div>
-                {dashboardGuides.map((guide) => (
-                  <a
-                    key={`nav-${guide.id}`}
-                    className="block hover:text-umd-red transition-colors"
-                    href={`#${guide.id}`}
-                  >
-                    {guide.title}
-                  </a>
-                ))}
-              </nav>
+
+              <div>
+                <div className="text-[10px] font-semibold uppercase tracking-[0.2em] text-gray-400 mb-3">
+                  Dashboards
+                </div>
+                <div className="space-y-2 text-sm">
+                  {dashboardGuides.map((guide) => (
+                    <button
+                      key={`nav-${guide.id}`}
+                      type="button"
+                      onClick={() => setActiveSection(guide.id)}
+                      className={`w-full text-left px-3 py-2 rounded-md border transition-colors ${
+                        activeSection === guide.id
+                          ? 'border-umd-red text-umd-red bg-red-50/60'
+                          : 'border-gray-200 text-gray-600 hover:border-umd-red hover:text-umd-red'
+                      }`}
+                    >
+                      {guide.title}
+                    </button>
+                  ))}
+                </div>
+              </div>
             </div>
           </aside>
 
           <div>
-        <div id="overview" className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-14 scroll-mt-24">
+        {activeSection === 'overview' && (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-14">
           {workflowSteps.map((step, index) => (
             <div key={step.title} className="bg-white border border-gray-100 p-6">
               <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-umd-red mb-2">Step {index + 1}</div>
@@ -414,8 +447,10 @@ export const DashboardReports = () => {
             </div>
           ))}
         </div>
+        )}
 
-        <div id="interface" className="mb-14 bg-white border border-gray-100 p-6 md:p-8 scroll-mt-24">
+        {activeSection === 'interface' && (
+        <div className="mb-14 bg-white border border-gray-100 p-6 md:p-8">
           <h2 className="text-2xl font-serif text-gray-900 mb-3">Interface Reference</h2>
           <p className="text-sm text-gray-500 font-light mb-4">
             Every dashboard uses the same two-tab workflow in the sidebar:
@@ -427,16 +462,17 @@ export const DashboardReports = () => {
             <li>• Download Displayed Data exports only what is currently filtered and visible.</li>
           </ul>
         </div>
+        )}
 
+        {activeGuide && activeSection !== 'overview' && activeSection !== 'interface' && (
         <div className="space-y-14">
-          {dashboardGuides.map((guide) => (
-            <section key={guide.id} id={guide.id} className="bg-white border border-gray-100 p-8 md:p-10 scroll-mt-24">
+            <section className="bg-white border border-gray-100 p-8 md:p-10">
               <div className="flex flex-col lg:flex-row lg:items-start gap-10">
                 <div className="lg:w-[46%]">
-                  <h2 className="text-3xl font-serif text-gray-900 mb-3">{guide.title}</h2>
-                  <p className="text-gray-500 font-light leading-relaxed mb-6">{guide.summary}</p>
+                  <h2 className="text-3xl font-serif text-gray-900 mb-3">{activeGuide.title}</h2>
+                  <p className="text-gray-500 font-light leading-relaxed mb-6">{activeGuide.summary}</p>
                   <Link
-                    to={guide.path}
+                    to={activeGuide.path}
                     className="inline-flex items-center gap-2 px-4 py-2 border border-gray-300 text-gray-700 hover:border-umd-red hover:text-umd-red transition-colors text-[11px] font-semibold tracking-[0.08em] uppercase mb-8"
                   >
                     <BarChart3 size={14} />
@@ -449,8 +485,8 @@ export const DashboardReports = () => {
                       <SlidersHorizontal size={14} />
                       Dropdown Context
                     </h3>
-                    {guide.dropdowns.map((item) => (
-                      <div key={`${guide.id}-${item.control}`} className="border border-gray-100 bg-gray-50/40 p-4">
+                    {activeGuide.dropdowns.map((item) => (
+                      <div key={`${activeGuide.id}-${item.control}`} className="border border-gray-100 bg-gray-50/40 p-4">
                         <div className="text-[11px] uppercase tracking-[0.12em] text-gray-900 font-semibold mb-2">
                           {item.control}
                         </div>
@@ -478,7 +514,7 @@ export const DashboardReports = () => {
                     <div>
                       <h3 className="text-xs font-bold uppercase tracking-[0.14em] text-gray-900 mb-3">Statistical Insights</h3>
                       <ul className="space-y-2 text-sm text-gray-600 font-light">
-                        {guide.insights.map((item) => (
+                        {activeGuide.insights.map((item) => (
                           <li key={item}>• {item}</li>
                         ))}
                       </ul>
@@ -490,7 +526,7 @@ export const DashboardReports = () => {
                         How To Use
                       </h3>
                       <ul className="space-y-2 text-sm text-gray-600 font-light">
-                        {guide.howToUse.map((item) => (
+                        {activeGuide.howToUse.map((item) => (
                           <li key={item}>• {item}</li>
                         ))}
                       </ul>
@@ -499,17 +535,17 @@ export const DashboardReports = () => {
                     <div>
                       <h3 className="text-xs font-bold uppercase tracking-[0.14em] text-gray-900 mb-3">Who It Helps</h3>
                       <div className="space-y-2 text-sm text-gray-600 font-light">
-                        <p><span className="font-medium text-gray-800">Researchers:</span> {guide.value.researchers}</p>
-                        <p><span className="font-medium text-gray-800">Policymakers:</span> {guide.value.policymakers}</p>
-                        <p><span className="font-medium text-gray-800">Analysts:</span> {guide.value.analysts}</p>
+                        <p><span className="font-medium text-gray-800">Researchers:</span> {activeGuide.value.researchers}</p>
+                        <p><span className="font-medium text-gray-800">Policymakers:</span> {activeGuide.value.policymakers}</p>
+                        <p><span className="font-medium text-gray-800">Analysts:</span> {activeGuide.value.analysts}</p>
                       </div>
                     </div>
                   </div>
                 </div>
               </div>
             </section>
-          ))}
         </div>
+        )}
           </div>
         </div>
       </div>
