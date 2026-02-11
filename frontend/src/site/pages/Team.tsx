@@ -28,7 +28,7 @@ export const Team = () => {
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-12">
                         {TEAM_MEMBERS.map((member) => (
                             <Link to={`/about/team/${member.id}`} key={member.id} className="flex flex-col items-center text-center group cursor-pointer">
-                                <div className="w-48 h-48 mb-8 overflow-hidden rounded-full border-4 border-white shadow-sm">
+                                <div className="w-48 h-48 mb-8 overflow-hidden rounded-lg border-4 border-white shadow-sm">
                                     <img
                                         src={member.imageUrl}
                                         alt={member.name}
