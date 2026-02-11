@@ -2,13 +2,20 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, BarChart3, Download, SlidersHorizontal } from 'lucide-react';
 
+type DropdownGuide = {
+  control: string;
+  controlType: string;
+  options: string;
+  impact: string;
+  notes?: string;
+};
+
 type DashboardGuide = {
   id: string;
   title: string;
   path: string;
   summary: string;
-  image: string;
-  filters: string[];
+  dropdowns: DropdownGuide[];
   insights: string[];
   howToUse: string[];
   value: {
@@ -25,22 +32,44 @@ const dashboardGuides: DashboardGuide[] = [
     path: '/dashboard/census',
     summary:
       'Visualizes demographic and socioeconomic data from ACS to compare population characteristics across states and districts.',
-    image: '/assets/dashboard-reports/dashboard-report-01.png',
-    filters: [
-      'Level: choose State or Congressional District to set geographic granularity.',
-      'Year: select reporting year for the ACS extract.',
-      'Metric: choose population, income, poverty, labor, education, or related ACS measures.'
+    dropdowns: [
+      {
+        control: 'Domain',
+        controlType: 'Read-only field labeled Domain',
+        options: 'Fixed to Census (ACS Demographics) in this dedicated dashboard.',
+        impact: 'Locks all downstream options to ACS source files and prevents accidental cross-dataset mixing.',
+        notes: 'Use the dashboard selection page to switch datasets.'
+      },
+      {
+        control: 'Level',
+        controlType: 'Dropdown (Geography > Level)',
+        options: 'State, County, or Congressional District when available for the dataset.',
+        impact: 'Changes map boundaries, peer comparison group, and the number of ranked records.'
+      },
+      {
+        control: 'Year',
+        controlType: 'Dropdown (Year > Year)',
+        options: 'All available ACS years for the selected level; defaults to the latest available year.',
+        impact: 'Recomputes values, quintiles, rank, and percentile for the selected time period.'
+      },
+      {
+        control: 'Metric',
+        controlType: 'Dropdown (Variable > Metric)',
+        options: 'Population, income, poverty, labor, education, and other ACS-derived indicators exposed by the API.',
+        impact: 'Switches the measured variable used by map colors, insights cards, and downloads.'
+      }
     ],
     insights: [
-      'Summary statistics panel reports records, min, max, mean, and median for the selected metric.',
-      'Quintile thresholds show breakpoints used for map coloring and percentile interpretation.',
-      'Selected geography panel provides value, rank, quintile, and percentile for that location.'
+      'Current Variable card confirms exactly which metric is active.',
+      'Summary Statistics reports records, min, max, mean, and median for the selected level/year.',
+      'Quintile Thresholds define Q1-Q5 breakpoints used in map shading and percentile context.',
+      'Top 10 and Bottom 10 panels provide fast outlier and benchmark scanning.'
     ],
     howToUse: [
-      'Select Level, Year, and Metric in Parameters.',
-      'Review the map distribution and quantile legend for spatial concentration.',
-      'Click a state or district to inspect rank and percentile.',
-      'Use Download Displayed Data to export the filtered map output.'
+      'Pick Level first, then Year, then Metric for a clean filter chain.',
+      'Use map colors to spot clusters, then click a geography for precise rank and percentile.',
+      'Use Download Dataset for full extracts and Download Displayed Data for filtered map output.',
+      'Switch between state and district levels to compare broad vs local patterns.'
     ],
     value: {
       researchers: 'Supports demographic baseline analysis and comparative studies across regions.',
@@ -54,22 +83,42 @@ const dashboardGuides: DashboardGuide[] = [
     path: '/dashboard/government-spending',
     summary:
       'Tracks federal contracts, grants, direct payments, and federal employee wages to show the distribution of federal funding.',
-    image: '/assets/dashboard-reports/dashboard-report-02.png',
-    filters: [
-      'Level: State or Congressional District depending on the selected data slice.',
-      'Year: choose fiscal year to compare historical patterns.',
-      'Metric: select contracts, grants, direct payments, federal wages, and per-1000 variants.'
+    dropdowns: [
+      {
+        control: 'Domain',
+        controlType: 'Read-only field labeled Domain',
+        options: 'Fixed to Government Spending in this dedicated dashboard.',
+        impact: 'Keeps all metrics tied to the federal funding dataset for consistent interpretation.'
+      },
+      {
+        control: 'Level',
+        controlType: 'Dropdown (Geography > Level)',
+        options: 'State and Congressional District where files are available for the selected year.',
+        impact: 'Changes aggregation scale and rank denominator for comparisons.'
+      },
+      {
+        control: 'Year',
+        controlType: 'Dropdown (Year > Year)',
+        options: 'Available years for Government Spending data at the chosen level.',
+        impact: 'Updates map values and all insights to the selected reporting year.'
+      },
+      {
+        control: 'Metric',
+        controlType: 'Dropdown (Variable > Metric)',
+        options: 'Contracts, Grants, Resident Wage, Direct Payments, Federal Residents, and corresponding Per 1,000 variants.',
+        impact: 'Switches between total exposure and population-normalized exposure for the same geography.'
+      }
     ],
     insights: [
-      'Summary statistics quantify spread and central tendency for the selected funding category.',
-      'Thresholds and quintiles highlight where federal exposure is concentrated.',
-      'Location detail provides value, ranking, and percentile for quick benchmarking.'
+      'Summary Statistics and Quintile Thresholds reveal concentration and distribution shape for each spending channel.',
+      'Top 10 and Bottom 10 rankings surface geographic leaders and laggards quickly.',
+      'Clicked geography panel reports value, rank, quintile, and percentile for defensible comparison.'
     ],
     howToUse: [
-      'Start with a broad metric like Contracts or Grants at state level.',
-      'Switch to per-1000 metrics for population-normalized comparisons.',
-      'Move to district level for intra-state variation.',
-      'Export displayed data for policy memos or agency briefings.'
+      'Start with Contracts or Grants at State level for macro allocation patterns.',
+      'Switch to Per 1,000 metrics when comparing states with very different population size.',
+      'Move to district level to identify sub-state concentration.',
+      'Export displayed selections for policy notes and briefing appendices.'
     ],
     value: {
       researchers: 'Enables state and district-level evaluation of federal dependence and trend changes.',
@@ -83,22 +132,42 @@ const dashboardGuides: DashboardGuide[] = [
     path: '/dashboard/government-finances',
     summary:
       'Analyzes fiscal indicators of local government health using national Reason Foundation data.',
-    image: '/assets/dashboard-reports/dashboard-report-03.png',
-    filters: [
-      'Geography/Level: select the available geographic unit for financial reporting.',
-      'Year: choose reporting cycle to compare fiscal outcomes over time.',
-      'Metric: select revenue, expenditure, debt, liabilities, and related finance indicators.'
+    dropdowns: [
+      {
+        control: 'Domain',
+        controlType: 'Read-only field labeled Domain',
+        options: 'Fixed to Government Finances in this dedicated dashboard.',
+        impact: 'Ensures all variables map to the fiscal health dataset only.'
+      },
+      {
+        control: 'Level',
+        controlType: 'Dropdown (Geography > Level)',
+        options: 'State, County, and/or Congressional District depending on loaded files for the selected metric/year.',
+        impact: 'Changes reporting unit and peer set used in rankings.'
+      },
+      {
+        control: 'Year',
+        controlType: 'Dropdown (Year > Year)',
+        options: 'Available reporting years in the finance dataset for the selected level.',
+        impact: 'Allows trend comparisons and refreshes all map and insight values.'
+      },
+      {
+        control: 'Metric',
+        controlType: 'Dropdown (Variable > Metric)',
+        options: 'Revenue, expenditure, liabilities, debt, and related fiscal indicators exposed in backend variables.',
+        impact: 'Defines which fiscal dimension is quantified on map and in insights.'
+      }
     ],
     insights: [
-      'Distribution statistics indicate relative fiscal standing within peer geographies.',
-      'Quintile thresholds expose outliers and concentration of fiscal stress or resilience.',
-      'Selected unit view provides rank and percentile for defensible comparison.'
+      'Summary Statistics capture central tendency and spread for the selected fiscal indicator.',
+      'Quintile thresholds make fiscal stress/resilience clusters visible on the map.',
+      'Top/Bottom ranking cards help quickly identify outlier jurisdictions.'
     ],
     howToUse: [
-      'Select a fiscal metric and year aligned with your policy question.',
-      'Read map clusters first, then verify with the insights panel.',
-      'Click specific geographies and compare rank shifts across years.',
-      'Download dataset or displayed data for deeper modeling.'
+      'Select a policy-relevant fiscal metric first, then compare across years.',
+      'Read map concentration, then confirm the scale using insight statistics.',
+      'Click target geographies to capture rank and percentile for reporting.',
+      'Export filtered output for regression or comparative memo work.'
     ],
     value: {
       researchers: 'Improves empirical work on fiscal health and subnational public finance.',
@@ -112,22 +181,42 @@ const dashboardGuides: DashboardGuide[] = [
     path: '/dashboard/finra-financial-literacy',
     summary:
       'Evaluates financial literacy and capability nationwide from FINRA Investor Education Foundation data.',
-    image: '/assets/dashboard-reports/dashboard-report-04.png',
-    filters: [
-      'Level: choose available geography for FINRA indicators.',
-      'Year/Wave: select survey wave for consistent comparisons.',
-      'Metric: select literacy, behavior, credit, savings, or stress-related indicators.'
+    dropdowns: [
+      {
+        control: 'Domain',
+        controlType: 'Read-only field labeled Domain',
+        options: 'Fixed to FINRA Financial Literacy for this dashboard route.',
+        impact: 'Prevents cross-source blending and keeps interpretation aligned with FINRA survey definitions.'
+      },
+      {
+        control: 'Level',
+        controlType: 'Dropdown (Geography > Level)',
+        options: 'State, County, and/or Congressional District depending on available processed FINRA files.',
+        impact: 'Changes geographic resolution and comparison peers.'
+      },
+      {
+        control: 'Year',
+        controlType: 'Dropdown (Year > Year)',
+        options: 'Available survey years/waves for the chosen level.',
+        impact: 'Updates all map values and rankings to the selected survey period.'
+      },
+      {
+        control: 'Metric',
+        controlType: 'Dropdown (Variable > Metric)',
+        options: 'Knowledge, behavior, savings, borrowing, stress, and related financial capability indicators.',
+        impact: 'Determines which capability dimension is measured and ranked.'
+      }
     ],
     insights: [
-      'Distribution metrics show where literacy and capability are strongest or weakest.',
-      'Quintile boundaries make regional disparity visible and measurable.',
-      'Selected geography panel contextualizes each location with rank and percentile.'
+      'Summary Statistics provide baseline distribution diagnostics for each literacy/capability measure.',
+      'Quintile thresholds reveal regional disparity bands in a consistent ranking scale.',
+      'Top/Bottom geography lists highlight strongest and weakest outcomes quickly.'
     ],
     howToUse: [
-      'Pick a literacy or behavior metric and map high-low regions.',
-      'Pair findings with Census and Spending dashboards for socioeconomic context.',
-      'Use district/state comparisons for targeted financial education strategy.',
-      'Export displayed data to support program evaluation.'
+      'Pick a metric tied to your intervention objective (knowledge, behavior, stress, etc.).',
+      'Compare state-level patterns first, then drill down to district/county where available.',
+      'Pair results with Census and Spending dashboards for socioeconomic context.',
+      'Export displayed data for program evaluation and grant evidence.'
     ],
     value: {
       researchers: 'Supports behavioral finance and household capability analysis.',
@@ -141,22 +230,67 @@ const dashboardGuides: DashboardGuide[] = [
     path: '/dashboard/fund-flow',
     summary:
       'Shows directional movement of prime and subcontract federal contract dollars across agencies, states, and industries.',
-    image: '/assets/dashboard-reports/dashboard-report-05.png',
-    filters: [
-      'Dataset and Geography: switch among state and district views.',
-      'Industry and flow dimensions: view inflow, outflow, and net movement.',
-      'Year and agency context: isolate specific periods and contract sources.'
+    dropdowns: [
+      {
+        control: 'Level',
+        controlType: 'Dropdown (Flow Scope > Level)',
+        options: 'State, County, or Congressional District.',
+        impact: 'Sets the map geometry and determines which additional filters appear (industry/year controls vary by level).'
+      },
+      {
+        control: 'Department',
+        controlType: 'Dropdown (Agency > Department)',
+        options: 'All Agencies plus the agency list loaded from `/api/flow/options`.',
+        impact: 'Filters all displayed flows and recomputes insight totals for a single awarding agency context.'
+      },
+      {
+        control: 'State',
+        controlType: 'Dropdown (Location > State)',
+        options: 'All States plus state list from flow options endpoint.',
+        impact: 'Focuses flows involving the selected state; unlocks direction control when a single state is selected.'
+      },
+      {
+        control: 'Direction',
+        controlType: 'Segmented control (Location > Direction)',
+        options: 'All, Inflow, Outflow.',
+        impact: 'Constrains directional perspective for the selected state; disabled when State is set to All States.'
+      },
+      {
+        control: 'Industry / NAICS',
+        controlType: 'Dropdown (Industry section)',
+        options: 'All Industries plus available 2-digit industry categories for the selected level.',
+        impact: 'Applies sector-level filtering to isolate industry-specific flow channels.'
+      },
+      {
+        control: 'Year Start',
+        controlType: 'Dropdown (Year Range > Year Start)',
+        options: 'Available years from flow options; visible for County and Congressional District levels.',
+        impact: 'Sets lower bound of analysis window and auto-corrects Year End if needed.'
+      },
+      {
+        control: 'Year End',
+        controlType: 'Dropdown (Year Range > Year End)',
+        options: 'Available years from flow options; visible for County and Congressional District levels.',
+        impact: 'Sets upper bound of analysis window and auto-corrects Year Start if needed.'
+      },
+      {
+        control: 'Flow Range',
+        controlType: 'Segmented control (Flow Volume)',
+        options: 'Top 10, Top 50, 50-100, 100-150, 150+.',
+        impact: 'Controls which ranked slice of flows is drawn for readability and performance.'
+      }
     ],
     insights: [
-      'Quantifies concentration of incoming versus outgoing contract activity.',
-      'Highlights dependency channels and secondary economic linkages.',
-      'Supports comparison of contract capture versus contract leakage.'
+      'Total Amount and Summary cards quantify loaded vs displayed flow concentration.',
+      'Internal Flows card reports same-origin/destination flows omitted from map lines.',
+      'Quintile Thresholds define line-thickness tiers by amount; Top Agencies/Origins/Destinations expose network anchors.',
+      'Largest Flow card provides direct origin-destination-agency traceability.'
     ],
     howToUse: [
-      'Start with a state-level map to identify inflow and outflow patterns.',
-      'Drill into industry filters to identify sector-specific exposure.',
-      'Use paired inflow/outflow views for economic network interpretation.',
-      'Export filtered views for supply-chain and regional impact studies.'
+      'Start with Level = State and Flow Range = Top 50 for a clear national pattern.',
+      'Select a target state, then switch Direction to Inflow or Outflow for focused interpretation.',
+      'Apply Department and Industry filters to isolate specific procurement channels.',
+      'Use year bounds (county/congress) for time-window analysis, then export displayed flow slice.'
     ],
     value: {
       researchers: 'Enables contract network and regional spillover analysis.',
@@ -170,22 +304,43 @@ const dashboardGuides: DashboardGuide[] = [
     path: '/dashboard/federal-spending-breaks',
     summary:
       'Breaks down federal contracts, grants, and federal employee wages by state with agency-level detail.',
-    image: '/assets/dashboard-reports/dashboard-report-06.png',
-    filters: [
-      'Select state and year to focus the profile.',
-      'Switch between spending categories and agency-specific lenses.',
-      'Use chart interactions to compare top agencies and category composition.'
+    dropdowns: [
+      {
+        control: 'Year',
+        controlType: 'Dropdown (Scope > Year)',
+        options: 'Available years for spending breakdown data; defaults to latest year.',
+        impact: 'Updates map values, state cards, and agency bar charts for the selected period.'
+      },
+      {
+        control: 'State',
+        controlType: 'Dropdown (Location > State)',
+        options: 'All States plus each available state in the current year.',
+        impact: 'Focuses state-level profile and enables detailed agency-level insights for one state.'
+      },
+      {
+        control: 'Measure',
+        controlType: 'Dropdown (Metric > Measure)',
+        options: 'Totals group: Contracts, Grants, Resident Wage, Direct Payments, Federal Residents. Per 1,000 group: corresponding normalized variants.',
+        impact: 'Switches the map and ranking basis between absolute exposure and population-adjusted intensity.'
+      },
+      {
+        control: 'Display',
+        controlType: 'Dropdown (View Type > Display)',
+        options: 'View by amount or View by percentage.',
+        impact: 'Changes bar chart interpretation from raw values to composition shares.'
+      }
     ],
     insights: [
-      'Combines map context with state detail and agency bar-chart rankings.',
-      'Surfaces concentration risk by agency and category share.',
-      'Supports interpretation of direct employment and wage dependency.'
+      'Current Selection card confirms active state/year/metric context.',
+      'Summary Statistics computes total agencies, total value, average, and maximum for the selected state.',
+      'Top 5 Agencies ranks dominant agencies for the active metric with quick comparisons.',
+      'When no state is selected, the panel explicitly prompts for a state to avoid misinterpretation.'
     ],
     howToUse: [
-      'Choose a state from the map to open focused detail.',
-      'Review category totals and agency rankings together.',
-      'Compare multiple states to identify structural differences.',
-      'Download displayed view for stakeholder-ready reporting.'
+      'Set Year and Measure first, then select a state from dropdown or by clicking the map.',
+      'Use Display = amount for magnitude and Display = percentage for composition.',
+      'Review map rank and agency bars together to assess concentration risk.',
+      'Use reset selection to return to national context quickly.'
     ],
     value: {
       researchers: 'Supports composition and concentration analysis of federal economic exposure.',
@@ -198,11 +353,11 @@ const dashboardGuides: DashboardGuide[] = [
 const workflowSteps = [
   {
     title: 'Set Parameters',
-    text: 'Choose domain, geography level, year, and metric from the sidebar to define the analysis scope.'
+    text: 'Choose each dashboard’s sidebar controls (domain/level/year/metric or flow filters) to define scope precisely.'
   },
   {
     title: 'Read Insights',
-    text: 'Use summary statistics and quintile thresholds to interpret distribution and ranking context.'
+    text: 'Use insights cards to validate distribution, ranking, concentration, and outlier behavior before drawing conclusions.'
   },
   {
     title: 'Export Results',
@@ -238,33 +393,22 @@ export const DashboardReports = () => {
 
         <div className="mb-14 bg-white border border-gray-100 p-6 md:p-8">
           <h2 className="text-2xl font-serif text-gray-900 mb-3">Interface Reference</h2>
-          <p className="text-sm text-gray-500 font-light mb-6">
-            The Parameters and Insights tabs are the core interaction model across dashboards.
+          <p className="text-sm text-gray-500 font-light mb-4">
+            Every dashboard uses the same two-tab workflow in the sidebar:
           </p>
-          <img
-            src="/assets/dashboard-reports/dashboard-report-07.png"
-            alt="Parameters and insights sidebar reference"
-            className="w-full border border-gray-100"
-            loading="lazy"
-            decoding="async"
-          />
+          <ul className="space-y-2 text-sm text-gray-600 font-light">
+            <li>• Parameters tab defines scope through dropdowns and filter controls.</li>
+            <li>• Insights tab provides computed statistics and ranked context for the current filter state.</li>
+            <li>• Download Dataset exports the full source slice for that dashboard.</li>
+            <li>• Download Displayed Data exports only what is currently filtered and visible.</li>
+          </ul>
         </div>
 
         <div className="space-y-14">
           {dashboardGuides.map((guide) => (
             <section key={guide.id} className="bg-white border border-gray-100 p-8 md:p-10">
-              <div className="flex flex-col lg:flex-row lg:items-start gap-8">
-                <div className="lg:w-1/2">
-                  <img
-                    src={guide.image}
-                    alt={`${guide.title} interface preview`}
-                    className="w-full border border-gray-100"
-                    loading="lazy"
-                    decoding="async"
-                  />
-                </div>
-
-                <div className="lg:w-1/2">
+              <div className="flex flex-col lg:flex-row lg:items-start gap-10">
+                <div className="lg:w-[46%]">
                   <h2 className="text-3xl font-serif text-gray-900 mb-3">{guide.title}</h2>
                   <p className="text-gray-500 font-light leading-relaxed mb-6">{guide.summary}</p>
                   <Link
@@ -276,19 +420,37 @@ export const DashboardReports = () => {
                     <ArrowRight size={12} />
                   </Link>
 
-                  <div className="space-y-6">
-                    <div>
-                      <h3 className="text-xs font-bold uppercase tracking-[0.14em] text-gray-900 mb-3 inline-flex items-center gap-2">
-                        <SlidersHorizontal size={14} />
-                        Dropdown Filters
-                      </h3>
-                      <ul className="space-y-2 text-sm text-gray-600 font-light">
-                        {guide.filters.map((item) => (
-                          <li key={item}>• {item}</li>
-                        ))}
-                      </ul>
-                    </div>
+                  <div className="space-y-4">
+                    <h3 className="text-xs font-bold uppercase tracking-[0.14em] text-gray-900 inline-flex items-center gap-2">
+                      <SlidersHorizontal size={14} />
+                      Dropdown Context
+                    </h3>
+                    {guide.dropdowns.map((item) => (
+                      <div key={`${guide.id}-${item.control}`} className="border border-gray-100 bg-gray-50/40 p-4">
+                        <div className="text-[11px] uppercase tracking-[0.12em] text-gray-900 font-semibold mb-2">
+                          {item.control}
+                        </div>
+                        <p className="text-sm text-gray-600 font-light leading-relaxed mb-1">
+                          <span className="font-medium text-gray-800">Control:</span> {item.controlType}
+                        </p>
+                        <p className="text-sm text-gray-600 font-light leading-relaxed mb-1">
+                          <span className="font-medium text-gray-800">Options:</span> {item.options}
+                        </p>
+                        <p className="text-sm text-gray-600 font-light leading-relaxed">
+                          <span className="font-medium text-gray-800">Effect:</span> {item.impact}
+                        </p>
+                        {item.notes && (
+                          <p className="text-sm text-gray-600 font-light leading-relaxed mt-1">
+                            <span className="font-medium text-gray-800">Note:</span> {item.notes}
+                          </p>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
 
+                <div className="lg:w-[54%]">
+                  <div className="space-y-6">
                     <div>
                       <h3 className="text-xs font-bold uppercase tracking-[0.14em] text-gray-900 mb-3">Statistical Insights</h3>
                       <ul className="space-y-2 text-sm text-gray-600 font-light">
