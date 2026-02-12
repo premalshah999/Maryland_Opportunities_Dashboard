@@ -86,9 +86,9 @@ export const RESEARCH_PAPERS: ResearchPaper[] = [
   },
   {
     id: 'shutdown-003',
-    title: "What's the Cost of a Government Shutdown to Maryland?",
+    title: 'Economic Impact of 2025 Federal Government Shutdown on Maryland',
     abstract: 'An estimation of the economic cost of the 2025 government shutdown to Maryland through its effects on employment, federal contracts, and other forms of federal spending.',
-    date: 'March 2024',
+    date: 'February 2026',
     authors: [],
     category: 'Government Shutdown',
     pdfUrl: '/assets/reports/research-government-shutdown-2025-md.pdf',

@@ -197,45 +197,33 @@ const RESEARCH_ARTICLES: Record<string, ResearchArticle> = {
   },
   'shutdown-cost': {
     slug: 'shutdown-cost',
-    title: "What's the Cost of a Government Shutdown to Maryland?",
+    title: 'Economic Impact of 2025 Federal Government Shutdown on Maryland',
     category: 'Government Shutdown',
-    date: 'March 2024',
+    date: 'February 2026',
     institution: 'University of Maryland, Robert H. Smith School of Business',
-    toc: ['Overview', 'Approach', 'Impact Channels', 'Policy Relevance'],
-    summary:
-      'This research estimates the economic impact of federal shutdown conditions on Maryland employment, contract activity, and related income channels.',
+    hideSummary: true,
+    preparedBy: {
+      faculty: ['Dr. Vojislav Maksimovic', 'Dr. Liu Yang'],
+      students: ['Kanat Isakov', 'Haotian Shi']
+    },
+    toc: [
+      'Executive Summary',
+      '1. Introduction',
+      '1.1 Data Sources',
+      '1.2 Key Assumptions',
+      '2. Federal Agency Furlough Rates',
+      '3. Results: Economic Impact Analysis',
+      '3.1 Employee Compensation Impact by County',
+      '3.2 Induced Economic Impact by Industry',
+      '3.3 Total Economic Impact Across by County',
+      '3.4 County-Industry Breakdown',
+      '3.4.1 Employee Compensation Impact by County and Industry',
+      '3.4.2 Output Impact by County and Industry'
+    ],
+    summary: 'Economic Impact of 2025 Federal Government Shutdown on Maryland',
     pdfUrl: '/assets/reports/research-government-shutdown-2025-md.pdf',
     dataLink: '/dashboard/federal-spending-breaks',
-    sections: [
-      {
-        title: 'Overview',
-        paragraphs: [
-          'This report estimates potential statewide and local impacts from federal shutdown conditions affecting employment, contracts, and payment flows.',
-          'The objective is to provide actionable estimates that can support preparedness and communication with stakeholders.'
-        ]
-      },
-      {
-        title: 'Approach',
-        paragraphs: [
-          'The analysis combines federal spending and labor dependencies with scenario assumptions to quantify likely impact ranges.',
-          'Results are interpreted across states and local geographies to support contingency planning.'
-        ]
-      },
-      {
-        title: 'Impact Channels',
-        paragraphs: [
-          'Key channels include payroll interruption risk, contract slowdown effects, and downstream multiplier pressures on local demand.',
-          'Distribution of impacts varies by federal concentration and industry exposure.'
-        ]
-      },
-      {
-        title: 'Policy Relevance',
-        paragraphs: [
-          'Results support budget planning, local mitigation prioritization, and communication strategy during federal disruption periods.',
-          'A full narrative update will be published in this page structure when the finalized long-form report text is provided.'
-        ]
-      }
-    ]
+    sections: []
   }
 };
 
@@ -275,11 +263,21 @@ const FEDERAL_FLOW_FIGURES = {
   fig10: { src: '/assets/reports/federal-flow-figures/fig10.png', alt: 'Figure 10: Federal Contract Flows to Montgomery County' }
 };
 
+const SHUTDOWN_FIGURES = {
+  fig1: { src: '/assets/reports/shutdown-figures/fig1.png', alt: 'Figure 1: Federal Employee Salaries by Maryland County' },
+  fig2: { src: '/assets/reports/shutdown-figures/fig2.png', alt: 'Figure 2: Employee Compensation Impact by County ($ Million)' },
+  fig3: { src: '/assets/reports/shutdown-figures/fig3.png', alt: 'Figure 3: Industries by Induced Output ($ Million)' },
+  fig4: { src: '/assets/reports/shutdown-figures/fig4.png', alt: 'Figure 4: Direct Compensation + Induced Output by County ($ Million)' },
+  fig5: { src: '/assets/reports/shutdown-figures/fig5.png', alt: 'Figure 5: Top 5 Industries by Induced Employee Compensation for Selected Counties' },
+  fig6: { src: '/assets/reports/shutdown-figures/fig6.png', alt: 'Figure 6: Top 5 Industries by Induced Output for Selected Counties' }
+};
+
 export const ResearchDetail: React.FC = () => {
   const { researchSlug } = useParams<{ researchSlug: string }>();
   const article = researchSlug ? RESEARCH_ARTICLES[researchSlug] : null;
   const isEwaArticle = article?.slug === 'earned-wage-access';
   const isFederalFlowArticle = article?.slug === 'federal-spending';
+  const isShutdownArticle = article?.slug === 'shutdown-cost';
 
   if (!article) {
     return <Navigate to="/research" replace />;
@@ -296,11 +294,11 @@ export const ResearchDetail: React.FC = () => {
             <ArrowLeft size={14} />
             Back to Research
           </Link>
-          {!isEwaArticle && !isFederalFlowArticle && (
+          {!isEwaArticle && !isFederalFlowArticle && !isShutdownArticle && (
             <div className="text-umd-red text-xs font-semibold uppercase tracking-[0.18em] mb-3">{article.category}</div>
           )}
           <h1 className="text-3xl md:text-5xl font-serif font-semibold text-gray-900 mb-4 leading-tight">{article.title}</h1>
-          {isEwaArticle || isFederalFlowArticle ? (
+          {isEwaArticle || isFederalFlowArticle || isShutdownArticle ? (
             <div className="space-y-1 text-sm text-gray-600">
               <p>{article.institution}</p>
               <p>Date: {article.date}</p>
@@ -633,6 +631,177 @@ export const ResearchDetail: React.FC = () => {
                 </div>
                 <figure className="mt-8">
                   <img src={FEDERAL_FLOW_FIGURES.fig10.src} alt={FEDERAL_FLOW_FIGURES.fig10.alt} className="w-full h-auto" />
+                </figure>
+              </section>
+            </div>
+          ) : isShutdownArticle ? (
+            <div className="space-y-10">
+              <section className="border-b border-gray-100 pb-8">
+                <div className="not-prose mb-8 bg-gray-50 border border-gray-100 p-6">
+                  <p className="text-base text-gray-900 mb-2">Prepared by:</p>
+                  <p className="text-base text-gray-700 mb-2">Faculty: Dr. Vojislav Maksimovic, Dr. Liu Yang</p>
+                  <p className="text-base text-gray-700">Students: Kanat Isakov, Haotian Shi</p>
+                </div>
+                <div className="not-prose border border-gray-100 bg-white p-6 md:p-8">
+                  <h2 className="text-2xl font-serif text-gray-900 mb-6">Table of Contents</h2>
+                  <div className="space-y-3 text-gray-700 leading-relaxed">
+                    {article.toc.map((item) => (
+                      <div key={item} className="text-base">{item}</div>
+                    ))}
+                  </div>
+                </div>
+              </section>
+
+              <section className="border-b border-gray-100 pb-8">
+                <h2 className="text-2xl font-serif font-semibold text-gray-900 mb-4">Executive Summary</h2>
+                <div className="space-y-4 text-gray-700 leading-8">
+                  <p>Maryland hosts approximately 139,000 civilian federal jobs across military and non-military agencies. Many Marylanders are also employed in federal positions located in the greater Washington, D.C. metropolitan area. Altogether, Maryland residents hold about 227,000 federal jobs. In 2023, these jobs generated an estimated $27 billion in income, accounting for 9.2% of the total adjusted gross income earned by all Marylanders.</p>
+                  <p>Based on agency employment levels and their announced furlough rates, we estimate that approximately 45% of federal government employees in Maryland have been furloughed, directly affecting over 102,000 Maryland residents and resulting in an estimated temporary wage loss of $255 million per week.</p>
+                </div>
+              </section>
+
+              <section className="border-b border-gray-100 pb-8">
+                <h2 className="text-2xl font-serif font-semibold text-gray-900 mb-4">1. Introduction</h2>
+                <div className="space-y-4 text-gray-700 leading-8">
+                  <p>Federal government shutdowns occur when Congress fails to pass appropriations legislation to fund federal government operations. During shutdowns, non-essential federal employees are furloughed without pay, leading to reduced household spending and ripple effects throughout the economy. Maryland is particularly vulnerable to shutdown impacts due to its high concentration of federal employees and defense contractors. This report quantifies the economic spillover effects of the proposed 2025 government shutdown on Maryland's economy.</p>
+                </div>
+              </section>
+
+              <section className="border-b border-gray-100 pb-8">
+                <h2 className="text-2xl font-serif font-semibold text-gray-900 mb-4">1.1 Data Sources</h2>
+                <div className="space-y-4 text-gray-700 leading-8">
+                  <p>We utilize multiple data sources for this analysis:</p>
+                  <p><strong><em>Federal Employee Data:</em></strong> U.S. Office of Personnel Management (OPM) salary data for Maryland federal employees by agency and county</p>
+                  <p><strong><em>Furlough Rates:</em></strong> Agency contingency plans compiled by GovExec.com, indicating the percentage of employees who would be furloughed by agency (Table 1)</p>
+                  <p><strong><em>IMPLAN Model:</em></strong> 2024 IMPLAN input-output model for Maryland at the county level, capturing inter-industry linkages and multiplier effects</p>
+                </div>
+              </section>
+
+              <section className="border-b border-gray-100 pb-8">
+                <h2 className="text-2xl font-serif font-semibold text-gray-900 mb-4">1.2 Key Assumptions</h2>
+                <div className="space-y-4 text-gray-700 leading-8">
+                  <p>Weekly economic loss per county estimated as: (county resident salary × furlough rate) / 52 weeks</p>
+                  <p>Furlough rate represents the proportion of federal employees placed on unpaid leave during the shutdown</p>
+                  <p>Due to lack of data on federal agency distribution across counties, we assume a uniform furlough rate across all Maryland counties</p>
+                  <p>Furloughed employees receive no pay during shutdown (back pay not modeled)</p>
+                </div>
+              </section>
+
+              <section className="border-b border-gray-100 pb-8">
+                <h2 className="text-2xl font-serif font-semibold text-gray-900 mb-4">2. Federal Agency Furlough Rates</h2>
+                <div className="space-y-4 text-gray-700 leading-8">
+                  <p>Table 1 presents the furlough rates for 30 major federal agencies based on their 2025 contingency plans. The rates vary significantly across agencies, ranging from 0% (Smithsonian Institution) to 93% (Equal Employment Opportunity Commission and NASA). Agencies with higher proportions of employees deemed "essential" have lower furlough rates, such as the Department of the Treasury (2%) and the Department of Veterans Affairs (4%). Defense-related agencies (DOD, Army, Navy, Air Force) have uniform 45% furlough rates, reflecting the large civilian workforce supporting military operations.</p>
+                  <p>Maryland hosts around 139,000 federal jobs across military and non-military agencies. Table 2 shows the distribution of employees by agency, along with average salaries and estimated salary reductions from furloughs. The Department of Health and Human Services employs the largest workforce in Maryland (41,000 employees), followed by the military services (Army: 14,500; Navy: 18,000; Defense: 12,000).</p>
+                  <p>The total estimated direct salary impact from the furloughs amounts to approximately $8 billion. The Department of Health and Human Services, the Department of Commerce, and the Navy account for the largest salary reductions due to their substantial furlough rates.</p>
+                  <p><strong><em>Table 3: Military vs Non-Military Salary Data</em></strong></p>
+                  <p>Category</p>
+                  <p>Salary ($k)</p>
+                  <p>Furlough Rate (%)</p>
+                  <p>Employees</p>
+                  <p>Salary Deduction ($m)</p>
+                  <p>Military</p>
+                  <p>130</p>
+                  <p>45</p>
+                  <p>46,000</p>
+                  <p>2,600</p>
+                  <p>Non-Military</p>
+                  <p>140</p>
+                  <p>40</p>
+                  <p>93,000</p>
+                  <p>5,200</p>
+                  <p>Table 3 compares military versus non-military federal employees in Maryland. Non-military employees constitute 67% of the federal workforce in Maryland (93,000 employees) with an average salary of $140,000, while military-affiliated civilians represent 33% (46,000 employees) with an average salary of $130,000. The military sector faces a higher average furlough rate (45%) compared to non-military agencies (40%), resulting in a direct salary reduction of $3 billion for military-affiliated employees and $5 billion for non-military employees.</p>
+                  <p>Figure 1: Federal Employee Salaries by Maryland County</p>
+                </div>
+                <figure className="mt-8">
+                  <img src={SHUTDOWN_FIGURES.fig1.src} alt={SHUTDOWN_FIGURES.fig1.alt} className="w-full h-auto" />
+                </figure>
+              </section>
+
+              <section className="border-b border-gray-100 pb-8">
+                <h2 className="text-2xl font-serif font-semibold text-gray-900 mb-4">3. Results: Economic Impact Analysis</h2>
+                <div className="space-y-4 text-gray-700 leading-8">
+                  <p>Figure 1 shows the geographic distribution of federal employee salaries across Maryland counties. Montgomery and Prince George's counties exhibit the highest concentrations at approximately $7 billion each, accounting for nearly 50% of the state's total federal payroll. This spatial clustering reflects the proximity to Washington D.C. and the concentration of federal agencies in the Capital Region. Counties farther from the metropolitan corridor show substantially lower federal salary levels, with rural areas such as Garrett and Kent counties each accounting for less than $15 million annually.</p>
+                  <p>Given our assumption of a uniform 45% furlough rate across all counties, the weekly wage deduction for each county is directly proportional to its total resident salary. Therefore, the spatial pattern of economic impacts mirrors the salary distribution shown in Figure 1, with Montgomery and Prince George's counties bearing the largest absolute losses.</p>
+                  <p><strong><em>Table 4: Federal Employee Furlough Impact</em></strong></p>
+                  <p>Metric</p>
+                  <p>Value</p>
+                  <p>Maryland Federal Employee Resident</p>
+                  <p>227,000</p>
+                  <p>Total Wage ($, Billion)</p>
+                  <p>29</p>
+                  <p>Furlough Rate (%)</p>
+                  <p>45%</p>
+                  <p>Affected Resident</p>
+                  <p>102,000</p>
+                  <p>Weekly Wage Deduction ($, Million)</p>
+                  <p>255</p>
+                  <p>Induced Weekly Wage Deduction ($, Million)</p>
+                  <p>23</p>
+                  <p>Table 4 summarizes the baseline parameters for Maryland's federal workforce and the estimated shutdown impact. Maryland hosts approximately 227,000 federal employee residents with a combined annual wage of $29 billion. Applying the weighted average furlough rate of 45% across agencies, we estimate that 102,000 employees would be affected, resulting in a direct weekly wage reduction of $255 million. Using the IMPLAN input-output model with this weekly wage shock as the primary input, we calculate an induced weekly wage deduction of $23 million across Maryland's economy, reflecting the multiplier effects as reduced household spending cascades through various sectors.</p>
+                </div>
+              </section>
+
+              <section className="border-b border-gray-100 pb-8">
+                <h2 className="text-2xl font-serif font-semibold text-gray-900 mb-4">3.1 Employee Compensation Impact by County</h2>
+                <div className="space-y-4 text-gray-700 leading-8">
+                  <p>The direct wage impact varies across counties. Seven counties are projected to experience temporary weekly income losses exceeding $10 million, including Montgomery ($64 million), Prince George's ($63 million), Anne Arundel (23 million), Charles County ($18 million), Baltimore County ($17 million), Howard County ($14 million), and Baltimore city (10 million).</p>
+                  <p>Figure 2: Employee Compensation Impact by County ($ Million)</p>
+                </div>
+                <figure className="mt-8">
+                  <img src={SHUTDOWN_FIGURES.fig2.src} alt={SHUTDOWN_FIGURES.fig2.alt} className="w-full h-auto" />
+                </figure>
+              </section>
+
+              <section className="border-b border-gray-100 pb-8">
+                <h2 className="text-2xl font-serif font-semibold text-gray-900 mb-4">3.2 Induced Economic Impact by Industry</h2>
+                <div className="space-y-4 text-gray-700 leading-8">
+                  <p>Beyond these direct wage effects, the shutdown will generate substantial induced economic impacts across Maryland. The loss of $255 million in weekly wages will ripple through local economies as affected households cut back on discretionary spending. Industries most sensitive to changes in consumer demand, such as professional and personal services, healthcare, retail trade, restaurants and food services, transportation, and housing, are expected to experience immediate slowdowns in sales and output. Using IMPLAN estimates, the induced effects on output are projected to reach approximately $75 million per week, or about 29% of the direct wage loss. Figure 3 below provides the estimated induced effect by industry.</p>
+                  <p>Figure 3: Industries by Induced Output ($ Million)</p>
+                </div>
+                <figure className="mt-8">
+                  <img src={SHUTDOWN_FIGURES.fig3.src} alt={SHUTDOWN_FIGURES.fig3.alt} className="w-full h-auto" />
+                </figure>
+              </section>
+
+              <section className="border-b border-gray-100 pb-8">
+                <h2 className="text-2xl font-serif font-semibold text-gray-900 mb-4">3.3 Total Economic Impact Across by County</h2>
+                <div className="space-y-4 text-gray-700 leading-8">
+                  <p>The scale of these secondary effects depends on local spending patterns and the strength of inter-industry linkages. Counties with high concentrations of federal employees and contractors are likely to face the largest spillovers, including lower business revenues, reduced sales tax receipts, and short-term contractions in service activity.</p>
+                  <p>Figure 4: Direct Compensation + Induced Output by County ($ Million)</p>
+                </div>
+                <figure className="mt-8">
+                  <img src={SHUTDOWN_FIGURES.fig4.src} alt={SHUTDOWN_FIGURES.fig4.alt} className="w-full h-auto" />
+                </figure>
+              </section>
+
+              <section className="border-b border-gray-100 pb-8">
+                <h2 className="text-2xl font-serif font-semibold text-gray-900 mb-4">3.4 County-Industry Breakdown</h2>
+                <div className="space-y-4 text-gray-700 leading-8">
+                  <p>To understand the geographic distribution of industry-specific impacts, we examine the top five industries by output and employee compensation for eight major Maryland counties: Montgomery, Prince George's, Anne Arundel, Charles, Baltimore County, Baltimore City, Howard, and Harford. We focus on these counties as they collectively account for $220 million, or 87%, of Maryland's total $255 million weekly resident wage deduction, thereby capturing the vast majority of the state's economic exposure to federal shutdowns.</p>
+                </div>
+              </section>
+
+              <section className="border-b border-gray-100 pb-8">
+                <h2 className="text-2xl font-serif font-semibold text-gray-900 mb-4">3.4.1 Employee Compensation Impact by County and Industry</h2>
+                <div className="space-y-4 text-gray-700 leading-8">
+                  <p>Figure 5 illustrates the spillover effects of federal government shutdowns on Maryland's workforce, showing how reduced federal employee spending cascades into wage losses for workers in other industries. Labor-intensive service sectors bear the largest induced compensation impacts across nearly all counties, with services, medical, and retail industries consistently ranking among the most affected.</p>
+                  <p>Notably, while housing shows substantial output impacts across counties (Figure 6), it generates relatively modest compensation effects, reflecting its capital-intensive nature and lower employment density. The geographic concentration of induced wage losses in the Washington-Baltimore corridor, particularly in Montgomery, Prince George's, and Anne Arundel counties, indicates that labor-market spillovers from federal shutdowns are highly localized. Workers in service industries within these counties face dual vulnerability: geographic proximity to federal employment centers and employment in sectors with high income volatility, making them particularly exposed to the cascading economic effects of government funding disruptions.</p>
+                  <p>Figure 5: Top 5 Industries by Induced Employee Compensation for Selected Counties</p>
+                </div>
+                <figure className="mt-8">
+                  <img src={SHUTDOWN_FIGURES.fig5.src} alt={SHUTDOWN_FIGURES.fig5.alt} className="w-full h-auto" />
+                </figure>
+              </section>
+
+              <section className="pb-2">
+                <h2 className="text-2xl font-serif font-semibold text-gray-900 mb-4">3.4.2 Output Impact by County and Industry</h2>
+                <div className="space-y-4 text-gray-700 leading-8">
+                  <p>Figure 6 reveals substantial heterogeneity in industry-specific output vulnerabilities across Maryland's major counties. Service-oriented sectors consistently rank among the most affected industries.</p>
+                  <p>Charles County displays a distinctive profile, with housing ($1.5 million) surpassing services ($1 million) as the dominant affected sector, potentially reflecting unique local housing market characteristics that amplify residential real estate exposure to federal income shocks. Anne Arundel, Baltimore County, Harford, and Howard counties follow more typical patterns with services leading, though magnitudes vary considerably. Baltimore City, despite its smaller federal employee base, shows service dominance ($1 million) alongside significant medical sector exposure ($0.3 million), reflecting its role as a regional healthcare hub.</p>
+                  <p>Figure 6: Top 5 Industries by Induced Output for Selected Counties</p>
+                </div>
+                <figure className="mt-8">
+                  <img src={SHUTDOWN_FIGURES.fig6.src} alt={SHUTDOWN_FIGURES.fig6.alt} className="w-full h-auto" />
                 </figure>
               </section>
             </div>
