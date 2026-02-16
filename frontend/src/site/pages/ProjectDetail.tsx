@@ -90,7 +90,7 @@ const projectContent: Record<string, {
                 <figure className="mb-8">
                     <img src="/assets/fed_spending_team.jpg" alt="Federal Spending Team" className="w-full h-auto rounded-lg mb-3 shadow-sm" />
                     <figcaption className="text-sm text-gray-500 leading-relaxed italic">
-                        From left to right: Haotian Shi (UMD), Vojislav Maksimovic (UMD), Liu Yang (UMD), Comptroller Brook Lierman, Pablo Gomez (Comptroller), Pranshu Sahasrabuddhe (UMD), Annie Alexander (Comptroller), Deputy Comptroller Ben Siegel.
+                        From left to right: Haotian Shi (UMD), Vojislav Maksimovic (UMD), Liu Yang (UMD), Comptroller Brooke Lierman, Pablo Gomez, Pranshu Sahasrabuddhe (UMD), Annie Alexander (Comptroller), Deputy Comptroller Ben Siegel.
                     </figcaption>
                 </figure>
                 <h2 className="text-2xl font-serif font-bold text-gray-900 mt-10 mb-4">Project Overview</h2>
