@@ -31,14 +31,13 @@ const dashboardGuides: DashboardGuide[] = [
     title: 'Census (ACS Demographics)',
     path: '/dashboard/census',
     summary:
-      'Visualizes demographic and socioeconomic data from ACS to compare population characteristics across states and districts.',
+      'Visualizes demographic and socioeconomic data from ACS to compare population characteristics across states, counties, and congressional districts.',
     dropdowns: [
       {
         control: 'Domain',
         controlType: 'Read-only field labeled Domain',
         options: 'Fixed to Census (ACS Demographics) in this dedicated dashboard.',
-        impact: 'Locks all downstream options to ACS source files and prevents accidental cross-dataset mixing.',
-        notes: 'Use the dashboard selection page to switch datasets.'
+        impact: 'Keeps all controls and outputs scoped to ACS demographic data.'
       },
       {
         control: 'Level',
@@ -55,7 +54,7 @@ const dashboardGuides: DashboardGuide[] = [
       {
         control: 'Metric',
         controlType: 'Dropdown (Variable > Metric)',
-        options: 'Population, income, poverty, labor, education, and other ACS-derived indicators exposed by the API.',
+        options: 'Population, income, poverty, labor, education, and other ACS-derived indicators.',
         impact: 'Switches the measured variable used by map colors, insights cards, and downloads.'
       }
     ],
@@ -93,7 +92,7 @@ const dashboardGuides: DashboardGuide[] = [
       {
         control: 'Level',
         controlType: 'Dropdown (Geography > Level)',
-        options: 'State and Congressional District where files are available for the selected year.',
+        options: 'State, County, and Congressional District where files are available for the selected year.',
         impact: 'Changes aggregation scale and rank denominator for comparisons.'
       },
       {
@@ -131,7 +130,7 @@ const dashboardGuides: DashboardGuide[] = [
     title: 'Government Finances',
     path: '/dashboard/government-finances',
     summary:
-      'Analyzes fiscal indicators of local government health using national Reason Foundation data.',
+      'Examines local government financial condition using local government financial statement data compiled by the Reason Foundation.',
     dropdowns: [
       {
         control: 'Domain',
@@ -213,7 +212,7 @@ const dashboardGuides: DashboardGuide[] = [
       'Top/Bottom geography lists highlight strongest and weakest outcomes quickly.'
     ],
     howToUse: [
-      'Pick a metric tied to your intervention objective (knowledge, behavior, stress, etc.).',
+      'Select a variable from regional-level survey data that you are interested in (e.g., financial literacy or constraints).',
       'Compare state-level patterns first, then drill down to district/county where available.',
       'Pair results with Census and Spending dashboards for socioeconomic context.',
       'Export displayed data for program evaluation and grant evidence.'
@@ -229,7 +228,7 @@ const dashboardGuides: DashboardGuide[] = [
     title: 'Federal Contract Flow',
     path: '/dashboard/fund-flow',
     summary:
-      'Shows directional movement of prime and subcontract federal contract dollars across agencies, states, and industries.',
+      'Shows directional movement of subcontract flows across agencies, states, and industries.',
     dropdowns: [
       {
         control: 'Level',
@@ -240,7 +239,7 @@ const dashboardGuides: DashboardGuide[] = [
       {
         control: 'Department',
         controlType: 'Dropdown (Agency > Department)',
-        options: 'All Agencies plus the agency list loaded from `/api/flow/options`.',
+        options: 'All Agencies, plus the agency list.',
         impact: 'Filters all displayed flows and recomputes insight totals for a single awarding agency context.'
       },
       {
@@ -264,13 +263,13 @@ const dashboardGuides: DashboardGuide[] = [
       {
         control: 'Year Start',
         controlType: 'Dropdown (Year Range > Year Start)',
-        options: 'Available years from flow options; visible for County and Congressional District levels.',
+        options: 'Available years from flow options; visible for State, County, and Congressional District levels.',
         impact: 'Sets lower bound of analysis window and auto-corrects Year End if needed.'
       },
       {
         control: 'Year End',
         controlType: 'Dropdown (Year Range > Year End)',
-        options: 'Available years from flow options; visible for County and Congressional District levels.',
+        options: 'Available years from flow options; visible for State, County, and Congressional District levels.',
         impact: 'Sets upper bound of analysis window and auto-corrects Year Start if needed.'
       },
       {
@@ -308,7 +307,7 @@ const dashboardGuides: DashboardGuide[] = [
       {
         control: 'Year',
         controlType: 'Dropdown (Scope > Year)',
-        options: 'Available years for spending breakdown data; defaults to latest year.',
+        options: 'Available options for spending breakdown data: 2024 and Historical Average.',
         impact: 'Updates map values, state cards, and agency bar charts for the selected period.'
       },
       {
@@ -374,10 +373,13 @@ export const DashboardReports = () => {
       <div className="bg-white py-16 md:py-24 border-b border-gray-100">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="max-w-4xl">
-            <span className="text-umd-red font-bold uppercase tracking-widest text-xs mb-4 block">Dashboard Reports</span>
+            <span className="text-umd-red font-bold uppercase tracking-widest text-xs mb-4 block">Documentation</span>
             <h1 className="text-4xl md:text-6xl font-serif font-bold text-gray-900 mb-6">How To Use The Dashboards</h1>
             <p className="text-xl text-gray-500 font-light">
               Detailed guidance on filters, insights, and interpretation for researchers, policymakers, and analysts.
+            </p>
+            <p className="text-sm text-gray-500 font-light mt-3">
+              (Click the ℹ️ icons for detailed explanations and value distributions.)
             </p>
           </div>
         </div>

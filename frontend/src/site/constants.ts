@@ -48,6 +48,7 @@ export const NAV_ITEMS: NavItem[] = [
     label: 'Data Dashboard',
     path: '/dashboards',
     subItems: [
+      { label: 'Documentation', path: '/dashboard-reports' },
       { label: 'Census (ACS Demographics)', path: '/dashboard/census' },
       { label: 'Government Spending', path: '/dashboard/government-spending' },
       { label: 'Government Finances', path: '/dashboard/government-finances' },
