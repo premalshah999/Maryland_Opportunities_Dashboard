@@ -555,17 +555,31 @@ export default function DashboardApp() {
       targets.add("state");
     }
 
+    const geoKeyForTarget = (target) => {
+      if (viewMode === "atlas" && target === "county" && year) {
+        return `${target}:${year}`;
+      }
+      return target;
+    };
+    const geoUrlForTarget = (target) => {
+      if (viewMode === "atlas" && target === "county" && year) {
+        return `/api/geo/${target}?year=${encodeURIComponent(year)}`;
+      }
+      return `/api/geo/${target}`;
+    };
+
     targets.forEach((target) => {
-      if (geoCache[target]) return;
-      fetchJson(`/api/geo/${target}`)
-        .then((data) => setGeoCache((prev) => ({ ...prev, [target]: data })))
+      const cacheKey = geoKeyForTarget(target);
+      if (geoCache[cacheKey]) return;
+      fetchJson(geoUrlForTarget(target))
+        .then((data) => setGeoCache((prev) => ({ ...prev, [cacheKey]: data })))
         .catch(() => {
           if (viewMode === "atlas") {
             setAtlasStatus({ state: "error", message: "Failed to load geometry" });
           }
         });
     });
-  }, [level, viewMode, flowLevel, geoCache]);
+  }, [level, viewMode, flowLevel, geoCache, year]);
 
   useEffect(() => {
     if (!isResizing) return;
@@ -591,7 +605,8 @@ export default function DashboardApp() {
   };
 
   const enrichedGeo = useMemo(() => {
-    const baseGeo = geoCache[level];
+    const geoKey = level === "county" && year ? `county:${year}` : level;
+    const baseGeo = geoCache[geoKey];
     if (!baseGeo || !valuesData) return null;
     const recordMap = new Map(
       valuesData.records.map((record) => [String(record.id), record])
@@ -616,7 +631,7 @@ export default function DashboardApp() {
         };
       })
     };
-  }, [geoCache, level, valuesData]);
+  }, [geoCache, level, valuesData, year]);
 
   const spendingEnrichedGeo = useMemo(() => {
     const baseGeo = geoCache.state;

@@ -77,14 +77,25 @@ def check_dataset(dataset: str, level: str) -> Tuple[Dict[str, str], List[str]]:
     if duplicates:
         issues.append(f"duplicate_id_year_rows:{int(duplicates)}")
 
-    boundary = main.boundary_ids(level)
     if level == "state":
+        boundary = main.boundary_ids(level)
         fips_series = id_series.map(state_name_to_fips)
         missing_fips = int(fips_series.isna().sum())
         if missing_fips:
             issues.append(f"unmapped_state_names:{missing_fips}")
         missing_boundary = fips_series[(~fips_series.isna()) & (~fips_series.isin(boundary))].dropna()
+    elif level == "county" and year_col:
+        missing_all: list[str] = []
+        for year_value in sorted(year_series.dropna().unique()):
+            boundary = main.boundary_ids(level, year_value)
+            year_mask = year_series == year_value
+            year_ids = id_series[year_mask]
+            missing = year_ids[(~year_ids.isna()) & (~year_ids.isin(boundary))].dropna()
+            if not missing.empty:
+                missing_all.extend(missing.tolist())
+        missing_boundary = pd.Series(missing_all)
     else:
+        boundary = main.boundary_ids(level)
         missing_boundary = id_series[(~id_series.isna()) & (~id_series.isin(boundary))].dropna()
 
     if not missing_boundary.empty:

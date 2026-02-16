@@ -2,6 +2,11 @@
 
 Interactive data atlas to compare demographic, fiscal, contract, and financial capability indicators across U.S. states, counties, and congressional districts.
 
+## Quick Links
+
+- Maintenance & deployment: `docs/MAINTENANCE.md`
+- Ops (Nginx + systemd): `ops/README.md`
+
 ## Project Structure
 
 - `frontend/` React + Vite client (map, sidebar, flow diagram).
@@ -42,6 +47,11 @@ python -m pytest backend/tests -q
 Run the dataset sanity checks (IDs, duplicates, missing boundaries):
 ```bash
 python backend/scripts/validate_data.py --warn-only
+```
+
+Repair known dataset anomalies (county/city duplicates, blank state rows):
+```bash
+python backend/scripts/repair_processed_datasets.py
 ```
 
 ## Production Deployment

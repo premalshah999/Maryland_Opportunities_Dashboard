@@ -11,15 +11,7 @@ EnvironmentFile=-/etc/mop/mop.env
 Environment=PYTHONDONTWRITEBYTECODE=1
 Environment=PYTHONUNBUFFERED=1
 
-ExecStart=/opt/mop/venv/bin/gunicorn backend.main:app \
-  --worker-class uvicorn.workers.UvicornWorker \
-  --bind 127.0.0.1:8000 \
-  --workers 2 \
-  --timeout 120 \
-  --graceful-timeout 30 \
-  --keep-alive 5 \
-  --access-logfile - \
-  --error-logfile -
+ExecStart=/opt/mop/venv/bin/gunicorn -c /etc/mop/gunicorn.conf.py backend.main:app
 
 Restart=always
 RestartSec=3

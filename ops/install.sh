@@ -70,6 +70,9 @@ install -d -m 0755 /etc/mop
 if [[ ! -f /etc/mop/mop.env ]]; then
   install -m 0644 "$APP_DIR/ops/mop.env.example" /etc/mop/mop.env
 fi
+if [[ ! -f /etc/mop/gunicorn.conf.py ]]; then
+  install -m 0644 "$APP_DIR/ops/gunicorn.conf.py" /etc/mop/gunicorn.conf.py
+fi
 
 install -m 0644 "$APP_DIR/ops/systemd/mop-api.service" /etc/systemd/system/mop-api.service
 systemctl daemon-reload

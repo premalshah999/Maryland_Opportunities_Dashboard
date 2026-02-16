@@ -4,6 +4,7 @@ import math
 import os
 import time
 import hashlib
+import re
 from collections import OrderedDict
 from io import BytesIO
 from functools import lru_cache
@@ -77,6 +78,7 @@ LEVELS = {"state", "county", "congress"}
 DATASET_LEVELS = {key: set(LEVELS) for key in DATASETS}
 DATASET_LEVELS["spending_breakdown"] = {"state"}
 YEAR_COLUMN = "Year"
+CENSUS_COUNTY_PLANNING_START_YEAR = 2022
 CENSUS_INCOME_REPLACEMENTS = {
     "Income <$50K": "Income >$50K",
     "Income <$100K": "Income >$100K",
@@ -197,10 +199,10 @@ SHORT_CACHE_SECONDS = int(os.getenv("SHORT_CACHE_SECONDS", "300"))
 LONG_CACHE_SECONDS = int(os.getenv("LONG_CACHE_SECONDS", "3600"))
 FLOW_CACHE_SECONDS = int(os.getenv("FLOW_CACHE_SECONDS", "120"))
 RATE_LIMIT_DEFAULT = os.getenv("RATE_LIMIT_DEFAULT", "120/minute")
-_RATE_LIMIT_LOCK = Lock()
 APP_START_TIME = time.time()
 _VALUES_CACHE: OrderedDict[str, tuple[dict, float]] = OrderedDict()
 _FLOW_RESULT_CACHE: OrderedDict[str, tuple[dict, float]] = OrderedDict()
+_LRU_CACHE_LOCK = Lock()
 
 def _client_ip(request: Request) -> str:
     forwarded = request.headers.get("x-forwarded-for")
@@ -322,13 +324,37 @@ def _flow_signature(level: str) -> str:
     return _file_signature(os.path.join(FLOW_DATA_DIR, FLOW_FILES[level]))
 
 
-def _geo_signature(level: str) -> str:
-    filename = {
+def _geo_signature(level: str, year: Optional[str] = None) -> str:
+    return _file_signature(os.path.join(ATLAS_BOUNDARIES_DIR, geo_filename(level, year)))
+
+
+def _parse_year_int(value: Optional[str]) -> Optional[int]:
+    if value is None:
+        return None
+    raw = str(value).strip()
+    if raw.isdigit():
+        return int(raw)
+    match = re.search(r"(19|20)\\d{2}", raw)
+    if match:
+        return int(match.group(0))
+    return None
+
+
+def county_geo_variant(year: Optional[str]) -> str:
+    year_value = _parse_year_int(year)
+    if year_value is not None and year_value < CENSUS_COUNTY_PLANNING_START_YEAR:
+        return "legacy"
+    return "planning"
+
+
+def geo_filename(level: str, year: Optional[str] = None) -> str:
+    if level == "county":
+        variant = county_geo_variant(year)
+        return "counties_legacy.geojson" if variant == "legacy" else "counties.geojson"
+    return {
         "state": "states.geojson",
-        "county": "counties.geojson",
         "congress": "congress.geojson",
     }[level]
-    return _file_signature(os.path.join(ATLAS_BOUNDARIES_DIR, filename))
 
 
 def _spending_signature() -> str:
@@ -341,22 +367,24 @@ def _build_etag(*parts: object) -> str:
 
 
 def _cache_get(cache: OrderedDict, key: str):
-    entry = cache.get(key)
-    if not entry:
-        return None
-    payload, timestamp = entry
-    if _is_expired(timestamp):
-        cache.pop(key, None)
-        return None
-    cache.move_to_end(key)
-    return payload
+    with _LRU_CACHE_LOCK:
+        entry = cache.get(key)
+        if not entry:
+            return None
+        payload, timestamp = entry
+        if _is_expired(timestamp):
+            cache.pop(key, None)
+            return None
+        cache.move_to_end(key)
+        return payload
 
 
 def _cache_set(cache: OrderedDict, key: str, payload: dict, limit: int):
-    cache[key] = (payload, time.time())
-    cache.move_to_end(key)
-    while len(cache) > limit:
-        cache.popitem(last=False)
+    with _LRU_CACHE_LOCK:
+        cache[key] = (payload, time.time())
+        cache.move_to_end(key)
+        while len(cache) > limit:
+            cache.popitem(last=False)
 
 
 def _cache_headers(etag: str, max_age: int) -> Dict[str, str]:
@@ -414,6 +442,24 @@ def dataset_path(dataset: str, level: str) -> str:
     info = DATASETS[dataset]
     filename = f"{info['prefix']}_{level}.xlsx"
     return os.path.join(ATLAS_PROCESSED_DIR, info["dir"], filename)
+
+
+def validate_dataset_level(
+    dataset: str,
+    level: str,
+    *,
+    allow_spending_breakdown: bool = True,
+) -> set:
+    if dataset not in DATASETS:
+        raise HTTPException(status_code=404, detail="Unknown dataset")
+    if not allow_spending_breakdown and dataset == "spending_breakdown":
+        raise HTTPException(status_code=404, detail="Unknown dataset")
+    if level not in LEVELS:
+        raise HTTPException(status_code=404, detail="Unknown level")
+    allowed_levels = DATASET_LEVELS.get(dataset, LEVELS)
+    if level not in allowed_levels:
+        raise HTTPException(status_code=404, detail="Unknown level")
+    return allowed_levels
 
 
 def load_dataset(dataset: str, level: str) -> pd.DataFrame:
@@ -474,14 +520,15 @@ def filter_dataset_year(df: pd.DataFrame, year: Optional[str]) -> tuple[pd.DataF
     return df, selected_year
 
 
-def load_geo(level: str) -> dict:
-    entry = _GEO_CACHE.get(level)
-    signature = _geo_signature(level)
+def load_geo(level: str, year: Optional[str] = None) -> dict:
+    cache_key = f"{level}:{county_geo_variant(year)}" if level == "county" else level
+    entry = _GEO_CACHE.get(cache_key)
+    signature = _geo_signature(level, year)
     if entry is not None and (_is_expired(entry[1]) or entry[2] != signature):
-        _GEO_CACHE.pop(level, None)
-        if level in _GEO_CACHE_ORDER:
-            _GEO_CACHE_ORDER.remove(level)
-    if level not in _GEO_CACHE:
+        _GEO_CACHE.pop(cache_key, None)
+        if cache_key in _GEO_CACHE_ORDER:
+            _GEO_CACHE_ORDER.remove(cache_key)
+    if cache_key not in _GEO_CACHE:
         # prune expired in order list
         for cached_level in list(_GEO_CACHE_ORDER):
             cached_entry = _GEO_CACHE.get(cached_level)
@@ -491,30 +538,26 @@ def load_geo(level: str) -> dict:
         while _GEO_CACHE_ORDER and len(_GEO_CACHE_ORDER) >= GEO_CACHE_LIMIT:
             evict_level = _GEO_CACHE_ORDER.pop(0)
             _GEO_CACHE.pop(evict_level, None)
-        filename = {
-            "state": "states.geojson",
-            "county": "counties.geojson",
-            "congress": "congress.geojson",
-        }[level]
-        path = os.path.join(ATLAS_BOUNDARIES_DIR, filename)
+        path = os.path.join(ATLAS_BOUNDARIES_DIR, geo_filename(level, year))
         if not os.path.exists(path):
             raise FileNotFoundError(path)
         with open(path, "r", encoding="utf-8") as f:
-            _GEO_CACHE[level] = (json.load(f), time.time(), signature)
-        _GEO_CACHE_ORDER.append(level)
+            _GEO_CACHE[cache_key] = (json.load(f), time.time(), signature)
+        _GEO_CACHE_ORDER.append(cache_key)
     else:
-        if level in _GEO_CACHE_ORDER:
-            _GEO_CACHE_ORDER.remove(level)
-            _GEO_CACHE_ORDER.append(level)
-    return _GEO_CACHE[level][0]
+        if cache_key in _GEO_CACHE_ORDER:
+            _GEO_CACHE_ORDER.remove(cache_key)
+            _GEO_CACHE_ORDER.append(cache_key)
+    return _GEO_CACHE[cache_key][0]
 
 
-def boundary_ids(level: str) -> set:
-    entry = _BOUNDARY_ID_CACHE.get(level)
-    signature = _geo_signature(level)
+def boundary_ids(level: str, year: Optional[str] = None) -> set:
+    cache_key = f"{level}:{county_geo_variant(year)}" if level == "county" else level
+    entry = _BOUNDARY_ID_CACHE.get(cache_key)
+    signature = _geo_signature(level, year)
     if entry is not None and entry[2] == signature and not _is_expired(entry[1]):
         return entry[0]
-    geo = load_geo(level)
+    geo = load_geo(level, year)
     ids = set()
     for feature in geo.get("features", []):
         raw_id = (feature.get("properties") or {}).get("id")
@@ -532,7 +575,7 @@ def boundary_ids(level: str) -> set:
                 continue
         else:
             ids.add(str(raw_id).strip().upper())
-    _BOUNDARY_ID_CACHE[level] = (ids, time.time(), signature)
+    _BOUNDARY_ID_CACHE[cache_key] = (ids, time.time(), signature)
     return ids
 
 
@@ -1131,13 +1174,7 @@ def list_variables(
     dataset: str = Query(..., min_length=1, max_length=50),
     level: str = Query(..., min_length=1, max_length=20),
 ):
-    if dataset not in DATASETS:
-        raise HTTPException(status_code=404, detail="Unknown dataset")
-    if level not in LEVELS:
-        raise HTTPException(status_code=404, detail="Unknown level")
-    allowed_levels = DATASET_LEVELS.get(dataset, LEVELS)
-    if level not in allowed_levels:
-        raise HTTPException(status_code=404, detail="Unknown level")
+    validate_dataset_level(dataset, level)
     df = load_dataset(dataset, level)
     exclude = ID_COLUMNS[level]
     columns = [col for col in df.columns if col not in exclude and col != YEAR_COLUMN]
@@ -1181,7 +1218,12 @@ def build_values_payload(
     elif variable not in df.columns:
         raise HTTPException(status_code=404, detail="Unknown variable")
 
-    records, thresholds = build_records(df, level, variable, allowed_ids=boundary_ids(level))
+    records, thresholds = build_records(
+        df,
+        level,
+        variable,
+        allowed_ids=boundary_ids(level, selected_year),
+    )
     stats = summarize([r["value"] for r in records])
 
     sorted_records = [r for r in records if r["value"] is not None]
@@ -1216,13 +1258,7 @@ def values(
     variable: str = Query(..., min_length=1, max_length=120),
     year: Optional[str] = Query(None, max_length=32),
 ):
-    if dataset not in DATASETS:
-        raise HTTPException(status_code=404, detail="Unknown dataset")
-    if level not in LEVELS:
-        raise HTTPException(status_code=404, detail="Unknown level")
-    allowed_levels = DATASET_LEVELS.get(dataset, LEVELS)
-    if level not in allowed_levels:
-        raise HTTPException(status_code=404, detail="Unknown level")
+    validate_dataset_level(dataset, level)
     payload = build_values_payload(dataset, level, variable, year)
     etag = _build_etag("values", dataset, level, variable, year, _dataset_signature(dataset, level))
     return _cached_json_response(request, payload, etag, SHORT_CACHE_SECONDS)
@@ -1233,13 +1269,7 @@ def download_atlas_dataset(
     dataset: str = Query(..., min_length=1, max_length=50),
     level: str = Query(..., min_length=1, max_length=20),
 ):
-    if dataset not in DATASETS or dataset == "spending_breakdown":
-        raise HTTPException(status_code=404, detail="Unknown dataset")
-    if level not in LEVELS:
-        raise HTTPException(status_code=404, detail="Unknown level")
-    allowed_levels = DATASET_LEVELS.get(dataset, LEVELS)
-    if level not in allowed_levels:
-        raise HTTPException(status_code=404, detail="Unknown level")
+    validate_dataset_level(dataset, level, allow_spending_breakdown=False)
     path = dataset_path(dataset, level)
     if not os.path.exists(path):
         raise HTTPException(status_code=404, detail="Dataset file not found")
@@ -1263,13 +1293,7 @@ def download_atlas_view(
     variable: str = Query(..., min_length=1, max_length=120),
     year: Optional[str] = Query(None, max_length=32),
 ):
-    if dataset not in DATASETS or dataset == "spending_breakdown":
-        raise HTTPException(status_code=404, detail="Unknown dataset")
-    if level not in LEVELS:
-        raise HTTPException(status_code=404, detail="Unknown level")
-    allowed_levels = DATASET_LEVELS.get(dataset, LEVELS)
-    if level not in allowed_levels:
-        raise HTTPException(status_code=404, detail="Unknown level")
+    validate_dataset_level(dataset, level, allow_spending_breakdown=False)
     payload = build_values_payload(dataset, level, variable, year)
     records = payload.get("records", [])
     selected_year = payload.get("year") or (year or "latest")
@@ -1375,11 +1399,11 @@ def download_flow_view(
 
 
 @app.get("/api/geo/{level}")
-def geo(request: Request, level: str):
+def geo(request: Request, level: str, year: Optional[str] = Query(None, max_length=32)):
     if level not in LEVELS:
         raise HTTPException(status_code=404, detail="Unknown level")
-    payload = load_geo(level)
-    etag = _build_etag("geo", level, _geo_signature(level))
+    payload = load_geo(level, year)
+    etag = _build_etag("geo", level, year, _geo_signature(level, year))
     return _cached_json_response(request, payload, etag, LONG_CACHE_SECONDS)
 
 

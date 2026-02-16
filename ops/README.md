@@ -19,6 +19,7 @@ These scripts are designed to match a long-lived, patchable Ubuntu deployment (n
 - Data directory: `/var/data/mop`
 - App checkout directory: `/opt/mop/app`
 - Python venv: `/opt/mop/venv`
+- Gunicorn config: `/etc/mop/gunicorn.conf.py`
 
 You can change these by editing the scripts below or setting environment variables.
 
@@ -90,6 +91,7 @@ Key settings:
 - `FLOW_DATA_DIR=/var/data/mop/flow`
 - `SPENDING_DATA_FILE=/var/data/mop/spending/spending_state_agency.xlsx`
 - `CORS_ALLOWED_ORIGINS=https://mop.rhsmith.umd.edu`
+- `MOP_GUNICORN_WORKERS=3` (adjust for CPU)
 
 ## Quick health checks
 
@@ -102,6 +104,16 @@ Check service logs:
 ```bash
 sudo journalctl -u mop-api -n 200 --no-pager
 ```
+
+## Private repo / repo changes
+
+- **Private repo**: use a deploy key or add a read-only collaborator for IT to pull updates.
+- **Move repo**:
+  ```bash
+  cd /opt/mop/app
+  git remote set-url origin <new_repo_url>
+  git pull
+  ```
 
 ## Rollback
 
