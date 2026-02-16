@@ -691,24 +691,80 @@ export const ResearchDetail: React.FC = () => {
                 <h2 className="text-2xl font-serif font-semibold text-gray-900 mb-4">2. Federal Agency Furlough Rates</h2>
                 <div className="space-y-4 text-gray-700 leading-8">
                   <p>Table 1 presents the furlough rates for 30 major federal agencies based on their 2025 contingency plans. The rates vary significantly across agencies, ranging from 0% (Smithsonian Institution) to 93% (Equal Employment Opportunity Commission and NASA). Agencies with higher proportions of employees deemed "essential" have lower furlough rates, such as the Department of the Treasury (2%) and the Department of Veterans Affairs (4%). Defense-related agencies (DOD, Army, Navy, Air Force) have uniform 45% furlough rates, reflecting the large civilian workforce supporting military operations.</p>
+                  <div className="overflow-x-auto">
+                    <p><strong><em>Table 1: Federal Agency Furlough Rates</em></strong></p>
+                    <table className="min-w-full border border-gray-200 text-sm text-gray-700">
+                      <thead className="bg-gray-50">
+                        <tr>
+                          <th className="px-4 py-3 border-b border-gray-200 font-semibold">Agency</th>
+                          <th className="px-4 py-3 border-b border-gray-200 font-semibold">Furlough Rate (%)</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr><td className="px-4 py-3 border-b border-gray-100">Smithsonian Institution</td><td className="px-4 py-3 border-b border-gray-100">0%</td></tr>
+                        <tr><td className="px-4 py-3 border-b border-gray-100">Equal Employment Opportunity Commission</td><td className="px-4 py-3 border-b border-gray-100">93%</td></tr>
+                        <tr><td className="px-4 py-3 border-b border-gray-100">NASA</td><td className="px-4 py-3 border-b border-gray-100">93%</td></tr>
+                        <tr><td className="px-4 py-3 border-b border-gray-100">Department of the Treasury</td><td className="px-4 py-3 border-b border-gray-100">2%</td></tr>
+                        <tr><td className="px-4 py-3 border-b border-gray-100">Department of Veterans Affairs</td><td className="px-4 py-3 border-b border-gray-100">4%</td></tr>
+                        <tr><td className="px-4 py-3 border-b border-gray-100">Department of Defense (DOD)</td><td className="px-4 py-3 border-b border-gray-100">45%</td></tr>
+                        <tr><td className="px-4 py-3 border-b border-gray-100">Department of the Army</td><td className="px-4 py-3 border-b border-gray-100">45%</td></tr>
+                        <tr><td className="px-4 py-3 border-b border-gray-100">Department of the Navy</td><td className="px-4 py-3 border-b border-gray-100">45%</td></tr>
+                        <tr><td className="px-4 py-3">Department of the Air Force</td><td className="px-4 py-3">45%</td></tr>
+                      </tbody>
+                    </table>
+                  </div>
                   <p>Maryland hosts around 139,000 federal jobs across military and non-military agencies. Table 2 shows the distribution of employees by agency, along with average salaries and estimated salary reductions from furloughs. The Department of Health and Human Services employs the largest workforce in Maryland (41,000 employees), followed by the military services (Army: 14,500; Navy: 18,000; Defense: 12,000).</p>
+                  <div className="overflow-x-auto">
+                    <p><strong><em>Table 2: Federal Employees by Agency in Maryland</em></strong></p>
+                    <table className="min-w-full border border-gray-200 text-sm text-gray-700">
+                      <thead className="bg-gray-50">
+                        <tr>
+                          <th className="px-4 py-3 border-b border-gray-200 font-semibold">Agency</th>
+                          <th className="px-4 py-3 border-b border-gray-200 font-semibold">Employees</th>
+                          <th className="px-4 py-3 border-b border-gray-200 font-semibold">Average Salary ($k)</th>
+                          <th className="px-4 py-3 border-b border-gray-200 font-semibold">Estimated Salary Reduction ($m)</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr><td className="px-4 py-3 border-b border-gray-100">Department of Health and Human Services</td><td className="px-4 py-3 border-b border-gray-100">41,000</td><td className="px-4 py-3 border-b border-gray-100">Not specified in text</td><td className="px-4 py-3 border-b border-gray-100">Not specified in text</td></tr>
+                        <tr><td className="px-4 py-3 border-b border-gray-100">Army</td><td className="px-4 py-3 border-b border-gray-100">14,500</td><td className="px-4 py-3 border-b border-gray-100">Not specified in text</td><td className="px-4 py-3 border-b border-gray-100">Not specified in text</td></tr>
+                        <tr><td className="px-4 py-3 border-b border-gray-100">Navy</td><td className="px-4 py-3 border-b border-gray-100">18,000</td><td className="px-4 py-3 border-b border-gray-100">Not specified in text</td><td className="px-4 py-3 border-b border-gray-100">Not specified in text</td></tr>
+                        <tr><td className="px-4 py-3 border-b border-gray-100">Defense</td><td className="px-4 py-3 border-b border-gray-100">12,000</td><td className="px-4 py-3 border-b border-gray-100">Not specified in text</td><td className="px-4 py-3 border-b border-gray-100">Not specified in text</td></tr>
+                        <tr><td className="px-4 py-3">All federal agencies in Maryland</td><td className="px-4 py-3">~139,000</td><td className="px-4 py-3">Not specified in text</td><td className="px-4 py-3">~8,000</td></tr>
+                      </tbody>
+                    </table>
+                  </div>
                   <p>The total estimated direct salary impact from the furloughs amounts to approximately $8 billion. The Department of Health and Human Services, the Department of Commerce, and the Navy account for the largest salary reductions due to their substantial furlough rates.</p>
-                  <p><strong><em>Table 3: Military vs Non-Military Salary Data</em></strong></p>
-                  <p>Category</p>
-                  <p>Salary ($k)</p>
-                  <p>Furlough Rate (%)</p>
-                  <p>Employees</p>
-                  <p>Salary Deduction ($m)</p>
-                  <p>Military</p>
-                  <p>130</p>
-                  <p>45</p>
-                  <p>46,000</p>
-                  <p>2,600</p>
-                  <p>Non-Military</p>
-                  <p>140</p>
-                  <p>40</p>
-                  <p>93,000</p>
-                  <p>5,200</p>
+                  <div className="overflow-x-auto">
+                    <p><strong><em>Table 3: Military vs Non-Military Salary Data</em></strong></p>
+                    <table className="min-w-full border border-gray-200 text-sm text-gray-700">
+                      <thead className="bg-gray-50">
+                        <tr>
+                          <th className="px-4 py-3 border-b border-gray-200 font-semibold">Category</th>
+                          <th className="px-4 py-3 border-b border-gray-200 font-semibold">Salary ($k)</th>
+                          <th className="px-4 py-3 border-b border-gray-200 font-semibold">Furlough Rate (%)</th>
+                          <th className="px-4 py-3 border-b border-gray-200 font-semibold">Employees</th>
+                          <th className="px-4 py-3 border-b border-gray-200 font-semibold">Salary Deduction ($m)</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr>
+                          <td className="px-4 py-3 border-b border-gray-100">Military</td>
+                          <td className="px-4 py-3 border-b border-gray-100">130</td>
+                          <td className="px-4 py-3 border-b border-gray-100">45</td>
+                          <td className="px-4 py-3 border-b border-gray-100">46,000</td>
+                          <td className="px-4 py-3 border-b border-gray-100">2,600</td>
+                        </tr>
+                        <tr>
+                          <td className="px-4 py-3">Non-Military</td>
+                          <td className="px-4 py-3">140</td>
+                          <td className="px-4 py-3">40</td>
+                          <td className="px-4 py-3">93,000</td>
+                          <td className="px-4 py-3">5,200</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
                   <p>Table 3 compares military versus non-military federal employees in Maryland. Non-military employees constitute 67% of the federal workforce in Maryland (93,000 employees) with an average salary of $140,000, while military-affiliated civilians represent 33% (46,000 employees) with an average salary of $130,000. The military sector faces a higher average furlough rate (45%) compared to non-military agencies (40%), resulting in a direct salary reduction of $3 billion for military-affiliated employees and $5 billion for non-military employees.</p>
                   <p>Figure 1: Federal Employee Salaries by Maryland County</p>
                 </div>
@@ -722,21 +778,25 @@ export const ResearchDetail: React.FC = () => {
                 <div className="space-y-4 text-gray-700 leading-8">
                   <p>Figure 1 shows the geographic distribution of federal employee salaries across Maryland counties. Montgomery and Prince George's counties exhibit the highest concentrations at approximately $7 billion each, accounting for nearly 50% of the state's total federal payroll. This spatial clustering reflects the proximity to Washington D.C. and the concentration of federal agencies in the Capital Region. Counties farther from the metropolitan corridor show substantially lower federal salary levels, with rural areas such as Garrett and Kent counties each accounting for less than $15 million annually.</p>
                   <p>Given our assumption of a uniform 45% furlough rate across all counties, the weekly wage deduction for each county is directly proportional to its total resident salary. Therefore, the spatial pattern of economic impacts mirrors the salary distribution shown in Figure 1, with Montgomery and Prince George's counties bearing the largest absolute losses.</p>
-                  <p><strong><em>Table 4: Federal Employee Furlough Impact</em></strong></p>
-                  <p>Metric</p>
-                  <p>Value</p>
-                  <p>Maryland Federal Employee Resident</p>
-                  <p>227,000</p>
-                  <p>Total Wage ($, Billion)</p>
-                  <p>29</p>
-                  <p>Furlough Rate (%)</p>
-                  <p>45%</p>
-                  <p>Affected Resident</p>
-                  <p>102,000</p>
-                  <p>Weekly Wage Deduction ($, Million)</p>
-                  <p>255</p>
-                  <p>Induced Weekly Wage Deduction ($, Million)</p>
-                  <p>23</p>
+                  <div className="overflow-x-auto">
+                    <p><strong><em>Table 4: Federal Employee Furlough Impact</em></strong></p>
+                    <table className="min-w-full border border-gray-200 text-sm text-gray-700">
+                      <thead className="bg-gray-50">
+                        <tr>
+                          <th className="px-4 py-3 border-b border-gray-200 font-semibold">Metric</th>
+                          <th className="px-4 py-3 border-b border-gray-200 font-semibold">Value</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr><td className="px-4 py-3 border-b border-gray-100">Maryland Federal Employee Resident</td><td className="px-4 py-3 border-b border-gray-100">227,000</td></tr>
+                        <tr><td className="px-4 py-3 border-b border-gray-100">Total Wage ($, Billion)</td><td className="px-4 py-3 border-b border-gray-100">29</td></tr>
+                        <tr><td className="px-4 py-3 border-b border-gray-100">Furlough Rate (%)</td><td className="px-4 py-3 border-b border-gray-100">45%</td></tr>
+                        <tr><td className="px-4 py-3 border-b border-gray-100">Affected Resident</td><td className="px-4 py-3 border-b border-gray-100">102,000</td></tr>
+                        <tr><td className="px-4 py-3 border-b border-gray-100">Weekly Wage Deduction ($, Million)</td><td className="px-4 py-3 border-b border-gray-100">255</td></tr>
+                        <tr><td className="px-4 py-3">Induced Weekly Wage Deduction ($, Million)</td><td className="px-4 py-3">23</td></tr>
+                      </tbody>
+                    </table>
+                  </div>
                   <p>Table 4 summarizes the baseline parameters for Maryland's federal workforce and the estimated shutdown impact. Maryland hosts approximately 227,000 federal employee residents with a combined annual wage of $29 billion. Applying the weighted average furlough rate of 45% across agencies, we estimate that 102,000 employees would be affected, resulting in a direct weekly wage reduction of $255 million. Using the IMPLAN input-output model with this weekly wage shock as the primary input, we calculate an induced weekly wage deduction of $23 million across Maryland's economy, reflecting the multiplier effects as reduced household spending cascades through various sectors.</p>
                 </div>
               </section>
