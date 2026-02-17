@@ -1,12 +1,18 @@
 import argparse
+import sys
 from pathlib import Path
 from typing import Optional
 
 import pandas as pd
 
-
 ROOT_DIR = Path(__file__).resolve().parents[2]
+sys.path.append(str(ROOT_DIR))
+
+from backend import main as backend_main
+
+
 PROCESSED_DIR = ROOT_DIR / "backend" / "data" / "atlas" / "processed"
+VALID_STATE_FIPS = set(backend_main.STATE_NAME_TO_FIPS.values())
 
 
 AMBIGUOUS_COUNTY_NAMES_BY_FIPS = {
@@ -133,6 +139,37 @@ def repair_census_state(path: Path, *, dry_run: bool) -> bool:
     return True
 
 
+def drop_invalid_congress_ids(path: Path, *, dry_run: bool) -> bool:
+    df = pd.read_excel(path)
+    if "cd_118" not in df.columns:
+        return False
+    cd_series = df["cd_118"].astype(str).str.strip().str.upper()
+    valid_mask = cd_series.str.match(r"^[A-Z]{2}-\d{2}$")
+    cleaned = df.loc[valid_mask].copy()
+    if len(cleaned) == len(df):
+        return False
+    if not dry_run:
+        cleaned.to_excel(path, index=False)
+    return True
+
+
+def drop_invalid_county_ids(path: Path, *, dry_run: bool) -> bool:
+    df = pd.read_excel(path)
+    fips_col = "fips" if "fips" in df.columns else "county_fips" if "county_fips" in df.columns else None
+    if not fips_col:
+        return False
+    fips_norm = df[fips_col].apply(_normalize_fips)
+    valid_state = fips_norm.apply(lambda f: f[:2] if isinstance(f, str) else None).isin(VALID_STATE_FIPS)
+    valid_mask = fips_norm.notna() & valid_state
+    cleaned = df.loc[valid_mask].copy()
+    if len(cleaned) == len(df):
+        return False
+    cleaned[fips_col] = fips_norm[valid_mask]
+    if not dry_run:
+        cleaned.to_excel(path, index=False)
+    return True
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="Repair known issues in processed dataset files.")
     parser.add_argument("--dry-run", action="store_true", help="Compute changes but do not write files.")
@@ -147,6 +184,24 @@ def main() -> None:
     census_state_path = PROCESSED_DIR / "census" / "acs_state.xlsx"
     if census_state_path.exists():
         changed = repair_census_state(census_state_path, dry_run=args.dry_run) or changed
+
+    congress_paths = [
+        PROCESSED_DIR / "contract_static" / "contract_congress.xlsx",
+        PROCESSED_DIR / "gov_spending" / "gov_congress.xlsx",
+        PROCESSED_DIR / "Finra" / "finra_congress.xlsx",
+    ]
+    for path in congress_paths:
+        if path.exists():
+            changed = drop_invalid_congress_ids(path, dry_run=args.dry_run) or changed
+
+    county_paths = [
+        PROCESSED_DIR / "contract_static" / "contract_county.xlsx",
+        PROCESSED_DIR / "gov_spending" / "gov_county.xlsx",
+        PROCESSED_DIR / "Finra" / "finra_county.xlsx",
+    ]
+    for path in county_paths:
+        if path.exists():
+            changed = drop_invalid_county_ids(path, dry_run=args.dry_run) or changed
 
     if not changed:
         print("No changes needed.")

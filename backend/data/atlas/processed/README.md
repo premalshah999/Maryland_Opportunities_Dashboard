@@ -1,6 +1,6 @@
 # Database Structure & Variable Types
 
-This project processes four primary datasets related to federal spending, demographics, municipal finance, and household financial health. The data is aggregated at two geographic levels: **County** and **Congressional District (118th)**.
+This project processes four primary datasets related to federal spending, demographics, municipal finance, and household financial health. The data is aggregated at two geographic levels: **County** and **Congressional District (year-specific)**.
 
 ## 1. Geographic Variables
 
@@ -14,9 +14,10 @@ This project processes four primary datasets related to federal spending, demogr
 - **Note:** Data is aggregated by summing county-level values for each state.
 
 ### Congressional District Level Files (`*_congress.xlsx`)
-- **`cd_118`** (String): Unique identifier for the 118th Congressional District.
+- **`cd_118`** (String): Unique identifier for the Congressional District associated with the row’s year.
   - Format: `SS-DD` (State Abbreviation - District Number).
   - Example: `AK-00` (Alaska At-large), `CA-12` (California 12th).
+  - Note: the column name is fixed as `cd_118`, but the values correspond to the district map for that year (pre-2012 districts appear in 2010–2011 data; post-2022 districts appear in 2022+ data).
 - **`state_str`** (String): State Abbreviation (e.g., `AL`, `NY`).
 
 ---

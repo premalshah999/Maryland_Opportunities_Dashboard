@@ -79,6 +79,12 @@ DATASET_LEVELS = {key: set(LEVELS) for key in DATASETS}
 DATASET_LEVELS["spending_breakdown"] = {"state"}
 YEAR_COLUMN = "Year"
 CENSUS_COUNTY_PLANNING_START_YEAR = 2022
+CONGRESS_LEGACY_END_YEAR = 2011
+CONGRESS_MODERN_END_YEAR = 2021
+BOUNDARY_YEAR_OVERRIDES = {
+    ("contract_static", "county"): str(CENSUS_COUNTY_PLANNING_START_YEAR - 1),
+    ("finra", "congress"): str(CENSUS_COUNTY_PLANNING_START_YEAR),
+}
 CENSUS_INCOME_REPLACEMENTS = {
     "Income <$50K": "Income >$50K",
     "Income <$100K": "Income >$100K",
@@ -191,7 +197,7 @@ _FLOW_CACHE: Dict[str, tuple[pd.DataFrame, float, float]] = {}
 _FLOW_CACHE_ORDER: List[str] = []
 _BOUNDARY_ID_CACHE: Dict[str, tuple[set, float, float]] = {}
 _STATE_CENTROID_CACHE: Optional[Dict[str, tuple[float, float]]] = None
-GEO_CACHE_LIMIT = int(os.getenv("GEO_CACHE_LIMIT", "2"))
+GEO_CACHE_LIMIT = int(os.getenv("GEO_CACHE_LIMIT", "4"))
 CACHE_TTL_SECONDS = int(os.getenv("CACHE_TTL_SECONDS", "3600"))
 VALUES_CACHE_LIMIT = int(os.getenv("VALUES_CACHE_LIMIT", "256"))
 FLOW_RESULT_CACHE_LIMIT = int(os.getenv("FLOW_RESULT_CACHE_LIMIT", "128"))
@@ -334,9 +340,9 @@ def _parse_year_int(value: Optional[str]) -> Optional[int]:
     raw = str(value).strip()
     if raw.isdigit():
         return int(raw)
-    match = re.search(r"(19|20)\\d{2}", raw)
-    if match:
-        return int(match.group(0))
+    matches = re.findall(r"(?:19|20)\\d{2}", raw)
+    if matches:
+        return max(int(match) for match in matches)
     return None
 
 
@@ -347,13 +353,43 @@ def county_geo_variant(year: Optional[str]) -> str:
     return "planning"
 
 
+def congress_geo_variant(year: Optional[str]) -> str:
+    year_value = _parse_year_int(year)
+    if year_value is None:
+        return "cd118"
+    if year_value <= CONGRESS_LEGACY_END_YEAR:
+        return "cd112"
+    if year_value <= CONGRESS_MODERN_END_YEAR:
+        return "cd116"
+    return "cd118"
+
+
+def geo_cache_key(level: str, year: Optional[str]) -> str:
+    if level == "county":
+        return f"{level}:{county_geo_variant(year)}"
+    if level == "congress":
+        return f"{level}:{congress_geo_variant(year)}"
+    return level
+
+
+def boundary_year_for_dataset(dataset: str, level: str, selected_year: Optional[str]) -> Optional[str]:
+    override = BOUNDARY_YEAR_OVERRIDES.get((dataset, level))
+    return override if override is not None else selected_year
+
+
 def geo_filename(level: str, year: Optional[str] = None) -> str:
     if level == "county":
         variant = county_geo_variant(year)
         return "counties_legacy.geojson" if variant == "legacy" else "counties.geojson"
+    if level == "congress":
+        variant = congress_geo_variant(year)
+        if variant == "cd112":
+            return "congress_cd112.geojson"
+        if variant == "cd116":
+            return "congress_cd116.geojson"
+        return "congress.geojson"
     return {
         "state": "states.geojson",
-        "congress": "congress.geojson",
     }[level]
 
 
@@ -521,7 +557,7 @@ def filter_dataset_year(df: pd.DataFrame, year: Optional[str]) -> tuple[pd.DataF
 
 
 def load_geo(level: str, year: Optional[str] = None) -> dict:
-    cache_key = f"{level}:{county_geo_variant(year)}" if level == "county" else level
+    cache_key = geo_cache_key(level, year)
     entry = _GEO_CACHE.get(cache_key)
     signature = _geo_signature(level, year)
     if entry is not None and (_is_expired(entry[1]) or entry[2] != signature):
@@ -552,7 +588,7 @@ def load_geo(level: str, year: Optional[str] = None) -> dict:
 
 
 def boundary_ids(level: str, year: Optional[str] = None) -> set:
-    cache_key = f"{level}:{county_geo_variant(year)}" if level == "county" else level
+    cache_key = geo_cache_key(level, year)
     entry = _BOUNDARY_ID_CACHE.get(cache_key)
     signature = _geo_signature(level, year)
     if entry is not None and entry[2] == signature and not _is_expired(entry[1]):
@@ -1218,11 +1254,12 @@ def build_values_payload(
     elif variable not in df.columns:
         raise HTTPException(status_code=404, detail="Unknown variable")
 
+    boundary_year = boundary_year_for_dataset(dataset, level, selected_year)
     records, thresholds = build_records(
         df,
         level,
         variable,
-        allowed_ids=boundary_ids(level, selected_year),
+        allowed_ids=boundary_ids(level, boundary_year),
     )
     stats = summarize([r["value"] for r in records])
 

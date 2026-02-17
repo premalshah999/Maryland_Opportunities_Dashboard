@@ -87,7 +87,19 @@ def check_dataset(dataset: str, level: str) -> Tuple[Dict[str, str], List[str]]:
     elif level == "county" and year_col:
         missing_all: list[str] = []
         for year_value in sorted(year_series.dropna().unique()):
-            boundary = main.boundary_ids(level, year_value)
+            boundary_year = main.boundary_year_for_dataset(dataset, level, year_value)
+            boundary = main.boundary_ids(level, boundary_year)
+            year_mask = year_series == year_value
+            year_ids = id_series[year_mask]
+            missing = year_ids[(~year_ids.isna()) & (~year_ids.isin(boundary))].dropna()
+            if not missing.empty:
+                missing_all.extend(missing.tolist())
+        missing_boundary = pd.Series(missing_all)
+    elif level == "congress" and year_col:
+        missing_all: list[str] = []
+        for year_value in sorted(year_series.dropna().unique()):
+            boundary_year = main.boundary_year_for_dataset(dataset, level, year_value)
+            boundary = main.boundary_ids(level, boundary_year)
             year_mask = year_series == year_value
             year_ids = id_series[year_mask]
             missing = year_ids[(~year_ids.isna()) & (~year_ids.isin(boundary))].dropna()

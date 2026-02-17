@@ -555,15 +555,29 @@ export default function DashboardApp() {
       targets.add("state");
     }
 
-    const geoKeyForTarget = (target) => {
-      if (viewMode === "atlas" && target === "county" && year) {
-        return `${target}:${year}`;
+    const resolveGeoYear = (target) => {
+      if (viewMode === "atlas" && (target === "county" || target === "congress") && year) {
+        if (dataset === "contract_static" && target === "county") {
+          return "2021";
+        }
+        if (dataset === "finra" && target === "congress") {
+          return "2022";
+        }
+        return year;
       }
-      return target;
+      if (viewMode === "flow" && (target === "county" || target === "congress")) {
+        return flowFilters.yearEnd || flowFilters.yearStart || null;
+      }
+      return null;
+    };
+    const geoKeyForTarget = (target) => {
+      const geoYear = resolveGeoYear(target);
+      return geoYear ? `${target}:${geoYear}` : target;
     };
     const geoUrlForTarget = (target) => {
-      if (viewMode === "atlas" && target === "county" && year) {
-        return `/api/geo/${target}?year=${encodeURIComponent(year)}`;
+      const geoYear = resolveGeoYear(target);
+      if (geoYear) {
+        return `/api/geo/${target}?year=${encodeURIComponent(geoYear)}`;
       }
       return `/api/geo/${target}`;
     };
@@ -579,7 +593,7 @@ export default function DashboardApp() {
           }
         });
     });
-  }, [level, viewMode, flowLevel, geoCache, year]);
+  }, [level, viewMode, flowLevel, geoCache, year, flowFilters.yearStart, flowFilters.yearEnd, dataset]);
 
   useEffect(() => {
     if (!isResizing) return;
@@ -604,8 +618,18 @@ export default function DashboardApp() {
     setIsResizing(true);
   };
 
+  const atlasGeoYear = useMemo(() => {
+    if (!year) return null;
+    if (level === "county" && dataset === "contract_static") return "2021";
+    if (level === "congress" && dataset === "finra") return "2022";
+    return year;
+  }, [level, dataset, year]);
+
   const enrichedGeo = useMemo(() => {
-    const geoKey = level === "county" && year ? `county:${year}` : level;
+    const geoKey =
+      (level === "county" || level === "congress") && atlasGeoYear
+        ? `${level}:${atlasGeoYear}`
+        : level;
     const baseGeo = geoCache[geoKey];
     if (!baseGeo || !valuesData) return null;
     const recordMap = new Map(
@@ -823,6 +847,12 @@ export default function DashboardApp() {
       internalFlowAmount
     };
   }, [flowData, flowDisplay, flowFilters.yearEnd, flowFilters.yearStart]);
+
+  const flowGeoKey = useMemo(() => {
+    if (!flowLevel || flowLevel === "state") return "state";
+    const flowYear = flowFilters.yearEnd || flowFilters.yearStart;
+    return flowYear ? `${flowLevel}:${flowYear}` : flowLevel;
+  }, [flowLevel, flowFilters.yearEnd, flowFilters.yearStart]);
 
   const handleAtlasFullDownload = async () => {
     if (!dataset || !level) return;
@@ -1139,6 +1169,7 @@ export default function DashboardApp() {
                   flows={flowDisplay}
                   flowLevel={flowLevel}
                   geoCache={geoCache}
+                  flowGeoKey={flowGeoKey}
                   flowFilters={flowFilters}
                   flowStatus={flowStatus}
                   flowSelected={flowSelected}

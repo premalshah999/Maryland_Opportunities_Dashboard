@@ -49,9 +49,14 @@ Run the dataset sanity checks (IDs, duplicates, missing boundaries):
 python backend/scripts/validate_data.py --warn-only
 ```
 
-Repair known dataset anomalies (county/city duplicates, blank state rows):
+Repair known dataset anomalies (county/city duplicates, blank state rows, invalid IDs):
 ```bash
 python backend/scripts/repair_processed_datasets.py
+```
+
+Rebuild year-specific congressional boundaries (cd112/cd116/cd118):
+```bash
+python backend/scripts/build_congress_geojsons.py
 ```
 
 ## Production Deployment

@@ -6,6 +6,7 @@ export function FlowMapPanel({
   flows,
   flowLevel,
   geoCache,
+  flowGeoKey,
   flowFilters,
   flowStatus,
   flowSelected,
@@ -22,7 +23,7 @@ export function FlowMapPanel({
         flows={flows}
         level={flowLevel}
         stateBoundaries={geoCache.state}
-        levelBoundaries={flowLevel !== "state" ? geoCache[flowLevel] : null}
+        levelBoundaries={flowLevel !== "state" ? geoCache[flowGeoKey] : null}
         focusState={flowFilters.state}
         direction={flowFilters.direction}
         onSelect={onFlowSelected}

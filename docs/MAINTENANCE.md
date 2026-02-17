@@ -43,7 +43,7 @@ This pulls latest code, rebuilds frontend, refreshes `/var/data/mop`, restarts A
 ## Data Updates
 
 1. Replace processed files under `backend/data/atlas/processed/` and flow files under `data/`.
-2. Run dataset repair (fixes known county/city duplicates, blank state rows):
+2. Run dataset repair (fixes known county/city duplicates, blank state rows, drops invalid IDs):
    ```bash
    python backend/scripts/repair_processed_datasets.py
    ```
@@ -60,10 +60,30 @@ Connecticut switched from counties to planning regions in 2022. The app handles 
 - `counties_legacy.geojson` for years `< 2022`
 - `counties.geojson` (planning regions) for years `>= 2022`
 
-To regenerate the legacy file from Census cartographic boundaries:
+The legacy file also injects historical FIPS that appear in older data (e.g., Shannon County 46113).
+To regenerate the legacy file from Census cartographic boundaries + TIGER 2012:
 ```bash
 python backend/scripts/build_county_legacy_geojson.py
 ```
+
+Note: `contract_static` county data still uses legacy CT county FIPS for 2022+.
+The API forces legacy county boundaries for that dataset so map IDs stay consistent.
+
+## Congressional District Boundaries (Year-Specific)
+
+The congressional district map changed after the 2010 and 2020 censuses. The API selects a boundary file by year:
+
+- **2010–2011** → `congress_cd112.geojson`
+- **2012–2021** → `congress_cd116.geojson`
+- **2022+** → `congress.geojson` (118th)
+
+To rebuild the congress boundary files:
+```bash
+python backend/scripts/build_congress_geojsons.py
+```
+
+Note: FINRA data (2021) is keyed to 118th districts; the API overrides congress boundaries for `finra`
+so those rows map correctly.
 
 ## Performance Tuning
 
