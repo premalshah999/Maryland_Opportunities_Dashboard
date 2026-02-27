@@ -147,10 +147,10 @@ export function SpendingMapPanel({
   const jobsChartHeight = compactCharts ? 520 : 600;
   const focusBoundsPadding = focusMode
     ? {
-      top: 40,
-      bottom: 40,
-      left: 32,
-      right: 32
+      top: 56,
+      bottom: 56,
+      left: 56,
+      right: 56
     }
     : undefined;
 
@@ -232,8 +232,9 @@ export function SpendingMapPanel({
           formatHoverValue={(value) => formatMetricValue(value, metric)}
           zoomToFeature={selectedId}
           focusMode={focusMode}
+          defaultBoundsPadding={24}
           focusBoundsPadding={focusBoundsPadding}
-          focusMaxZoom={4.2}
+          focusMaxZoom={3.6}
         />
         {!enrichedGeo && (
           <div className="map-placeholder">

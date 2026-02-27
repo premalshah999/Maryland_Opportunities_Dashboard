@@ -3045,9 +3045,9 @@ body {
 
 /* When state is selected, map shrinks and charts appear */
 .spending-dynamic-layout--active .spending-dynamic-map {
-  flex: 0 0 33.3333%;
+  flex: 0 0 30%;
   max-width: none;
-  min-width: 320px;
+  min-width: 280px;
 }
 
 .spending-dynamic-charts {
@@ -3062,7 +3062,7 @@ body {
 }
 
 .spending-dynamic-layout--active .spending-dynamic-charts {
-  flex: 0 0 66.6667%;
+  flex: 0 0 70%;
 }
 
 @keyframes slideInRight {
@@ -3106,7 +3106,7 @@ body {
 /* Mobile adjustments */
 @media (max-width: 1200px) {
   .spending-dynamic-layout--active .spending-dynamic-map {
-    flex: 0 0 40%;
+    flex: 0 0 36%;
     min-width: 280px;
   }
 
@@ -3152,6 +3152,9 @@ body {
 
 .spending-state-card {
   z-index: 11;
+  min-width: 220px;
+  max-width: 270px;
+  padding: 12px 14px;
 }
 
 .spending-charts-pane::-webkit-scrollbar {

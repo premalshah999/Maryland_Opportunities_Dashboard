@@ -44,6 +44,7 @@ export function MapCanvas({
   formatHoverValue,
   zoomToFeature,
   focusMode = false,
+  defaultBoundsPadding = 40,
   focusBoundsPadding,
   focusOffset,
   focusMaxZoom
@@ -336,7 +337,7 @@ export function MapCanvas({
     if (!map || !geojson || !level) return;
     if (fittedLevels.current[level]) return;
     fittedLevels.current[level] = true;
-    map.fitBounds(US_BOUNDS, { padding: 40, duration: 800 });
+    map.fitBounds(US_BOUNDS, { padding: defaultBoundsPadding, duration: 800 });
   }, [geojson, level]);
 
   // Zoom to selected feature
@@ -346,7 +347,7 @@ export function MapCanvas({
 
     if (!zoomToFeature) {
       // Reset to US bounds when no feature selected
-      map.fitBounds(US_BOUNDS, { padding: 40, duration: 600 });
+      map.fitBounds(US_BOUNDS, { padding: defaultBoundsPadding, duration: 600 });
       return;
     }
 
@@ -385,7 +386,7 @@ export function MapCanvas({
 
     const maxZoom = focusMode && typeof focusMaxZoom === "number" ? focusMaxZoom : 5;
     map.fitBounds(bounds, { padding, offset, duration: 500, maxZoom });
-  }, [zoomToFeature, geojson, focusMode, focusBoundsPadding, focusOffset, focusMaxZoom]);
+  }, [zoomToFeature, geojson, focusMode, focusBoundsPadding, focusOffset, focusMaxZoom, defaultBoundsPadding]);
 
   return (
     <div className="map-container" ref={containerRef}>
