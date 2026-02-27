@@ -632,9 +632,6 @@ export default function DashboardApp() {
         : level;
     const baseGeo = geoCache[geoKey];
     if (!baseGeo || !valuesData) return null;
-    const recordMap = new Map(
-      valuesData.records.map((record) => [String(record.id), record])
-    );
     const normalizeFeatureId = (id) => {
       const raw = String(id || "").trim();
       if (level === "state" && /^\d+$/.test(raw)) {
@@ -645,6 +642,9 @@ export default function DashboardApp() {
       }
       return raw;
     };
+    const recordMap = new Map(
+      valuesData.records.map((record) => [normalizeFeatureId(record.id), record])
+    );
     return {
       type: "FeatureCollection",
       features: baseGeo.features.map((feature) => {
@@ -670,16 +670,17 @@ export default function DashboardApp() {
   const spendingEnrichedGeo = useMemo(() => {
     const baseGeo = geoCache.state;
     if (!baseGeo || !spendingValuesData) return null;
+    const normalizeStateId = (id) => {
+      const raw = String(id || "").trim();
+      return /^\d+$/.test(raw) ? raw.padStart(2, "0") : raw;
+    };
     const recordMap = new Map(
-      spendingValuesData.records.map((record) => [String(record.id), record])
+      spendingValuesData.records.map((record) => [normalizeStateId(record.id), record])
     );
     return {
       type: "FeatureCollection",
       features: baseGeo.features.map((feature) => {
-        const rawFeatureId = String(feature.properties?.id || "").trim();
-        const featureId = /^\d+$/.test(rawFeatureId)
-          ? rawFeatureId.padStart(2, "0")
-          : rawFeatureId;
+        const featureId = normalizeStateId(feature.properties?.id);
         const record = recordMap.get(featureId);
         const value = record ? record.value : null;
         const quintile = record ? record.quintile : 0;

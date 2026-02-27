@@ -46,6 +46,8 @@ export function MapCanvas({
   focusMode = false,
   defaultBoundsPadding = 40,
   refitOnResizeKeyChange = false,
+  resetBoundsDuration = 600,
+  focusFitDuration = 500,
   focusBoundsPadding,
   focusOffset,
   focusMaxZoom
@@ -60,6 +62,10 @@ export function MapCanvas({
   const onSelectRef = useRef(onSelect);
   const hoverMetaLabelRef = useRef(hoverMetaLabel);
   const formatHoverValueRef = useRef(formatHoverValue);
+  const STATE_FOCUS_VIEWPORTS = {
+    "02": { center: [-152.4937, 64.2008], zoom: 2.8 },
+    "15": { center: [-156.3319, 20.7984], zoom: 5.4 }
+  };
 
   useEffect(() => {
     onSelectRef.current = onSelect;
@@ -361,8 +367,24 @@ export function MapCanvas({
 
     if (!zoomToFeature) {
       // Reset to US bounds when no feature selected
-      map.fitBounds(US_BOUNDS, { padding: defaultBoundsPadding, duration: 600 });
+      map.fitBounds(US_BOUNDS, {
+        padding: defaultBoundsPadding,
+        duration: resetBoundsDuration
+      });
       return;
+    }
+
+    if (level === "state") {
+      const normalizedStateId = String(zoomToFeature || "").trim().padStart(2, "0");
+      const stateViewport = STATE_FOCUS_VIEWPORTS[normalizedStateId];
+      if (stateViewport) {
+        map.easeTo({
+          center: stateViewport.center,
+          zoom: stateViewport.zoom,
+          duration: focusFitDuration
+        });
+        return;
+      }
     }
 
     // Find the feature matching the selected ID
@@ -399,8 +421,8 @@ export function MapCanvas({
     const offset = focusMode ? (focusOffset || [0, 0]) : [0, 0];
 
     const maxZoom = focusMode && typeof focusMaxZoom === "number" ? focusMaxZoom : 5;
-    map.fitBounds(bounds, { padding, offset, duration: 500, maxZoom });
-  }, [zoomToFeature, geojson, focusMode, focusBoundsPadding, focusOffset, focusMaxZoom, defaultBoundsPadding]);
+    map.fitBounds(bounds, { padding, offset, duration: focusFitDuration, maxZoom });
+  }, [zoomToFeature, geojson, focusMode, focusBoundsPadding, focusOffset, focusMaxZoom, defaultBoundsPadding, level, resetBoundsDuration, focusFitDuration]);
 
   return (
     <div className="map-container" ref={containerRef}>

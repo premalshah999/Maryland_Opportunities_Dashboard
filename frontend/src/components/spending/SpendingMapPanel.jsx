@@ -234,6 +234,8 @@ export function SpendingMapPanel({
           focusMode={focusMode}
           defaultBoundsPadding={24}
           refitOnResizeKeyChange
+          resetBoundsDuration={0}
+          focusFitDuration={260}
           focusBoundsPadding={focusBoundsPadding}
           focusMaxZoom={3.6}
         />
