@@ -635,10 +635,20 @@ export default function DashboardApp() {
     const recordMap = new Map(
       valuesData.records.map((record) => [String(record.id), record])
     );
+    const normalizeFeatureId = (id) => {
+      const raw = String(id || "").trim();
+      if (level === "state" && /^\d+$/.test(raw)) {
+        return raw.padStart(2, "0");
+      }
+      if (level === "county" && /^\d+$/.test(raw)) {
+        return raw.padStart(5, "0");
+      }
+      return raw;
+    };
     return {
       type: "FeatureCollection",
       features: baseGeo.features.map((feature) => {
-        const featureId = String(feature.properties?.id || "");
+        const featureId = normalizeFeatureId(feature.properties?.id);
         const record = recordMap.get(featureId);
         const value = record ? record.value : null;
         const quintile = record ? record.quintile : 0;
@@ -666,7 +676,10 @@ export default function DashboardApp() {
     return {
       type: "FeatureCollection",
       features: baseGeo.features.map((feature) => {
-        const featureId = String(feature.properties?.id || "");
+        const rawFeatureId = String(feature.properties?.id || "").trim();
+        const featureId = /^\d+$/.test(rawFeatureId)
+          ? rawFeatureId.padStart(2, "0")
+          : rawFeatureId;
         const record = recordMap.get(featureId);
         const value = record ? record.value : null;
         const quintile = record ? record.quintile : 0;
