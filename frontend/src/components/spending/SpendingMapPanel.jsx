@@ -145,16 +145,12 @@ export function SpendingMapPanel({
   const chartYAxisWidth = compactCharts ? 224 : 242;
   const spendingChartHeight = compactCharts ? 520 : 600;
   const jobsChartHeight = compactCharts ? 520 : 600;
-  const mainWidth = Math.max(320, viewportWidth - sidebarWidth);
-  const chartsOverlayWidth = compactCharts
-    ? Math.min(360, Math.round(mainWidth * 0.64))
-    : Math.min(900, Math.round(mainWidth * 0.62));
   const focusBoundsPadding = focusMode
     ? {
-      top: 70,
-      bottom: 240,
-      left: 30,
-      right: chartsOverlayWidth + 48
+      top: 40,
+      bottom: 40,
+      left: 32,
+      right: 32
     }
     : undefined;
 
@@ -224,28 +220,28 @@ export function SpendingMapPanel({
   }, [selectedId]);
 
   return (
-    <>
-      <MapCanvas
-        geojson={enrichedGeo}
-        level="state"
-        onSelect={onSelectedFeatureChange}
-        selectedId={selectedId}
-        resizeKey={`spending-${sidebarWidth}-${focusMode ? "focus" : "all"}`}
-        hoverMetaLabel={metric || "Spending"}
-        formatHoverValue={(value) => formatMetricValue(value, metric)}
-        zoomToFeature={selectedId}
-        focusMode={focusMode}
-        focusBoundsPadding={focusBoundsPadding}
-        focusMaxZoom={4.2}
-      />
-      {!enrichedGeo && (
-        <div className="map-placeholder">
-          <p>Loading spending data...</p>
-        </div>
-      )}
+    <div className={`spending-dynamic-layout${selectedFeature ? " spending-dynamic-layout--active" : ""}`}>
+      <div className="spending-dynamic-map">
+        <MapCanvas
+          geojson={enrichedGeo}
+          level="state"
+          onSelect={onSelectedFeatureChange}
+          selectedId={selectedId}
+          resizeKey={`spending-${sidebarWidth}-${focusMode ? "focus" : "all"}`}
+          hoverMetaLabel={metric || "Spending"}
+          formatHoverValue={(value) => formatMetricValue(value, metric)}
+          zoomToFeature={selectedId}
+          focusMode={focusMode}
+          focusBoundsPadding={focusBoundsPadding}
+          focusMaxZoom={4.2}
+        />
+        {!enrichedGeo && (
+          <div className="map-placeholder">
+            <p>Loading spending data...</p>
+          </div>
+        )}
 
-      {selectedFeature && (
-        <>
+        {selectedFeature && (
           <div className="map-card spending-state-card">
             <div className="map-card-header">
               <div>
@@ -274,193 +270,191 @@ export function SpendingMapPanel({
               </div>
             </div>
           </div>
+        )}
 
-          <div
-            className="spending-charts-pane"
-            style={{ width: chartsOverlayWidth }}
-            ref={chartsPaneRef}
-          >
-            {detailLoading && (
-              <div className="spending-overlay-loading">
-                <span>Loading agency data...</span>
+        {!selectedFeature && (
+          <div className="map-legend">
+            <span>Quintile Scale</span>
+            <div className="legend-scale">
+              <div className="legend-bar" />
+              <div className="legend-labels">
+                <span>Low</span>
+                <span>Q2</span>
+                <span>Q3</span>
+                <span>Q4</span>
+                <span>High</span>
               </div>
-            )}
+            </div>
+          </div>
+        )}
+      </div>
 
-            {!detailLoading && detailRecords && detailRecords.length > 0 && (
-              <div className="spending-charts">
-                <div className="spending-chart-card">
-                  <div className="spending-chart-card-header">
-                    <div>
-                      <div className="spending-chart-card-title">Top 10 Federal Agencies by Spending</div>
-                      <div className="spending-chart-card-subtitle">Contracts, Grants, and Wages per Fiscal Year</div>
-                    </div>
-                  </div>
+      {selectedFeature && (
+        <div className="spending-dynamic-charts" ref={chartsPaneRef}>
+          {detailLoading && (
+            <div className="spending-overlay-loading">
+              <span>Loading agency data...</span>
+            </div>
+          )}
 
-                  <div className="spending-chart-frame" style={{ height: spendingChartHeight }}>
-                    <div className="spending-chart-y-header" style={{ paddingLeft: chartYAxisWidth + 10 }}>
-                      <span>Agency</span>
-                      <span className="spending-chart-y-icon" aria-hidden="true" />
-                    </div>
-
-                    <ResponsiveContainer width="100%" height="100%">
-                      <BarChart
-                        data={spendingData}
-                        layout="vertical"
-                        margin={{ top: 30, right: 30, left: 20, bottom: 20 }}
-                        barSize={36}
-                      >
-                        <CartesianGrid horizontal={false} vertical={true} stroke="#f1f5f9" strokeDasharray="4 4" />
-                        <XAxis
-                          type="number"
-                          axisLine={false}
-                          tickLine={false}
-                          tick={{ fill: "#64748b", fontSize: 12 }}
-                          tickFormatter={
-                            viewType === "percentage" ? (value) => `${Math.round(value)}%` : formatAxisMoney
-                          }
-                          domain={viewType === "percentage" ? [0, 100] : [0, spendingTickMax]}
-                          ticks={viewType === "percentage" ? [0, 20, 40, 60, 80, 100] : spendingTicks}
-                        />
-                        <YAxis
-                          dataKey="agency"
-                          type="category"
-                          width={chartYAxisWidth}
-                          tick={{ fill: "#1e293b", fontSize: 13, fontWeight: 500 }}
-                          axisLine={false}
-                          tickLine={false}
-                          interval={0}
-                          tickMargin={16}
-                          tickFormatter={formatAgencyLabel}
-                        />
-                        <Tooltip
-                          content={(props) => <SpendingTooltip {...props} viewType={viewType} />}
-                          cursor={{ fill: "#f8fafc" }}
-                        />
-                        <Legend
-                          verticalAlign="top"
-                          height={36}
-                          iconType="square"
-                          wrapperStyle={{
-                            paddingBottom: "20px",
-                            fontSize: "14px",
-                            fontWeight: 500,
-                            color: "#475569"
-                          }}
-                        />
-
-                        {SPENDING_SERIES.map((key) => (
-                          <Bar
-                            key={key}
-                            name={SERIES[key].label}
-                            dataKey={key}
-                            stackId="a"
-                            fill={SERIES[key].color}
-                            stroke="#ffffff"
-                            strokeWidth={0.8}
-                            radius={[0, 0, 0, 0]}
-                            animationDuration={1000}
-                            isAnimationActive
-                          >
-                            <LabelList dataKey={key} content={makeStackLabel(viewType)} />
-                          </Bar>
-                        ))}
-                      </BarChart>
-                    </ResponsiveContainer>
+          {!detailLoading && detailRecords && detailRecords.length > 0 && (
+            <div className="spending-charts">
+              <div className="spending-chart-card">
+                <div className="spending-chart-card-header">
+                  <div>
+                    <div className="spending-chart-card-title">Top 10 Federal Agencies by Spending</div>
+                    <div className="spending-chart-card-subtitle">Contracts, Grants, and Wages per Fiscal Year</div>
                   </div>
                 </div>
 
-                <div className="spending-chart-card">
-                  <div className="spending-chart-card-header">
-                    <div>
-                      <div className="spending-chart-card-title">Top 10 Federal Agencies by Federal Employee Jobs</div>
-                      <div className="spending-chart-card-subtitle">Full-time resident employees by agency</div>
-                    </div>
+                <div className="spending-chart-frame" style={{ height: spendingChartHeight }}>
+                  <div className="spending-chart-y-header" style={{ paddingLeft: chartYAxisWidth + 10 }}>
+                    <span>Agency</span>
+                    <span className="spending-chart-y-icon" aria-hidden="true" />
                   </div>
 
-                  <div className="spending-chart-frame" style={{ height: jobsChartHeight }}>
-                    <div className="spending-chart-y-header" style={{ paddingLeft: chartYAxisWidth + 10 }}>
-                      <span>Agency</span>
-                      <span className="spending-chart-y-icon" aria-hidden="true" />
-                    </div>
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart
+                      data={spendingData}
+                      layout="vertical"
+                      margin={{ top: 30, right: 30, left: 20, bottom: 20 }}
+                      barSize={36}
+                    >
+                      <CartesianGrid horizontal={false} vertical={true} stroke="#f1f5f9" strokeDasharray="4 4" />
+                      <XAxis
+                        type="number"
+                        axisLine={false}
+                        tickLine={false}
+                        tick={{ fill: "#64748b", fontSize: 12 }}
+                        tickFormatter={
+                          viewType === "percentage" ? (value) => `${Math.round(value)}%` : formatAxisMoney
+                        }
+                        domain={viewType === "percentage" ? [0, 100] : [0, spendingTickMax]}
+                        ticks={viewType === "percentage" ? [0, 20, 40, 60, 80, 100] : spendingTicks}
+                      />
+                      <YAxis
+                        dataKey="agency"
+                        type="category"
+                        width={chartYAxisWidth}
+                        tick={{ fill: "#1e293b", fontSize: 13, fontWeight: 500 }}
+                        axisLine={false}
+                        tickLine={false}
+                        interval={0}
+                        tickMargin={16}
+                        tickFormatter={formatAgencyLabel}
+                      />
+                      <Tooltip
+                        content={(props) => <SpendingTooltip {...props} viewType={viewType} />}
+                        cursor={{ fill: "#f8fafc" }}
+                      />
+                      <Legend
+                        verticalAlign="top"
+                        height={36}
+                        iconType="square"
+                        wrapperStyle={{
+                          paddingBottom: "20px",
+                          fontSize: "14px",
+                          fontWeight: 500,
+                          color: "#475569"
+                        }}
+                      />
 
-                    <ResponsiveContainer width="100%" height="100%">
-                      <BarChart
-                        data={jobsData}
-                        layout="vertical"
-                        margin={{ top: 20, right: 50, left: 20, bottom: 20 }}
-                        barSize={36}
-                      >
-                        <CartesianGrid horizontal={false} vertical={true} stroke="#f1f5f9" strokeDasharray="4 4" />
-                        <XAxis
-                          type="number"
-                          axisLine={false}
-                          tickLine={false}
-                          tickFormatter={formatAxisJobs}
-                          domain={[0, jobsTickMax]}
-                          ticks={jobsTicks}
-                          tick={{ fill: "#64748b", fontSize: 12 }}
-                        />
-                        <YAxis
-                          dataKey="agency"
-                          type="category"
-                          width={chartYAxisWidth}
-                          tick={{ fill: "#1e293b", fontSize: 13, fontWeight: 500 }}
-                          axisLine={false}
-                          tickLine={false}
-                          interval={0}
-                          tickMargin={16}
-                          tickFormatter={formatAgencyLabel}
-                        />
-                        <Tooltip content={<JobsTooltip />} cursor={{ fill: "#f8fafc" }} />
+                      {SPENDING_SERIES.map((key) => (
                         <Bar
-                          name="Employees"
-                          dataKey="jobs"
-                          fill={SERIES.jobs.color}
+                          key={key}
+                          name={SERIES[key].label}
+                          dataKey={key}
+                          stackId="a"
+                          fill={SERIES[key].color}
+                          stroke="#ffffff"
+                          strokeWidth={0.8}
                           radius={[0, 0, 0, 0]}
                           animationDuration={1000}
                           isAnimationActive
                         >
-                          <LabelList
-                            dataKey="jobs"
-                            position="right"
-                            fill={SERIES.jobs.color}
-                            fontSize={13}
-                            fontWeight={500}
-                            offset={10}
-                            formatter={(value) => formatCountLabel(value)}
-                          />
+                          <LabelList dataKey={key} content={makeStackLabel(viewType)} />
                         </Bar>
-                      </BarChart>
-                    </ResponsiveContainer>
-                  </div>
+                      ))}
+                    </BarChart>
+                  </ResponsiveContainer>
                 </div>
               </div>
-            )}
 
-            {!detailLoading && (!detailRecords || detailRecords.length === 0) && (
-              <div className="spending-overlay-loading">
-                <span>No agency records available for this state and year.</span>
+              <div className="spending-chart-card">
+                <div className="spending-chart-card-header">
+                  <div>
+                    <div className="spending-chart-card-title">Top 10 Federal Agencies by Federal Employee Jobs</div>
+                    <div className="spending-chart-card-subtitle">Full-time resident employees by agency</div>
+                  </div>
+                </div>
+
+                <div className="spending-chart-frame" style={{ height: jobsChartHeight }}>
+                  <div className="spending-chart-y-header" style={{ paddingLeft: chartYAxisWidth + 10 }}>
+                    <span>Agency</span>
+                    <span className="spending-chart-y-icon" aria-hidden="true" />
+                  </div>
+
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart
+                      data={jobsData}
+                      layout="vertical"
+                      margin={{ top: 20, right: 50, left: 20, bottom: 20 }}
+                      barSize={36}
+                    >
+                      <CartesianGrid horizontal={false} vertical={true} stroke="#f1f5f9" strokeDasharray="4 4" />
+                      <XAxis
+                        type="number"
+                        axisLine={false}
+                        tickLine={false}
+                        tickFormatter={formatAxisJobs}
+                        domain={[0, jobsTickMax]}
+                        ticks={jobsTicks}
+                        tick={{ fill: "#64748b", fontSize: 12 }}
+                      />
+                      <YAxis
+                        dataKey="agency"
+                        type="category"
+                        width={chartYAxisWidth}
+                        tick={{ fill: "#1e293b", fontSize: 13, fontWeight: 500 }}
+                        axisLine={false}
+                        tickLine={false}
+                        interval={0}
+                        tickMargin={16}
+                        tickFormatter={formatAgencyLabel}
+                      />
+                      <Tooltip content={<JobsTooltip />} cursor={{ fill: "#f8fafc" }} />
+                      <Bar
+                        name="Employees"
+                        dataKey="jobs"
+                        fill={SERIES.jobs.color}
+                        radius={[0, 0, 0, 0]}
+                        animationDuration={1000}
+                        isAnimationActive
+                      >
+                        <LabelList
+                          dataKey="jobs"
+                          position="right"
+                          fill={SERIES.jobs.color}
+                          fontSize={13}
+                          fontWeight={500}
+                          offset={10}
+                          formatter={(value) => formatCountLabel(value)}
+                        />
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
               </div>
-            )}
-          </div>
-        </>
-      )}
-
-      {!selectedFeature && (
-        <div className="map-legend">
-          <span>Quintile Scale</span>
-          <div className="legend-scale">
-            <div className="legend-bar" />
-            <div className="legend-labels">
-              <span>Low</span>
-              <span>Q2</span>
-              <span>Q3</span>
-              <span>Q4</span>
-              <span>High</span>
             </div>
-          </div>
+          )}
+
+          {!detailLoading && (!detailRecords || detailRecords.length === 0) && (
+            <div className="spending-overlay-loading">
+              <span>No agency records available for this state and year.</span>
+            </div>
+          )}
         </div>
       )}
-    </>
+    </div>
   );
 }

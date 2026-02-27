@@ -3045,8 +3045,8 @@ body {
 
 /* When state is selected, map shrinks and charts appear */
 .spending-dynamic-layout--active .spending-dynamic-map {
-  flex: 0 0 35%;
-  max-width: 480px;
+  flex: 0 0 33.3333%;
+  max-width: none;
   min-width: 320px;
 }
 
@@ -3059,6 +3059,10 @@ body {
   border-left: 1px solid var(--border);
   padding: 24px 32px;
   animation: slideInRight 0.4s ease;
+}
+
+.spending-dynamic-layout--active .spending-dynamic-charts {
+  flex: 0 0 66.6667%;
 }
 
 @keyframes slideInRight {
