@@ -53,7 +53,7 @@ DATASETS = {
         "prefix": "acs",
     },
     "contract_static": {
-        "label": "Government Spending",
+        "label": "Federal Spending",
         "dir": "contract_static",
         "prefix": "contract",
     },

@@ -29,10 +29,16 @@ const DASHBOARD_SECTIONS = [
   },
   {
     key: "government-spending",
-    label: "Government Spending",
-    shortLabel: "Gov Spending",
+    label: "Federal Spending",
+    shortLabel: "Federal Spending",
     view: "atlas",
     dataset: "contract_static"
+  },
+  {
+    key: "federal-spending-breaks",
+    label: "Federal Spending Breakdown",
+    shortLabel: "Spending Breakdown",
+    view: "spending"
   },
   {
     key: "government-finances",
@@ -53,12 +59,6 @@ const DASHBOARD_SECTIONS = [
     label: "Fund Flow",
     shortLabel: "Fund Flow",
     view: "flow"
-  },
-  {
-    key: "federal-spending-breaks",
-    label: "Federal Spending Breaks",
-    shortLabel: "Fed Spending",
-    view: "spending"
   }
 ];
 

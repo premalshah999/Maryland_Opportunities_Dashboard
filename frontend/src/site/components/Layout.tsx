@@ -388,11 +388,11 @@ const Footer = () => {
             <h4 className="font-bold text-xs uppercase tracking-[0.15em] text-gray-900 mb-8 pb-2 border-b border-gray-100 inline-block">Dashboards</h4>
             <ul className="space-y-4 text-sm font-light text-gray-600">
               <li><Link to="/dashboard/census" className="hover:text-umd-red transition-colors">Census (ACS Demographics)</Link></li>
-              <li><Link to="/dashboard/government-spending" className="hover:text-umd-red transition-colors">Government Spending</Link></li>
+              <li><Link to="/dashboard/government-spending" className="hover:text-umd-red transition-colors">Federal Spending</Link></li>
+              <li><Link to="/dashboard/federal-spending-breaks" className="hover:text-umd-red transition-colors">Federal Spending Breakdown</Link></li>
               <li><Link to="/dashboard/government-finances" className="hover:text-umd-red transition-colors">Government Finances</Link></li>
               <li><Link to="/dashboard/finra-financial-literacy" className="hover:text-umd-red transition-colors">FINRA Financial Literacy</Link></li>
               <li><Link to="/dashboard/fund-flow" className="hover:text-umd-red transition-colors">Fund Flow</Link></li>
-              <li><Link to="/dashboard/federal-spending-breaks" className="hover:text-umd-red transition-colors">Federal Spending Breaks</Link></li>
             </ul>
           </div>
 

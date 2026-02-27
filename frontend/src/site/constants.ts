@@ -50,11 +50,11 @@ export const NAV_ITEMS: NavItem[] = [
     subItems: [
       { label: 'Documentation', path: '/dashboard-reports' },
       { label: 'Census (ACS Demographics)', path: '/dashboard/census' },
-      { label: 'Government Spending', path: '/dashboard/government-spending' },
+      { label: 'Federal Spending', path: '/dashboard/government-spending' },
+      { label: 'Federal Spending Breakdown', path: '/dashboard/federal-spending-breaks' },
       { label: 'Government Finances', path: '/dashboard/government-finances' },
       { label: 'FINRA Financial Literacy', path: '/dashboard/finra-financial-literacy' },
       { label: 'Fund Flow', path: '/dashboard/fund-flow' },
-      { label: 'Federal Spending Breaks', path: '/dashboard/federal-spending-breaks' },
     ]
   },
   {

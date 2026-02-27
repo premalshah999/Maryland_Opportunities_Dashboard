@@ -15,7 +15,7 @@ export const METADATA = {
       "description": "Government fiscal health, assets, liabilities, revenues, expenses, and per-capita measures."
     },
     "contract_static": {
-      "name": "Government Spending",
+      "name": "Federal Spending",
       "sourceName": "USAspending.gov",
       "sourceUrl": "https://usaspending.gov/",
       "coverage": "Federal contracts, grants, resident wages, direct payments, and federal residents by county, congressional district, and state (annual values where available).",

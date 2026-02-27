@@ -78,7 +78,7 @@ const dashboardGuides: DashboardGuide[] = [
   },
   {
     id: 'government-spending',
-    title: 'Government Spending',
+    title: 'Federal Spending',
     path: '/dashboard/government-spending',
     summary:
       'Tracks federal contracts, grants, direct payments, and federal employee wages to show the distribution of federal funding.',
@@ -86,7 +86,7 @@ const dashboardGuides: DashboardGuide[] = [
       {
         control: 'Domain',
         controlType: 'Read-only field labeled Domain',
-        options: 'Fixed to Government Spending in this dedicated dashboard.',
+        options: 'Fixed to Federal Spending in this dedicated dashboard.',
         impact: 'Keeps all metrics tied to the federal funding dataset for consistent interpretation.'
       },
       {
@@ -98,7 +98,7 @@ const dashboardGuides: DashboardGuide[] = [
       {
         control: 'Year',
         controlType: 'Dropdown (Year > Year)',
-        options: 'Available years for Government Spending data at the chosen level.',
+        options: 'Available years for Federal Spending data at the chosen level.',
         impact: 'Updates map values and all insights to the selected reporting year.'
       },
       {
@@ -299,7 +299,7 @@ const dashboardGuides: DashboardGuide[] = [
   },
   {
     id: 'federal-spending-breaks',
-    title: 'Federal Funding Breakdown',
+    title: 'Federal Spending Breakdown',
     path: '/dashboard/federal-spending-breaks',
     summary:
       'Breaks down federal contracts, grants, and federal employee wages by state with agency-level detail.',
@@ -364,6 +364,19 @@ const workflowSteps = [
   }
 ];
 
+const dashboardGuideOrder = [
+  'census',
+  'government-spending',
+  'federal-spending-breaks',
+  'government-finances',
+  'finra-financial-literacy',
+  'fund-flow'
+];
+
+const orderedDashboardGuides = dashboardGuideOrder
+  .map((id) => dashboardGuides.find((guide) => guide.id === id))
+  .filter((guide): guide is DashboardGuide => Boolean(guide));
+
 export const DashboardReports = () => {
   const [activeSection, setActiveSection] = React.useState('overview');
 
@@ -419,7 +432,7 @@ export const DashboardReports = () => {
                   Dashboards
                 </div>
                 <div className="space-y-2 text-sm">
-                  {dashboardGuides.map((guide) => (
+                  {orderedDashboardGuides.map((guide) => (
                     <button
                       key={`nav-${guide.id}`}
                       type="button"

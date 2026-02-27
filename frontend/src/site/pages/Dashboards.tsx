@@ -11,9 +11,15 @@ const dashboards = [
   },
   {
     id: 'government-spending',
-    title: 'Government Spending',
+    title: 'Federal Spending',
     description: 'Visualizes the distribution of federal funding across the United States using data from the USAspending, tracking key economic drivers including federal contracts, grants, direct payments, and federal employee wages.',
     path: '/dashboard/government-spending'
+  },
+  {
+    id: 'federal-spending-breaks',
+    title: 'Federal Spending Breakdown',
+    description: 'Provides a detailed breakdown of federal funding categories, including contracts, grants, and federal employee wages for each State, using data from the USAspending.',
+    path: '/dashboard/federal-spending-breaks'
   },
   {
     id: 'government-finances',
@@ -32,12 +38,6 @@ const dashboards = [
     title: 'Fund Flow',
     description: 'Visualizes the flow of federal funds by merging prime contract and subcontract data from System for Award Management (SAM). Tracks the directional movement of contracts, including inflows and outflows, between agencies, states, and industries.',
     path: '/dashboard/fund-flow'
-  },
-  {
-    id: 'federal-spending-breaks',
-    title: 'Federal Spending Breaks',
-    description: 'Provides a detailed breakdown of federal funding categories, including contracts, grants, and federal employee wages for each State, using data from the USAspending.',
-    path: '/dashboard/federal-spending-breaks'
   }
 ];
 
