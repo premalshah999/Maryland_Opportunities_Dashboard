@@ -45,6 +45,7 @@ export function MapCanvas({
   zoomToFeature,
   focusMode = false,
   defaultBoundsPadding = 40,
+  refitOnResizeKeyChange = false,
   focusBoundsPadding,
   focusOffset,
   focusMaxZoom
@@ -331,6 +332,19 @@ export function MapCanvas({
       mapRef.current.resize();
     }
   }, [resizeKey]);
+
+  useEffect(() => {
+    if (!refitOnResizeKeyChange) return;
+    if (zoomToFeature) return;
+    const map = mapRef.current;
+    if (!map) return;
+    const timer = setTimeout(() => {
+      if (!mapRef.current) return;
+      mapRef.current.resize();
+      mapRef.current.fitBounds(US_BOUNDS, { padding: defaultBoundsPadding, duration: 0 });
+    }, 420);
+    return () => clearTimeout(timer);
+  }, [resizeKey, zoomToFeature, defaultBoundsPadding, refitOnResizeKeyChange]);
 
   useEffect(() => {
     const map = mapRef.current;

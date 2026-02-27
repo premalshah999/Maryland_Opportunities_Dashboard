@@ -749,11 +749,17 @@ export default function DashboardApp() {
   const thresholdSummary = atlasHasData && thresholds.length
     ? `Q1 ≤ ${formatNumber(thresholds[0])} · Q2 ≤ ${formatNumber(thresholds[1])} · Q3 ≤ ${formatNumber(thresholds[2])} · Q4 ≤ ${formatNumber(thresholds[3])}`
     : "—";
-  const spendingSelectedId = spendingSelectedFeature?.id
-    ? String(spendingSelectedFeature.id)
+  const spendingSelectedIdRaw = spendingSelectedFeature?.id
+    ? String(spendingSelectedFeature.id).trim()
     : "";
-  const spendingSelectedRank = spendingSelectedId
-    ? spendingRankMeta.map.get(spendingSelectedId)
+  const spendingSelectedId = /^\d+$/.test(spendingSelectedIdRaw)
+    ? spendingSelectedIdRaw.padStart(2, "0")
+    : spendingSelectedIdRaw;
+  const spendingSelectedRank = spendingSelectedIdRaw
+    ? (
+      spendingRankMeta.map.get(spendingSelectedIdRaw) ||
+      spendingRankMeta.map.get(spendingSelectedId)
+    )
     : null;
   const spendingRecordCount = spendingValuesData?.stats?.count ?? 0;
   const spendingHasData = spendingRecordCount > 0;

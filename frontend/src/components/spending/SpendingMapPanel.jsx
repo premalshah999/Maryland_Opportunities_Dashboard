@@ -233,6 +233,7 @@ export function SpendingMapPanel({
           zoomToFeature={selectedId}
           focusMode={focusMode}
           defaultBoundsPadding={24}
+          refitOnResizeKeyChange
           focusBoundsPadding={focusBoundsPadding}
           focusMaxZoom={3.6}
         />
