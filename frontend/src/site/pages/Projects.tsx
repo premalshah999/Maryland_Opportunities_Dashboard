@@ -1,6 +1,7 @@
 import React from 'react';
 import { ArrowRight, Building2, Briefcase, BarChart3, Home as HomeIcon, FileText, Paperclip, BarChart2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { CollaborationPopup } from '../components/CollaborationPopup';
 
 const projects = [
     {
@@ -48,6 +49,7 @@ const projects = [
 export const Projects = () => {
     return (
         <div className="animate-fadeIn">
+            <CollaborationPopup />
             {/* Hero Section */}
             <div className="bg-white py-20 border-b border-gray-100">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">

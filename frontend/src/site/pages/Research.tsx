@@ -2,6 +2,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { RESEARCH_PAPERS } from '../constants';
 import { Paperclip, BarChart3, ArrowRight } from 'lucide-react';
+import { CollaborationPopup } from '../components/CollaborationPopup';
 
 export const Research = () => {
   const actionButtonClass =
@@ -21,6 +22,7 @@ export const Research = () => {
 
   return (
     <div className="animate-fadeIn">
+      <CollaborationPopup />
       {/* Header */}
       <div className="bg-white py-16 md:py-24 border-b border-gray-100">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">

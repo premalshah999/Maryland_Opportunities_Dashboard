@@ -9,16 +9,15 @@ export const CollaborationPopup: React.FC = () => {
         type="button"
         onClick={() => setIsOpen(true)}
         aria-label="Open collaboration message"
-        className="fixed right-0 top-1/2 -translate-y-1/2 z-40 border border-gray-200 border-r-0 bg-white px-2 py-4 text-[10px] font-semibold uppercase tracking-[0.2em] text-gray-700 hover:text-umd-red hover:border-umd-red transition-colors"
-        style={{ writingMode: 'vertical-rl', textOrientation: 'mixed' }}
+        className="fixed z-40 right-4 bottom-6 md:right-0 md:bottom-auto md:top-1/2 md:-translate-y-1/2 md:translate-x-0 rounded-full md:rounded-none md:rounded-l-md border border-umd-red bg-umd-red px-4 py-2.5 md:px-2 md:py-4 text-[10px] font-semibold uppercase tracking-[0.16em] text-white hover:bg-red-700 transition-colors md:[writing-mode:vertical-rl] md:[text-orientation:mixed]"
       >
-        Help
+        Collaborate
       </button>
     );
   }
 
   return (
-    <aside className="fixed right-0 top-1/2 -translate-y-1/2 z-40 w-[320px] max-w-[90vw] border border-gray-200 border-r-0 bg-white shadow-xl">
+    <aside className="fixed z-40 right-4 bottom-6 md:right-0 md:bottom-auto md:top-1/2 md:-translate-y-1/2 md:translate-x-0 w-[320px] max-w-[90vw] border border-gray-200 md:border-r-0 bg-white shadow-xl rounded-lg md:rounded-none md:rounded-l-lg">
       <div className="flex items-start justify-between gap-3 border-b border-gray-100 px-4 py-3">
         <div>
           <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-gray-500">Collaboration</p>
