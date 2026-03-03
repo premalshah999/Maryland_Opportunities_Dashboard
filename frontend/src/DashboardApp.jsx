@@ -18,6 +18,8 @@ import { FlowMapPanel } from "./components/flow/FlowMapPanel.jsx";
 import { SpendingFiltersPanel } from "./components/spending/SpendingFiltersPanel.jsx";
 import { SpendingInsightsPanel } from "./components/spending/SpendingInsightsPanel.jsx";
 import { SpendingMapPanel } from "./components/spending/SpendingMapPanel.jsx";
+import { DashboardHelpPanel } from "./components/common/DashboardHelpPanel.jsx";
+import { dashboardGuides } from "./site/dashboardGuides";
 
 const DASHBOARD_SECTIONS = [
   {
@@ -158,6 +160,7 @@ export default function DashboardApp() {
   const [spendingSelectedAgency, setSpendingSelectedAgency] = useState("ALL");
   const [spendingSelectedFeature, setSpendingSelectedFeature] = useState(null);
   const [infoOpen, setInfoOpen] = useState(false);
+  const [helpOpen, setHelpOpen] = useState(false);
   const resizeRef = useRef({ startX: 0, startWidth: 360 });
   const spendingMetaLoadedRef = useRef(false);
   const spendingValuesCacheRef = useRef(new Map());
@@ -929,6 +932,10 @@ export default function DashboardApp() {
   };
   const activeStatus =
     viewMode === "flow" ? flowStatus : viewMode === "spending" ? spendingStatus : atlasStatus;
+  const activeHelpGuide = useMemo(
+    () => dashboardGuides.find((item) => item.id === sectionKey) || null,
+    [sectionKey]
+  );
   const atlasDatasets = useMemo(
     () => datasets.filter((item) => item.key !== "spending_breakdown"),
     [datasets]
@@ -1204,6 +1211,11 @@ export default function DashboardApp() {
             </div>
           </div>
         )}
+        <DashboardHelpPanel
+          guide={activeHelpGuide}
+          isOpen={helpOpen}
+          onToggle={() => setHelpOpen((open) => !open)}
+        />
       </main>
     </div>
   );
