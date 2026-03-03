@@ -1,6 +1,7 @@
 import React from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Building2, Calendar, Download, ExternalLink, BarChart3 } from 'lucide-react';
+import { CollaborationPopup } from '../components/CollaborationPopup';
 
 // Project content data
 const projectContent: Record<string, {
@@ -370,6 +371,7 @@ export const ProjectDetail: React.FC = () => {
 
     return (
         <div className="animate-fadeIn">
+            <CollaborationPopup />
             {/* Hero Section */}
             <div className="relative h-[40vh] min-h-[300px] bg-gray-900">
                 <img

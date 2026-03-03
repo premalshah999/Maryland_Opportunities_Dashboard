@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link, Navigate, useParams } from 'react-router-dom';
 import { ArrowLeft, BarChart3, Download, LineChart } from 'lucide-react';
+import { CollaborationPopup } from '../components/CollaborationPopup';
 
 type ResearchSection = {
   title: string;
@@ -285,6 +286,7 @@ export const ResearchDetail: React.FC = () => {
 
   return (
     <div className="animate-fadeIn">
+      <CollaborationPopup />
       <div className="bg-white py-16 md:py-20 border-b border-gray-100">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
           <Link
