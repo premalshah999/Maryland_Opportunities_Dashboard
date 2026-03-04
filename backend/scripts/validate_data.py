@@ -69,10 +69,16 @@ def check_dataset(dataset: str, level: str) -> Tuple[Dict[str, str], List[str]]:
 
     if year_col:
         year_series = df[year_col].apply(normalize_year)
-        duplicates = pd.DataFrame({"id": id_series, "year": year_series}).duplicated().sum()
+        duplicate_frame = pd.DataFrame({"id": id_series, "year": year_series})
+        if "agency" in df.columns:
+            duplicate_frame["agency"] = df["agency"].astype(str).str.strip().str.lower()
+        duplicates = duplicate_frame.duplicated().sum()
         summary["years"] = ", ".join(sorted(y for y in year_series.dropna().unique()))
     else:
-        duplicates = pd.DataFrame({"id": id_series}).duplicated().sum()
+        duplicate_frame = pd.DataFrame({"id": id_series})
+        if "agency" in df.columns:
+            duplicate_frame["agency"] = df["agency"].astype(str).str.strip().str.lower()
+        duplicates = duplicate_frame.duplicated().sum()
 
     if duplicates:
         issues.append(f"duplicate_id_year_rows:{int(duplicates)}")

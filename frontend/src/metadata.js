@@ -21,6 +21,13 @@ export const METADATA = {
       "coverage": "Federal contracts, grants, resident wages, direct payments, and federal residents by county, congressional district, and state (annual values where available).",
       "description": "Government spending activity and workforce indicators with per-1,000-resident measures."
     },
+    "contract_agency": {
+      "name": "Federal Spending by Agency",
+      "sourceName": "USAspending.gov",
+      "sourceUrl": "https://usaspending.gov/",
+      "coverage": "Federal contracts, grants, resident wages, direct payments, and federal residents by state, county, and congressional district with agency-level breakdowns.",
+      "description": "Agency-specific view of federal spending and workforce indicators with per-1,000-resident measures."
+    },
     "finra": {
       "name": "FINRA Financial Literacy",
       "sourceName": "FINRA National Financial Capability Study",
@@ -92,6 +99,29 @@ export const METADATA = {
       "Free_Cash_Flow_per_capita": "Free Cash Flow / Population"
     },
     "contract_static": {
+      "state": "State name",
+      "state_fips": "State FIPS code",
+      "county": "County name",
+      "county_fips": "County FIPS code",
+      "cd_118": "Congressional district identifier (118th Congress)",
+      "year": "Fiscal year",
+      "Contracts": "Federal contract obligations",
+      "Contracts Per 1000": "Federal contracts per 1,000 residents",
+      "Grants": "Federal grant obligations",
+      "Grants Per 1000": "Federal grants per 1,000 residents",
+      "Resident Wage": "Wages paid to federal resident employees",
+      "Resident Wage Per 1000": "Resident wages per 1,000 residents",
+      "Direct Payments": "Federal direct payments",
+      "Direct Payments Per 1000": "Federal direct payments per 1,000 residents",
+      "Federal Residents": "Federal resident employee count",
+      "Federal Residents Per 1000": "Federal resident employees per 1,000 residents",
+      "Employees": "Federal employee count",
+      "Employees Per 1000": "Federal employees per 1,000 residents",
+      "Employees Wage": "Wages paid to federal employees",
+      "Employees Wage Per 1000": "Federal employee wages per 1,000 residents"
+    },
+    "contract_agency": {
+      "agency": "Federal awarding agency name",
       "state": "State name",
       "state_fips": "State FIPS code",
       "county": "County name",

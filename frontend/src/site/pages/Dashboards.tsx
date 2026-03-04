@@ -16,6 +16,12 @@ const dashboards = [
     path: '/dashboard/government-spending'
   },
   {
+    id: 'federal-spending-agency',
+    title: 'Federal Spending by Agency',
+    description: 'Extends the federal spending view with an agency filter so users can isolate top federal agencies and compare their geographic funding footprint.',
+    path: '/dashboard/federal-spending-agency'
+  },
+  {
     id: 'federal-spending-breaks',
     title: 'Federal Spending Breakdown',
     description: 'Provides a detailed breakdown of federal funding categories, including contracts, grants, and federal employee wages for each State, using data from the USAspending.',

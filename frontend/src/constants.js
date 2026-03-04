@@ -42,6 +42,22 @@ export const VARIABLE_LABEL_OVERRIDES = {
     "Employees Wage": "Employees Wage",
     "Employees Wage Per 1000": "Employees Wage per 1,000 Residents"
   },
+  contract_agency: {
+    Contracts: "Contracts",
+    "Contracts Per 1000": "Contracts per 1,000 Residents",
+    Grants: "Grants",
+    "Grants Per 1000": "Grants per 1,000 Residents",
+    "Resident Wage": "Resident Wage",
+    "Resident Wage Per 1000": "Resident Wage per 1,000 Residents",
+    "Direct Payments": "Direct Payments",
+    "Direct Payments Per 1000": "Direct Payments per 1,000 Residents",
+    "Federal Residents": "Federal Residents",
+    "Federal Residents Per 1000": "Federal Residents per 1,000 Residents",
+    Employees: "Employees",
+    "Employees Per 1000": "Employees per 1,000 Residents",
+    "Employees Wage": "Employees Wage",
+    "Employees Wage Per 1000": "Employees Wage per 1,000 Residents"
+  },
   spending_breakdown: {
     "Contracts": "Federal Contracts",
     "Contracts Per 1000": "Federal Contracts per 1,000 Residents",

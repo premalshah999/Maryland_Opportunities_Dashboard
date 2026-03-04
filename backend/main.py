@@ -45,6 +45,8 @@ FLOW_DATA_DIR = _env_path("FLOW_DATA_DIR", os.path.join(ROOT_DIR, "data"))
 SPENDING_DATA_FILE = _env_path(
     "SPENDING_DATA_FILE", os.path.join(DATA_DIR, "spending_state_agency.xlsx")
 )
+AGENCY_COLUMN = "agency"
+ALL_AGENCIES_OPTION = "All"
 
 DATASETS = {
     "census": {
@@ -55,6 +57,11 @@ DATASETS = {
     "contract_static": {
         "label": "Federal Spending",
         "dir": "contract_static",
+        "prefix": "contract",
+    },
+    "contract_agency": {
+        "label": "Federal Spending by Agency",
+        "dir": "contract_agency",
         "prefix": "contract",
     },
     "gov_spending": {
@@ -83,6 +90,7 @@ CONGRESS_LEGACY_END_YEAR = 2011
 CONGRESS_MODERN_END_YEAR = 2021
 BOUNDARY_YEAR_OVERRIDES = {
     ("contract_static", "county"): str(CENSUS_COUNTY_PLANNING_START_YEAR - 1),
+    ("contract_agency", "county"): str(CENSUS_COUNTY_PLANNING_START_YEAR - 1),
     ("finra", "congress"): str(CENSUS_COUNTY_PLANNING_START_YEAR),
 }
 CENSUS_INCOME_REPLACEMENTS = {
@@ -100,6 +108,11 @@ ID_COLUMNS = {
     "state": {"state", "state_fips"},
     "county": {"county", "state", "fips", "county_fips", "state_fips"},
     "congress": {"cd_118", "state", "state_fips"},
+}
+LEVEL_GROUP_COLUMNS = {
+    "state": ["state", "state_fips"],
+    "county": ["state", "county", "fips", "state_fips"],
+    "congress": ["state", "cd_118", "state_fips"],
 }
 
 STATE_META = [
@@ -544,6 +557,12 @@ def list_years(df: pd.DataFrame) -> List[str]:
     return years
 
 
+def list_numeric_variables(df: pd.DataFrame, level: str) -> List[str]:
+    exclude = set(ID_COLUMNS[level]) | {YEAR_COLUMN, AGENCY_COLUMN}
+    numeric_columns = set(df.select_dtypes(include="number").columns.tolist())
+    return [col for col in df.columns if col in numeric_columns and col not in exclude]
+
+
 def filter_dataset_year(df: pd.DataFrame, year: Optional[str]) -> tuple[pd.DataFrame, Optional[str]]:
     if YEAR_COLUMN not in df.columns:
         return df, None
@@ -554,6 +573,21 @@ def filter_dataset_year(df: pd.DataFrame, year: Optional[str]) -> tuple[pd.DataF
     if selected_year:
         df = df[df[YEAR_COLUMN] == selected_year]
     return df, selected_year
+
+
+def filter_dataset_agency(df: pd.DataFrame, agency: Optional[str]) -> tuple[pd.DataFrame, Optional[str]]:
+    if AGENCY_COLUMN not in df.columns:
+        return df, None
+    selected_agency = (agency or "").strip()
+    if not selected_agency or selected_agency.lower() in {"all", "all agencies"}:
+        return df, None
+
+    normalized_agency = df[AGENCY_COLUMN].astype(str).str.strip()
+    mask = normalized_agency.str.lower() == selected_agency.lower()
+    if not mask.any():
+        return df.iloc[0:0], selected_agency
+    matched_name = normalized_agency[mask].iloc[0]
+    return df[mask], matched_name
 
 
 def load_geo(level: str, year: Optional[str] = None) -> dict:
@@ -1064,6 +1098,15 @@ def summarize(values: List[float]) -> dict:
     }
 
 
+def dataframe_record_ids(df: pd.DataFrame, level: str) -> pd.Series:
+    if level == "state":
+        return df["state"].astype(str).str.strip().str.lower().map(STATE_NAME_TO_FIPS)
+    if level == "county":
+        fips = pd.to_numeric(df.get("fips", df.get("county_fips")), errors="coerce")
+        return fips.apply(lambda value: str(int(value)).zfill(5) if not pd.isna(value) else None)
+    return df.get("cd_118", pd.Series(index=df.index, dtype="object")).astype(str).str.strip().str.upper()
+
+
 def build_records(
     df: pd.DataFrame,
     level: str,
@@ -1212,8 +1255,7 @@ def list_variables(
 ):
     validate_dataset_level(dataset, level)
     df = load_dataset(dataset, level)
-    exclude = ID_COLUMNS[level]
-    columns = [col for col in df.columns if col not in exclude and col != YEAR_COLUMN]
+    columns = list_numeric_variables(df, level)
     if dataset == "census":
         adjusted = []
         for col in columns:
@@ -1230,20 +1272,121 @@ def list_variables(
     return _cached_json_response(request, payload, etag, LONG_CACHE_SECONDS)
 
 
+def build_agencies_payload(
+    dataset: str,
+    level: str,
+    year: Optional[str],
+    metric: Optional[str],
+    limit: int,
+) -> dict:
+    signature = _dataset_signature(dataset, level)
+    cache_key = f"agencies:{dataset}:{level}:{year}:{metric}:{limit}:{signature}"
+    cached = _cache_get(_VALUES_CACHE, cache_key)
+    if cached is not None:
+        return cached
+
+    df = load_dataset(dataset, level)
+    if AGENCY_COLUMN not in df.columns:
+        raise HTTPException(status_code=404, detail="Agency filter unavailable for this dataset")
+
+    df, selected_year = filter_dataset_year(df, year)
+    agencies_payload = {
+        "agencies": [],
+        "year": selected_year,
+        "metric": None,
+    }
+    if df.empty:
+        _cache_set(_VALUES_CACHE, cache_key, agencies_payload, VALUES_CACHE_LIMIT)
+        return agencies_payload
+
+    boundary_year = boundary_year_for_dataset(dataset, level, selected_year)
+    allowed_ids = boundary_ids(level, boundary_year)
+    record_ids = dataframe_record_ids(df, level)
+    df = df.loc[record_ids.isin(allowed_ids)].copy()
+    if df.empty:
+        _cache_set(_VALUES_CACHE, cache_key, agencies_payload, VALUES_CACHE_LIMIT)
+        return agencies_payload
+
+    numeric_columns = list_numeric_variables(df, level)
+    chosen_metric = None
+    requested_metric = (metric or "").strip()
+    if requested_metric and requested_metric in numeric_columns:
+        chosen_metric = requested_metric
+    elif "Contracts" in numeric_columns:
+        chosen_metric = "Contracts"
+    elif numeric_columns:
+        chosen_metric = numeric_columns[0]
+
+    grouped = (
+        df.assign(_agency=df[AGENCY_COLUMN].astype(str).str.strip())
+        .loc[lambda frame: frame["_agency"].ne("")]
+    )
+    if chosen_metric:
+        grouped = (
+            grouped.groupby("_agency", dropna=False, sort=False)[chosen_metric]
+            .sum(min_count=1)
+            .reset_index(name="_value")
+            .sort_values("_value", ascending=False)
+        )
+    else:
+        grouped = (
+            grouped.groupby("_agency", dropna=False, sort=False)
+            .size()
+            .reset_index(name="_value")
+            .sort_values("_value", ascending=False)
+        )
+
+    agencies = grouped["_agency"].astype(str).tolist()
+    if limit > 0:
+        agencies = agencies[:limit]
+    agencies_payload = {
+        "agencies": agencies,
+        "year": selected_year,
+        "metric": chosen_metric,
+    }
+    _cache_set(_VALUES_CACHE, cache_key, agencies_payload, VALUES_CACHE_LIMIT)
+    return agencies_payload
+
+
+@app.get("/api/agencies")
+def list_agencies(
+    request: Request,
+    dataset: str = Query(..., min_length=1, max_length=50),
+    level: str = Query(..., min_length=1, max_length=20),
+    year: Optional[str] = Query(None, max_length=32),
+    metric: Optional[str] = Query(None, min_length=1, max_length=120),
+    limit: int = Query(25, ge=1, le=200),
+):
+    validate_dataset_level(dataset, level)
+    payload = build_agencies_payload(dataset, level, year, metric, limit)
+    etag = _build_etag(
+        "agencies",
+        dataset,
+        level,
+        year,
+        metric,
+        limit,
+        _dataset_signature(dataset, level),
+    )
+    return _cached_json_response(request, payload, etag, SHORT_CACHE_SECONDS)
+
+
 def build_values_payload(
     dataset: str,
     level: str,
     variable: str,
     year: Optional[str],
+    agency: Optional[str] = None,
 ) -> dict:
     signature = _dataset_signature(dataset, level)
-    cache_key = f"values:{dataset}:{level}:{variable}:{year}:{signature}"
+    cache_key = f"values:{dataset}:{level}:{variable}:{year}:{agency}:{signature}"
     cached = _cache_get(_VALUES_CACHE, cache_key)
     if cached is not None:
         return cached
     df = load_dataset(dataset, level)
 
     df, selected_year = filter_dataset_year(df, year)
+    df, selected_agency = filter_dataset_agency(df, agency)
 
     if dataset == "census" and variable in CENSUS_DERIVED_VARIABLES and variable not in df.columns:
         total_col, less_col = CENSUS_DERIVED_VARIABLES[variable]
@@ -1253,6 +1396,18 @@ def build_values_payload(
         df[variable] = numeric_series(df[total_col]) - numeric_series(df[less_col])
     elif variable not in df.columns:
         raise HTTPException(status_code=404, detail="Unknown variable")
+
+    if AGENCY_COLUMN in df.columns:
+        group_columns = [column for column in LEVEL_GROUP_COLUMNS[level] if column in df.columns]
+        if not group_columns:
+            raise HTTPException(status_code=500, detail="Unable to aggregate agency dataset")
+        grouped_df = df[group_columns + [variable]].copy()
+        grouped_df[variable] = numeric_series(grouped_df[variable])
+        df = (
+            grouped_df.groupby(group_columns, dropna=False, sort=False)[variable]
+            .sum(min_count=1)
+            .reset_index()
+        )
 
     boundary_year = boundary_year_for_dataset(dataset, level, selected_year)
     records, thresholds = build_records(
@@ -1282,6 +1437,7 @@ def build_values_payload(
         "top": top,
         "bottom": bottom,
         "year": selected_year,
+        "agency": selected_agency,
     }
     _cache_set(_VALUES_CACHE, cache_key, payload, VALUES_CACHE_LIMIT)
     return payload
@@ -1294,10 +1450,11 @@ def values(
     level: str = Query(..., min_length=1, max_length=20),
     variable: str = Query(..., min_length=1, max_length=120),
     year: Optional[str] = Query(None, max_length=32),
+    agency: Optional[str] = Query(None, min_length=1, max_length=200),
 ):
     validate_dataset_level(dataset, level)
-    payload = build_values_payload(dataset, level, variable, year)
-    etag = _build_etag("values", dataset, level, variable, year, _dataset_signature(dataset, level))
+    payload = build_values_payload(dataset, level, variable, year, agency)
+    etag = _build_etag("values", dataset, level, variable, year, agency, _dataset_signature(dataset, level))
     return _cached_json_response(request, payload, etag, SHORT_CACHE_SECONDS)
 
 
@@ -1329,17 +1486,20 @@ def download_atlas_view(
     level: str = Query(..., min_length=1, max_length=20),
     variable: str = Query(..., min_length=1, max_length=120),
     year: Optional[str] = Query(None, max_length=32),
+    agency: Optional[str] = Query(None, min_length=1, max_length=200),
 ):
     validate_dataset_level(dataset, level, allow_spending_breakdown=False)
-    payload = build_values_payload(dataset, level, variable, year)
+    payload = build_values_payload(dataset, level, variable, year, agency)
     records = payload.get("records", [])
     selected_year = payload.get("year") or (year or "latest")
+    selected_agency = payload.get("agency")
     export_df = pd.DataFrame(records)
     if not export_df.empty:
         export_df.insert(0, "dataset", dataset)
         export_df.insert(1, "level", level)
         export_df.insert(2, "variable", variable)
         export_df.insert(3, "year", selected_year)
+        export_df.insert(4, "agency", selected_agency or ALL_AGENCIES_OPTION)
 
     output = BytesIO()
     with pd.ExcelWriter(output, engine="openpyxl") as writer:
@@ -1347,7 +1507,7 @@ def download_atlas_view(
     output.seek(0)
     filename = f"{dataset}_{level}_{variable}_{selected_year or 'latest'}.xlsx"
     headers = _cache_headers(
-        _build_etag("atlas-view", dataset, level, variable, year, _dataset_signature(dataset, level)),
+        _build_etag("atlas-view", dataset, level, variable, year, agency, _dataset_signature(dataset, level)),
         SHORT_CACHE_SECONDS,
     )
     headers["Content-Disposition"] = f'attachment; filename=\"{filename}\"'

@@ -37,6 +37,13 @@ const DASHBOARD_SECTIONS = [
     dataset: "contract_static"
   },
   {
+    key: "federal-spending-agency",
+    label: "Federal Spending by Agency",
+    shortLabel: "By Agency",
+    view: "atlas",
+    dataset: "contract_agency"
+  },
+  {
     key: "federal-spending-breaks",
     label: "Federal Spending Breakdown",
     shortLabel: "Spending Breakdown",
@@ -105,6 +112,7 @@ export default function DashboardApp() {
     } else if (view === "atlas" || datasetParam) {
       if (datasetParam === "census") targetKey = "census";
       if (datasetParam === "contract_static") targetKey = "government-spending";
+      if (datasetParam === "contract_agency") targetKey = "federal-spending-agency";
       if (datasetParam === "gov_spending") targetKey = "government-finances";
       if (datasetParam === "finra") targetKey = "finra-financial-literacy";
     }
@@ -122,6 +130,8 @@ export default function DashboardApp() {
   const [variable, setVariable] = useState("");
   const [years, setYears] = useState([]);
   const [year, setYear] = useState("");
+  const [agencies, setAgencies] = useState([]);
+  const [agency, setAgency] = useState("All");
   const [valuesData, setValuesData] = useState(null);
   const [geoCache, setGeoCache] = useState({});
   const [tab, setTab] = useState("filters");
@@ -311,6 +321,8 @@ export default function DashboardApp() {
     setVariable("");
     setYears([]);
     setYear("");
+    setAgencies([]);
+    setAgency("All");
     setAtlasStatus({ state: "loading", message: "Loading variables" });
     setValuesData(null);
     const params = new URLSearchParams({ dataset, level }).toString();
@@ -328,17 +340,47 @@ export default function DashboardApp() {
   }, [dataset, level]);
 
   useEffect(() => {
+    if (dataset !== "contract_agency" || !level || !year || !variable) {
+      setAgencies([]);
+      setAgency("All");
+      return;
+    }
+    const params = new URLSearchParams({
+      dataset,
+      level,
+      year,
+      metric: variable,
+      limit: "30"
+    }).toString();
+    fetchJson(`/api/agencies?${params}`)
+      .then((data) => {
+        const nextAgencies = data.agencies || [];
+        setAgencies(nextAgencies);
+        setAgency((previous) => (
+          previous !== "All" && nextAgencies.includes(previous) ? previous : "All"
+        ));
+      })
+      .catch(() => {
+        setAgencies([]);
+        setAgency("All");
+      });
+  }, [dataset, level, year, variable]);
+
+  useEffect(() => {
     if (!dataset || !level || !variable || !year) return;
     setAtlasStatus({ state: "loading", message: "Loading values" });
     setSelectedFeature(null);
-    const params = new URLSearchParams({ dataset, level, variable, year }).toString();
+    const params = new URLSearchParams({ dataset, level, variable, year });
+    if (dataset === "contract_agency" && agency && agency !== "All") {
+      params.set("agency", agency);
+    }
     fetchJson(`/api/values?${params}`)
       .then((data) => {
         setValuesData(data);
         setAtlasStatus({ state: "ready", message: `Loaded ${data.stats?.count || 0} records` });
       })
       .catch(() => setAtlasStatus({ state: "error", message: "Failed to load values" }));
-  }, [dataset, level, variable, year]);
+  }, [dataset, level, variable, year, agency]);
 
   // Load flow options when level changes
   useEffect(() => {
@@ -563,6 +605,9 @@ export default function DashboardApp() {
         if (dataset === "contract_static" && target === "county") {
           return "2021";
         }
+        if (dataset === "contract_agency" && target === "county") {
+          return "2021";
+        }
         if (dataset === "finra" && target === "congress") {
           return "2022";
         }
@@ -624,6 +669,7 @@ export default function DashboardApp() {
   const atlasGeoYear = useMemo(() => {
     if (!year) return null;
     if (level === "county" && dataset === "contract_static") return "2021";
+    if (level === "county" && dataset === "contract_agency") return "2021";
     if (level === "congress" && dataset === "finra") return "2022";
     return year;
   }, [level, dataset, year]);
@@ -896,6 +942,9 @@ export default function DashboardApp() {
     if (year) {
       params.set("year", year);
     }
+    if (dataset === "contract_agency" && agency && agency !== "All") {
+      params.set("agency", agency);
+    }
     try {
       await downloadFile(
         `/api/download/atlas/view?${params.toString()}`,
@@ -1064,6 +1113,10 @@ export default function DashboardApp() {
               years={years}
               year={year}
               onYearChange={(event) => setYear(event.target.value)}
+              showAgencyFilter={dataset === "contract_agency"}
+              agencies={agencies}
+              agency={agency}
+              onAgencyChange={(event) => setAgency(event.target.value)}
               variables={variables}
               variable={variable}
               onVariableChange={(event) => setVariable(event.target.value)}

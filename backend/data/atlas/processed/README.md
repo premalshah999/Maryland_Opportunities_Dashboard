@@ -1,6 +1,6 @@
 # Database Structure & Variable Types
 
-This project processes four primary datasets related to federal spending, demographics, municipal finance, and household financial health. The data is aggregated at two geographic levels: **County** and **Congressional District (year-specific)**.
+This project processes multiple datasets related to federal spending, demographics, municipal finance, and household financial health. The data is aggregated at three geographic levels: **State**, **County**, and **Congressional District (year-specific)**.
 
 ## 1. Geographic Variables
 
@@ -99,3 +99,14 @@ This project processes four primary datasets related to federal spending, demogr
 *   **`Employees`**: Federal employment counts.
 *   **`Employees Wage`**: Federal employee wage totals.
 *   **Per 1,000** variants for the above (columns ending in `Per 1000`).
+
+### F. Federal Spending by Agency
+**Source:** USAspending.gov  
+**File Output:** `contract_state.xlsx`, `contract_county.xlsx`, `contract_congress.xlsx` under `contract_agency/`
+
+**Variables:**
+*   **`agency`**: Federal awarding agency.
+*   **Metrics:** `Contracts`, `Grants`, `Resident Wage`, `Direct Payments`, `Federal Residents`, and per-1,000 variants.
+*   **State file only:** `Employees`, `Employees Wage`, and per-1,000 variants.
+
+This dataset is used by the “Federal Spending by Agency” dashboard and enables agency-level filtering on top of the baseline federal spending view.

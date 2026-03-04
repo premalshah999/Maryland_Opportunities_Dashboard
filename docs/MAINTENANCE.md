@@ -43,6 +43,7 @@ This pulls latest code, rebuilds frontend, refreshes `/var/data/mop`, restarts A
 ## Data Updates
 
 1. Replace processed files under `backend/data/atlas/processed/` and flow files under `data/`.
+   - `contract_agency/` powers the **Federal Spending by Agency** dashboard.
 2. Run dataset repair (fixes known county/city duplicates, blank state rows, drops invalid IDs):
    ```bash
    python backend/scripts/repair_processed_datasets.py
@@ -68,6 +69,7 @@ python backend/scripts/build_county_legacy_geojson.py
 
 Note: `contract_static` county data still uses legacy CT county FIPS for 2022+.
 The API forces legacy county boundaries for that dataset so map IDs stay consistent.
+`contract_agency` county data follows the same legacy mapping rule.
 
 ## Congressional District Boundaries (Year-Specific)
 

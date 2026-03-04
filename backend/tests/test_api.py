@@ -21,6 +21,7 @@ def test_list_datasets():
     keys = {item["key"] for item in data["datasets"]}
     assert "spending_breakdown" not in keys
     assert "contract_static" in keys
+    assert "contract_agency" in keys
 
 
 def test_variables_invalid_level():
@@ -138,6 +139,50 @@ def test_contract_static_new_schema_variables_and_values():
     first = values_payload["records"][0]
     assert first["id"] is not None
     assert "value" in first
+
+
+def test_contract_agency_variables_agencies_and_values():
+    variables_response = client.get(
+        "/api/variables",
+        params={"dataset": "contract_agency", "level": "state"},
+    )
+    assert variables_response.status_code == 200
+    payload = variables_response.json()
+    variables = payload["variables"]
+    years = payload["years"]
+    assert "Contracts" in variables
+    assert "agency" not in variables
+    assert years
+
+    agencies_response = client.get(
+        "/api/agencies",
+        params={
+            "dataset": "contract_agency",
+            "level": "state",
+            "year": years[-1],
+            "metric": "Contracts",
+            "limit": 10,
+        },
+    )
+    assert agencies_response.status_code == 200
+    agencies_payload = agencies_response.json()
+    assert agencies_payload["agencies"]
+    selected_agency = agencies_payload["agencies"][0]
+
+    values_response = client.get(
+        "/api/values",
+        params={
+            "dataset": "contract_agency",
+            "level": "state",
+            "variable": "Contracts",
+            "year": years[-1],
+            "agency": selected_agency,
+        },
+    )
+    assert values_response.status_code == 200
+    values_payload = values_response.json()
+    assert values_payload["records"]
+    assert values_payload["agency"] == selected_agency
 
 
 def test_download_endpoints():

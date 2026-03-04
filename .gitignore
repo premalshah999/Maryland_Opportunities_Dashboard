@@ -1,6 +1,7 @@
 .DS_Store
 .claude/
 .venv/
+.venv_local/
 node_modules/
 frontend/node_modules/
 frontend/dist/
@@ -10,6 +11,7 @@ newapp/
 /contract_static/
 /census/
 maryland-opportunity-project/
+federal_spending_with_agency/
 Variable_Dictionary_Full.xlsx
 __pycache__/
 .pytest_cache/

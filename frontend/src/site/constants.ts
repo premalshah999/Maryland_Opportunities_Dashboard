@@ -51,6 +51,7 @@ export const NAV_ITEMS: NavItem[] = [
       { label: 'Documentation', path: '/dashboard-reports' },
       { label: 'Census (ACS Demographics)', path: '/dashboard/census' },
       { label: 'Federal Spending', path: '/dashboard/government-spending' },
+      { label: 'Federal Spending by Agency', path: '/dashboard/federal-spending-agency' },
       { label: 'Federal Spending Breakdown', path: '/dashboard/federal-spending-breaks' },
       { label: 'Government Finances', path: '/dashboard/government-finances' },
       { label: 'FINRA Financial Literacy', path: '/dashboard/finra-financial-literacy' },

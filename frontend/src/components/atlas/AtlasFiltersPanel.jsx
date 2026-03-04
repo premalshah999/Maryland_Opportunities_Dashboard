@@ -13,6 +13,10 @@ export function AtlasFiltersPanel({
   years,
   year,
   onYearChange,
+  showAgencyFilter = false,
+  agencies = [],
+  agency = "All",
+  onAgencyChange,
   variables,
   variable,
   onVariableChange,
@@ -106,6 +110,28 @@ export function AtlasFiltersPanel({
           </select>
         </label>
       </div>
+
+      {showAgencyFilter && (
+        <div className="section">
+          <div className="section-title">Top Agencies</div>
+          <label className="control">
+            <span>Agency</span>
+            <select
+              className="select-input"
+              value={agency}
+              onChange={onAgencyChange}
+              disabled={!agencies.length}
+            >
+              <option value="All">All Agencies</option>
+              {agencies.map((item) => (
+                <option key={item} value={item}>
+                  {item}
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
+      )}
 
       <div className="section">
         <div className="section-title">Download</div>

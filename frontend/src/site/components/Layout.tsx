@@ -389,6 +389,7 @@ const Footer = () => {
             <ul className="space-y-4 text-sm font-light text-gray-600">
               <li><Link to="/dashboard/census" className="hover:text-umd-red transition-colors">Census (ACS Demographics)</Link></li>
               <li><Link to="/dashboard/government-spending" className="hover:text-umd-red transition-colors">Federal Spending</Link></li>
+              <li><Link to="/dashboard/federal-spending-agency" className="hover:text-umd-red transition-colors">Federal Spending by Agency</Link></li>
               <li><Link to="/dashboard/federal-spending-breaks" className="hover:text-umd-red transition-colors">Federal Spending Breakdown</Link></li>
               <li><Link to="/dashboard/government-finances" className="hover:text-umd-red transition-colors">Government Finances</Link></li>
               <li><Link to="/dashboard/finra-financial-literacy" className="hover:text-umd-red transition-colors">FINRA Financial Literacy</Link></li>

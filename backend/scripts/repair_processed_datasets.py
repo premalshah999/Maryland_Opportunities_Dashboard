@@ -187,6 +187,7 @@ def main() -> None:
 
     congress_paths = [
         PROCESSED_DIR / "contract_static" / "contract_congress.xlsx",
+        PROCESSED_DIR / "contract_agency" / "contract_congress.xlsx",
         PROCESSED_DIR / "gov_spending" / "gov_congress.xlsx",
         PROCESSED_DIR / "Finra" / "finra_congress.xlsx",
     ]
@@ -196,6 +197,7 @@ def main() -> None:
 
     county_paths = [
         PROCESSED_DIR / "contract_static" / "contract_county.xlsx",
+        PROCESSED_DIR / "contract_agency" / "contract_county.xlsx",
         PROCESSED_DIR / "gov_spending" / "gov_county.xlsx",
         PROCESSED_DIR / "Finra" / "finra_county.xlsx",
     ]
