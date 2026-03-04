@@ -147,9 +147,15 @@ export const dashboardGuides: DashboardGuide[] = [
         impact: 'Refreshes all values and rankings to the chosen reporting period.'
       },
       {
+        control: 'Metric',
+        controlType: 'Dropdown (Variable > Metric)',
+        options: 'Contracts, Grants, Resident Wage, Direct Payments, Federal Residents, and per-1,000 variants.',
+        impact: 'Defines the value used to rank and color each geography.'
+      },
+      {
         control: 'Top Agencies',
         controlType: 'Dropdown (Top Agencies > Agency)',
-        options: 'All Agencies, plus the top agencies ranked for the selected level and year.',
+        options: 'All Agencies, plus the top agencies ranked for the selected level/year/metric.',
         impact: 'Filters the map and insights to one agency so agency-specific concentration patterns are visible.'
       }
     ],
@@ -159,7 +165,7 @@ export const dashboardGuides: DashboardGuide[] = [
       'Clicked geography panel still reports value, rank, quintile, and percentile under the active agency filter.'
     ],
     howToUse: [
-      'Select Level and Year first so the Top Agencies list is ranked in the same context.',
+      'Select Level, Year, and Metric first so the Top Agencies list is ranked in the same context.',
       'Keep Agency = All Agencies for total footprint, then switch to one agency for drill-down.',
       'Compare agency-specific maps against the regular Federal Spending dashboard to separate composition from total size.',
       'Export displayed data when you need a single-agency comparison file.'

@@ -331,11 +331,8 @@ export default function DashboardApp() {
         const nextVars = data.variables || [];
         const nextYears = data.years || [];
         const nextYear = nextYears.length ? nextYears[nextYears.length - 1] : "";
-        const defaultMetric = dataset === "contract_agency"
-          ? (nextVars.includes("Contracts") ? "Contracts" : (nextVars[0] || ""))
-          : (nextVars[0] || "");
         setVariables(nextVars);
-        setVariable(defaultMetric);
+        setVariable(nextVars[0] || "");
         setYears(nextYears);
         setYear(nextYear);
       })
@@ -1116,11 +1113,9 @@ export default function DashboardApp() {
               years={years}
               year={year}
               onYearChange={(event) => setYear(event.target.value)}
-              hideVariableSelect={dataset === "contract_agency"}
               showAgencyFilter={dataset === "contract_agency"}
               agencies={agencies}
               agency={agency}
-              agencyLabel={dataset === "contract_agency" ? "Department" : "Agency"}
               onAgencyChange={(event) => setAgency(event.target.value)}
               variables={variables}
               variable={variable}

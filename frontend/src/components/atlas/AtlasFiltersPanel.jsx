@@ -13,11 +13,9 @@ export function AtlasFiltersPanel({
   years,
   year,
   onYearChange,
-  hideVariableSelect = false,
   showAgencyFilter = false,
   agencies = [],
   agency = "All",
-  agencyLabel = "Agency",
   onAgencyChange,
   variables,
   variable,
@@ -90,36 +88,34 @@ export function AtlasFiltersPanel({
         </label>
       </div>
 
-      {!hideVariableSelect && (
-        <div className="section">
-          <div className="section-title">Variable</div>
-          <label className="control">
-            <span>Metric</span>
-            <select
-              className="select-input"
-              value={variable}
-              onChange={onVariableChange}
-              disabled={!variables.length}
-            >
-              {!variables.length ? (
-                <option value="">Select dataset and level</option>
-              ) : (
-                variables.map((item) => (
-                  <option key={item} value={item}>
-                    {getVariableLabel(dataset, item)}
-                  </option>
-                ))
-              )}
-            </select>
-          </label>
-        </div>
-      )}
+      <div className="section">
+        <div className="section-title">Variable</div>
+        <label className="control">
+          <span>Metric</span>
+          <select
+            className="select-input"
+            value={variable}
+            onChange={onVariableChange}
+            disabled={!variables.length}
+          >
+            {!variables.length ? (
+              <option value="">Select dataset and level</option>
+            ) : (
+              variables.map((item) => (
+                <option key={item} value={item}>
+                  {getVariableLabel(dataset, item)}
+                </option>
+              ))
+            )}
+          </select>
+        </label>
+      </div>
 
       {showAgencyFilter && (
         <div className="section">
           <div className="section-title">Top Agencies</div>
           <label className="control">
-            <span>{agencyLabel}</span>
+            <span>Agency</span>
             <select
               className="select-input"
               value={agency}
